@@ -1,2 +1,35 @@
-# Pracownia-app
-Inteligentna aplikacja do zarządzania pracownią, projektami, warsztatami, klientami i finansami dla artystów, twórców oraz małych firm.
+# PRACOWNIA — osobisty organizer dla twórców
+
+**Wersja 1.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## Co działa
+- Projekty i warsztaty: tworzenie, edycja, powielanie, usuwanie, statusy i terminy.
+- Lista kosztów realizacji, przychód, wpłaty, należności i szacunkowy wynik po kosztach.
+- Orientacyjna kwota za godzinę na podstawie czasu wpisanego przez użytkownika.
+- Listy uczestników warsztatów i oznaczanie statusu wpłaty.
+- Zadania z terminami oraz powiązanie z projektami.
+- Mobilny pulpit, finanse, archiwum realizacji, filtr i wyszukiwarka.
+- Zapis lokalny w IndexedDB (rezerwowo localStorage), eksport i import kopii JSON.
+- PWA: manifest, ikony 192/512 oraz service worker umożliwiający podstawową pracę offline po pierwszym uruchomieniu przez HTTPS.
+
+## Uruchomienie
+Kod stanowi statyczną aplikację HTML/CSS/JS. Aby uruchomić ją w telefonie, opublikuj zawartość **katalogu głównego** na hostingu HTTPS (np. Vercel/Netlify); nie ma polecenia budowania. `index.html` musi znajdować się w folderze publikacji obok plików `app.js`, `styles.css`, `manifest.webmanifest`, `service-worker.js` oraz ikon.
+
+Przy prywatnym repozytorium na GitHub Free, GitHub Pages nie publikuje tej strony. Możesz połączyć repozytorium z hostingiem obsługującym prywatne repozytoria, zachowując kod źródłowy na GitHubie jako prywatny.
+
+Po publikacji otwórz adres w Chrome na Androidzie, menu **⋮ → Zainstaluj aplikację** (lub **Dodaj do ekranu głównego**, zależnie od urządzenia).
+
+## Dane i bezpieczeństwo
+**Wersja 1.0 nie ma kont, serwera, synchronizacji między telefonami ani automatycznych backupów.** Każde urządzenie ma swoją osobną pamięć aplikacji. Utrata telefonu lub wyczyszczenie danych przeglądarki może oznaczać utratę wpisów.
+
+W ustawieniach pobieraj regularnie kopię danych JSON. Import zastępuje dotychczasowe dane. **Na tym etapie używaj wyłącznie informacji fikcyjnych/testowych; nie wpisuj prawdziwych danych osobowych klientów i uczestników.** Przed testami na danych rzeczywistych trzeba wdrożyć odpowiednie zabezpieczenia i zasady zgodne z RODO.
+
+Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, a nie zysk księgowy ani wynagrodzenie netto; nie uwzględnia podatków, ZUS, kosztów stałych i innych nieujętych wydatków. Znaczniki wpłat uczestników nie aktualizują automatycznie kwoty wpłaconej za warsztat.
+
+## Następne etapy
+1. Testy na Androidzie i poprawki UX.
+2. Konta użytkowników, bezpieczna synchronizacja, kopie zapasowe i oddzielenie danych użytkowników.
+3. Raporty opłacalności, zdjęcia realizacji, wyceny PDF, dodatkowe szablony branżowe.
+4. Funkcje AI oraz panel udostępniany klientom po osobnych testach bezpieczeństwa.
+
+To jest prywatny prototyp, nie gotowy produkt komercyjny.
