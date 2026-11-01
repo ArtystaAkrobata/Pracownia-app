@@ -7,7 +7,7 @@ const $=s=>document.querySelector(s);
 const htmlEscape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const now=()=>new Date().toISOString();
 const uid=()=> (crypto?.randomUUID?.() || 'id_'+Date.now()+'_'+Math.random().toString(16).slice(2));
-const fMoney=n=>new Intl.NumberFormat('pl-PL',{style:'currency',currency:'PLN',maximumFractionDigits:0}).format(Number(n)||0);
+const fMoney=n=>new Intl.NumberFormat('pl-PL',{style:'currency',currency:'PLN',minimumFractionDigits:0,maximumFractionDigits:2}).format(Number(n)||0);
 const fNum=n=>new Intl.NumberFormat('pl-PL',{maximumFractionDigits:1}).format(Number(n)||0);
 const fDate=s=>s?new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short',year:'numeric'}).format(new Date(s+'T12:00:00')):'Bez terminu';
 const val=v=>Math.max(0,Number(v)||0);
