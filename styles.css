@@ -17,3 +17,21 @@
 .participant-info small.money-positive{color:var(--green)}
 .participant-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
 @media(max-width:420px){.participant-summary{gap:6px}.participant-summary>div{padding:10px 7px}.participant-summary strong{font-size:12px}.participant-summary small{font-size:9px}.participant-entry .participant-actions{width:100%;justify-content:flex-start}}
+
+
+/* PRACOWNIA 1.2 — dynamiczne formularze dla dwóch rodzajów działalności */
+[hidden]{display:none!important}
+.project-kind-section{margin:16px 0 20px;padding:16px;border:1px solid var(--stroke);border-radius:16px;background:#16243a}
+.kind-heading{display:flex;align-items:flex-start;gap:10px;margin-bottom:17px}
+.kind-heading .kind-symbol{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border-radius:10px;background:#2d384a;color:var(--gold)}
+.kind-heading h3{margin:0;font-size:14px}
+.kind-heading p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+.project-kind-section .form-cols .field-full{grid-column:1/-1}
+.project-kind-section .form-cols{row-gap:0}
+.project-kind-section .field:last-child{margin-bottom:0}
+.specific-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:11px}
+.specific-detail-grid>div{padding:12px 10px;background:var(--panel2);border:1px solid var(--stroke);border-radius:11px;min-width:0}
+.specific-detail-grid small{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}
+.specific-detail-grid b{display:block;overflow-wrap:anywhere;font-size:12px}
+@media(max-width:690px){.project-kind-section{margin:14px 0 18px;padding:14px}.type-select-row{grid-template-columns:1fr 1fr;gap:8px}.type-select-row .field select{padding-left:9px;padding-right:7px;font-size:12px}.kind-heading h3{font-size:13px}}
+@media(max-width:370px){.type-select-row{grid-template-columns:1fr}.specific-detail-grid{grid-template-columns:1fr 1fr}}
