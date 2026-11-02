@@ -1,6 +1,25 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.0.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.1.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.1.0 — Etap 6: profesjonalne wyceny i dokumenty PDF
+- **Rejestr wycen:** nowy widok **Wyceny** dostępny z menu bocznego, a na Androidzie przyciskiem **Wyceny** na stronie Projektów. Każda wycena może być samodzielna lub połączona z konkretnym zleceniem/warsztatem. Ze szczegółów projektu dostępny jest przycisk **Przygotuj wycenę**.
+- **Formularz wyceny:** automatyczny unikalny numer w danym roku (np. `MANU-2026-001`), data wystawienia i ważności, tytuł, wystawiający, dane kontaktowe, odbiorca oraz warunki. Wycena zawiera do 80 pozycji z opisem, ilością, jednostką i ceną jednostkową. Dodawanie/usuwanie pozycji aktualizuje sumę lokalnie **bez przewijania notesu na górę**. Rabat jest kwotowy, nie procentowy; nie może przekroczyć sumy pozycji.
+- **Wycena z projektu:** nazwa, klient oraz wstępna cena są przenoszone do nowego formularza, ale po zapisaniu wyceny **nie są zmieniane** dane źródłowego zlecenia, cena, wpłaty, podatki, koszty, stoper ani terminy. Pozwala to przygotowywać wersje ofert bez wpływu na historię rozliczeń.
+- **Przechowywanie wycen:** lista podglądów z kwotami, edycja, kasowanie po potwierdzeniu. Wyceny znajdują się w tym samym lokalnym magazynie. Kopia JSON `version:12` zawiera `quotes[]`; kontrola kopii pokazuje także liczbę wycen, a starsze kopie do wersji 11 automatycznie odczytują pustą listę wycen.
+- **Elegancki dokument A4:** logo MANU, numer wyceny, daty, dane klienta, tabela cen, rabat, kwota do zapłaty oraz uwagi. Przycisk **Drukuj / zapisz PDF** otwiera systemowe okno drukowania na Androidzie i w przeglądarce, w którym użytkownik wybiera **Zapisz jako PDF**. Aplikacja nie generuje samodzielnie pobieralnego pliku PDF jednym kliknięciem i nie wysyła go do klienta.
+- **Wydruk bez interfejsu:** wydzielona sekcja `#quote-print-root` i style `@media print`; inne elementy MANU, menu, przyciski i modalne tła są ukrywane w wydruku. Na wielu stronach A4 powtarza się nagłówek tabeli. Wersja jest zaprojektowana mobilnie, ale jakość i podział stron trzeba jeszcze zweryfikować w systemowym podglądzie Androida.
+- **Bez automatycznego VAT:** wartości są cenami wyceny, aplikacja nie oblicza podatku VAT, nie określa statusu podatkowego wystawcy i nie wystawia faktur. Przed udostępnieniem oferty sprawdź prawidłowość cen i potrzebne dane identyfikacyjne.
+- **Zgodność:** nie zmieniono nazwy IndexedDB `pracownia_db_v1`, klucza `snapshot` ani identyfikatora PWA. Nadal działają wszystkie etapy, przypomnienia, warsztaty, stoper, historia wpłat i odwracanie przewijania. Backup kodu: `backup-manu-v3-0-1-before-quotes`.
+
+### Test etapu 6 na telefonie
+1. Otwórz **Ustawienia** i pobierz kopię JSON, zachowując plik poza telefonem.
+2. Wejdź w **Projekty → Wyceny** albo w szczegóły próbnego zlecenia i wybierz **Przygotuj wycenę**.
+3. Dodaj dwie lub więcej pozycji, ustaw ilości i ceny oraz rabat. Sprawdź poprawność sumy i to, czy kartka nie przewija się na górę.
+4. Zapisz wycenę. W podglądzie sprawdź dane odbiorcy, tabelę, kwoty i warunki.
+5. Wybierz **Drukuj / zapisz PDF → Zapisz jako PDF**. Otwórz powstały plik i sprawdź układ A4 (zwłaszcza przy kilku pozycjach i długim tekście).
+6. Edytuj utworzoną wycenę i upewnij się, że pierwotna wartość zlecenia, koszty i otrzymane wpłaty nie zostały zmienione.
+7. W Ustawieniach pobierz nową kopię JSON i wybierz **Sprawdź plik kopii**: liczba wycen musi zgadzać się z listą.
 
 ## MANU 3.0.1 — Poprawa brzegu kartki Kalendarza
 - **Kalendarz ma teraz prawą krawędź notesu**, tak samo jak Finanse. Klasę `open-notebook--right` nadaje wspólna funkcja `openNotebook`; istniejące reguły CSS przenoszą skórzany grzbiet i detale na prawą stronę także na telefonie.
