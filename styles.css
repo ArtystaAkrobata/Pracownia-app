@@ -713,3 +713,92 @@ body{background:#08090b;color:var(--text)}
  .open-notebook .page-title{font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){.open-notebook{animation:none!important}}
+
+
+/* ═══ MANU 2.3 · Page turning: alternating spine ═══ */
+/* Projects: left leaf. Finance: opposite/right leaf. Tasks: left leaf. */
+.open-notebook--right{flex-direction:row-reverse;border-radius:21px 16px 16px 21px}
+.open-notebook--right .open-notebook-binding{
+ background:linear-gradient(270deg,#0a0b0e,#262024 19%,#45312a 36%,#1a1415 70%,#b57851 96%,#e0b38b);
+ box-shadow:inset 4px 0 7px #0008,-4px 0 12px #75503659;
+}
+.open-notebook--right .book-cover-edge{
+ left:auto;right:8px;
+}
+.open-notebook--right .book-binding-seam{
+ left:auto;right:18px;
+ background:linear-gradient(270deg,#150f11,#724934,#130e10);
+}
+.open-notebook--right .book-paper-edges{
+ right:auto;left:-5px;
+ border-left:1px solid #8b6d50;border-right:1px solid #b58d6c;
+ box-shadow:-3px 0 7px #6848305c;
+}
+.open-notebook--right .open-notebook-sheet{
+ background:
+  repeating-linear-gradient(0deg,transparent 0 7px,#6b543707 8px,transparent 9px 13px),
+  radial-gradient(ellipse at 5% 2%,#fffefa8c,transparent 56%),
+  linear-gradient(255deg,#e1ceb2 0%,#f6edde 6%,#fbf6eb 55%,#f0e4d1 100%);
+ box-shadow:inset -9px 0 21px #8662442a;
+}
+.open-notebook--right .open-notebook-ribbon{
+ right:auto;left:32px;
+}
+.open-notebook--right .open-notebook-lead{
+ flex-direction:row;
+}
+/* Slightly lift an incoming page with light along its turning edge. */
+@keyframes manu-page-forward{
+ 0%{opacity:.54;transform:perspective(1400px) rotateY(-5deg) translateX(14px) scale(.988);filter:brightness(.94)}
+ 58%{opacity:1;transform:perspective(1400px) rotateY(1deg) translateX(-1px) scale(1);filter:brightness(1.018)}
+ 100%{opacity:1;transform:perspective(1400px) rotateY(0deg) translateX(0) scale(1);filter:brightness(1)}
+}
+@keyframes manu-page-backward{
+ 0%{opacity:.54;transform:perspective(1400px) rotateY(5deg) translateX(-14px) scale(.988);filter:brightness(.94)}
+ 58%{opacity:1;transform:perspective(1400px) rotateY(-1deg) translateX(1px) scale(1);filter:brightness(1.018)}
+ 100%{opacity:1;transform:perspective(1400px) rotateY(0deg) translateX(0) scale(1);filter:brightness(1)}
+}
+.open-notebook.page-turn-next{
+ transform-origin:0% 50%;
+ animation:manu-page-forward 340ms cubic-bezier(.2,.75,.24,1) both;
+}
+.open-notebook.page-turn-prev{
+ transform-origin:100% 50%;
+ animation:manu-page-backward 340ms cubic-bezier(.2,.75,.24,1) both;
+}
+.open-notebook.page-turn-next .open-notebook-sheet::before,
+.open-notebook.page-turn-prev .open-notebook-sheet::before{
+ content:"";position:absolute;pointer-events:none;z-index:4;
+ inset:0;width:100%;opacity:0;
+ background:linear-gradient(90deg,transparent 19%,#fff9ea8c 50%,transparent 78%);
+ animation:manu-page-glint 340ms ease-out both;
+}
+.open-notebook.page-turn-prev .open-notebook-sheet::before{
+ background:linear-gradient(270deg,transparent 19%,#fff9ea8c 50%,transparent 78%);
+}
+@keyframes manu-page-glint{
+ 0%{opacity:0;transform:translateX(-16%)}
+ 25%{opacity:.35}
+ 100%{opacity:0;transform:translateX(16%)}
+}
+@media(max-width:1020px){
+ .open-notebook--right .book-binding-seam{right:13px;left:auto}
+ .open-notebook--right .book-cover-edge{right:5px;left:auto}
+}
+@media(max-width:690px){
+ .open-notebook--right{border-radius:17px 13px 13px 17px}
+ .open-notebook--right .book-cover-edge{right:3px;left:auto}
+ .open-notebook--right .book-binding-seam{right:9px;left:auto}
+ .open-notebook--right .book-paper-edges{left:-3px;right:auto}
+ .open-notebook--right .open-notebook-ribbon{left:12px;right:auto}
+ .open-notebook.page-turn-next,.open-notebook.page-turn-prev{animation-duration:270ms}
+ .open-notebook.page-turn-next .open-notebook-sheet::before,
+ .open-notebook.page-turn-prev .open-notebook-sheet::before{animation-duration:270ms}
+}
+@media(prefers-reduced-motion:reduce){
+ .open-notebook.page-turn-next,.open-notebook.page-turn-prev{
+  animation:none!important;transform:none!important;filter:none!important;
+ }
+ .open-notebook.page-turn-next .open-notebook-sheet::before,
+ .open-notebook.page-turn-prev .open-notebook-sheet::before{content:none!important;animation:none!important}
+}
