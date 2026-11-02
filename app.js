@@ -352,7 +352,7 @@ function projectForm(p){
     <div class="kind-heading"><span class="kind-symbol">${icon('wallet')}</span><div><h3>Rozliczenie ${oldManualWorkshop?'warsztatu':'realizacji'}</h3><p data-money-description>Cena dla klienta i otrzymane wpłaty.</p></div></div>
     <div class="form-cols">
       <div class="field"><label data-label="price">Cena realizacji (zł)</label><input name="price" type="number" min="0" step="0.01" value="${money(moneyFieldValue)}"></div>
-      <div class="field"><label data-label="paid">Wpłacono od klienta (zł)</label><input name="paid" type="number" min="0" step="0.01" value="${money(paidFieldValue)}"></div>
+      <div class="field"><label data-label="paid">Wpłaty wcześniejsze, bez daty (zł)</label><input name="paid" type="number" min="0" step="0.01" value="${money(paidFieldValue)}"></div>
     </div>
   </section>
 
@@ -392,8 +392,8 @@ function syncProjectFields(){
   form.querySelector('[data-label="date"]').textContent=workshop?'Data warsztatu':'Termin wykonania';
   form.elements.namedItem('title').placeholder=workshop?'Np. Warsztaty kaligrafii – Gotyk':'Np. Lustro z grawerem, stół dębowy';
   form.querySelector('[data-label="price"]').textContent=workshop?'Wartość warsztatu (zł)':'Cena realizacji (zł)';
-  form.querySelector('[data-label="paid"]').textContent=workshop?'Wpłacono za warsztat (zł)':'Wpłacono od klienta (zł)';
-  form.querySelector('[data-money-description]').textContent=workshop?'Zachowane ręczne rozliczenie istniejącego warsztatu. Możesz przełączyć je na sumy uczestników w szczegółach.':'Cena dla klienta i otrzymane wpłaty.';
+  form.querySelector('[data-label="paid"]').textContent='Wcześniejsze wpłaty (bez historii) (zł)';
+  form.querySelector('[data-money-description]').textContent=workshop?'Zachowane ręczne rozliczenie starszego warsztatu. Nowe wpłaty zapisuj w historii na karcie realizacji.':'Tutaj zachowujesz tylko kwoty bez daty. Nowe zaliczki i dopłaty dopisuj w historii wpłat na karcie realizacji, aby nie liczyć ich drugi raz.';
   syncTravelFields();
 }
 function showParticipants(p){
