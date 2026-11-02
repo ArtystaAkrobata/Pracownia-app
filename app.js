@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='2.1.0';
+const APP_VERSION='2.1.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const $=s=>document.querySelector(s);
