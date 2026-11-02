@@ -1,6 +1,25 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.6.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 2.7.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 2.7 — Etap 2: przebieg realizacji i ewidencja czasu
+- **Postęp etapów:** każdy nowy projekt i warsztat ma pięć sugerowanych etapów. Starsze projekty otrzymują etapy bez usuwania dotychczasowych kosztów, godzin ani uczestników. Można je odhaczać, cofać, usuwać i dopisywać własne (do 40). Procent ukończenia wynika wyłącznie z odhaczonych etapów i jest widoczny w projekcie oraz na jego karcie na liście.
+- **Stoper Start / Pauza / Wznów / Stop i zapisz:** w szczegółach realizacji, z naliczaniem w sekundach. Start i pauza są zapisywane w pamięci lokalnej. Zegar bazuje na lokalnym czasie urządzenia, więc po zamknięciu i ponownym otwarciu MANU nadal widzi rozpoczętą sesję i oblicza upływ czasu. Działa bez internetu. Liczenie zakłada poprawną datę i godzinę telefonu; limit jednej sesji to 24 godziny, by ograniczyć skutki zapomnianego stopera.
+- **Tylko jeden aktywny stoper:** jeśli stoper pracuje nad jednym projektem, nie można uruchomić jednocześnie drugiego. Zatrzymanie dopisuje czas do dotychczasowej liczby godzin projektu oraz tworzy wpis w historii.
+- **Ręczne dopisanie czasu:** data, liczba minut, krótki opis. Pozwala dodać pracę wykonaną bez stopera. Można także dopisać lub poprawić opis zakończonej sesji i usunąć błędny wpis, odejmując jego czas z projektu.
+- **Plan vs rzeczywistość:** zestawienie planowanych godzin, wszystkich dotąd zarejestrowanych godzin i brakującego/przekroczonego czasu. Plan można wpisywać dla zleceń i warsztatów, a łączny czas jest wyświetlany z dokładnością do setnych godziny. Stare ręcznie zapisane godziny pozostają w sumie, bez dodawania ich drugi raz.
+- **Historia pracy:** lista sesji, ręcznych wpisów czasu i zmian etapów. Źródłowe wpisy czasu i wydarzenia są przechowywane w danych i w eksporcie JSON. Pozycje historyczne starsze niż limity techniczne mogą zostać usunięte z dziennika, dlatego warto regularnie wykonywać kopie.
+- **Powielanie:** kopia realizacji zachowuje etapy jako niewykonane, zeruje przepracowany czas, historię i stoper; nie kopiuje już przeprowadzonych sesji.
+- **Schemat:** `version:8` przy zachowaniu tej samej bazy danych `pracownia_db_v1` i klucza `snapshot`. Import obsługuje wcześniejsze kopie do wersji 7 oraz nowe kopie wersji 8.
+- **Poprzednia wersja kodu:** `backup-manu-v2-6-before-workflow`.
+
+### Jak przetestować na telefonie
+1. Wykonaj kopię JSON z Ustawień przed próbami na własnych wpisach.
+2. Otwórz testowe zlecenie i odhacz pierwszy etap — zobacz 20% postępu. Dodaj własny etap i sprawdź zmianę procentów.
+3. Uruchom **Start**, po kilku minutach kliknij **Pauza**. Zamknij MANU i otwórz ponownie; sesja powinna być zachowana. Wybierz **Wznów**, a potem **Stop i zapisz**.
+4. Sprawdź, czy godziny, historia oraz orientacyjna stawka za godzinę zmieniły się zgodnie z zakończoną sesją.
+5. Użyj **Dopisz czas ręcznie** z opisem; edytuj opis wpisu, a następnie sprawdź, czy możesz skasować próbny wpis i cofnąć naliczone minuty.
+6. Wykonaj nowy eksport JSON i sprawdź kopię w Ustawieniach. Nie odinstalowuj MANU i nie czyść pamięci przeglądarki.
 
 ## MANU 2.6 — Etap 1: bezpieczeństwo zapisów i kopii
 - **Bez zmiany struktury danych:** baza \`pracownia_db_v1\`, klucz \`snapshot\`, wersja schematu 7 i identyfikator instalacji PWA pozostają bez zmian.
