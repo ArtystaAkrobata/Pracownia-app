@@ -1,12 +1,12 @@
 # PRACOWNIA — osobisty organizer dla twórców
 
-**Wersja 1.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 1.5 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
 
 ## Co działa
 - Projekty i warsztaty: tworzenie, edycja, powielanie, usuwanie, statusy i terminy.
 - **Formularze zależne od typu**: realizacja ma miejsce wykonania (własna pracownia lub zewnętrzny adres, np. mural), liczbę sztuk, planowany i rzeczywisty czas pracy oraz szacowane materiały; warsztat ma osobne miejsce, godzinę startu, czas zajęć, liczbę miejsc, domyślną cenę i czas przygotowania.
 - W szczegółach projektu widoczne są plan i porównanie z dotychczasową realizacją; planowane koszty materiałów są oddzielone od kosztów faktycznie wprowadzonych.
-- **Dojazd do realizacji:** przycisk „Nawiguj w Mapach Google” otwiera wskazówki pod wpisany adres. **Domyślnie** koszt wylicza się z dystansu w obie strony × spalania w l/100 km × ceny paliwa w zł/l + dodatkowych opłat (np. parkingu). Formularz pokazuje na żywo przewidywaną liczbę litrów i kwotę. Osoby stosujące koszt zł/km mogą przełączyć metodę; istniejące realizacje ze stawką zł/km zachowują poprzednie rozliczenie po aktualizacji. Aplikacja nie pobiera automatycznie dystansu, spalania, ceny paliwa ani danych GPS. Szacunek paliwa **nie obejmuje amortyzacji, serwisu i innych kosztów eksploatacji auta**. Koszt jest uwzględniany tylko raz w całkowitych kosztach realizacji i w wyniku finansowym; nie dodawaj go ponownie jako wydatek ręczny.
+- **Miejsce i dojazd w zwijanym kafelku:** użytkownik otwiera sekcję tylko wtedy, gdy jej potrzebuje. Wybiera **Bez dojazdu**, **Własne auto** lub **Transport płatny**. Dla auta koszt jest liczony z łącznego dystansu, spalania i ceny paliwa, z opcjonalną metodą zł/km. Dla transportu płatnego wpisuje łączną cenę przejazdu (np. taksówki lub pociągu) i ewentualne dodatkowe opłaty. „Bez dojazdu” nalicza 0 zł. Wcześniejsze zlecenia z kosztami dojazdu domyślnie zachowują tryb auta oraz dotychczasowe wyliczenia. Wszystkie kwoty są szacunkowe i użytkownik wpisuje je samodzielnie. Przycisk nawigacji do wpisanego adresu pozostaje dostępny w szczegółach realizacji. **Dojazdu nie dopisuj ponownie ręcznie**, bo jest ujęty w kosztach projektu.
 - Lista kosztów realizacji, przychód, wpłaty, należności i szacunkowy wynik po kosztach.
 - Orientacyjna kwota za godzinę na podstawie czasu wpisanego przez użytkownika.
 - Uczestnicy warsztatów: cena udziału, kwota otrzymanej zaliczki/wpłaty, automatyczne obliczanie dopłaty oraz edycja rozliczenia.
