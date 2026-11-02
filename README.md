@@ -1,6 +1,26 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.9.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.0.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.0 — Etap 5: kalendarz i przypomnienia
+- **Kalendarz miesięczny:** nowa zakładka „Kalendarz” w menu bocznym i dolnej nawigacji Androida, z dniami tygodnia od poniedziałku. Przełączanie miesięcy, wybór dnia i podgląd szczegółów odbywają się bez przeładowywania całego notesu i bez przeskoków do góry. Zachowano środkowy przycisk „Dodaj” w nawigacji mobilnej.
+- **Terminy projektów i warsztatów:** terminy pochodzą z dotychczasowego pola `date`. Warsztaty pokazują godzinę startu, jeśli została wpisana. Zakończone projekty są w kalendarzu, ale nie trafiają do listy aktywnych zaległości.
+- **Zadania:** terminy w kalendarzu pochodzą z `tasks.due`. Na karcie kalendarza można je oznaczać jako wykonane, cofać oznaczenie i otworzyć edycję terminu. Ukończone zadania nadal są widoczne w historii dnia.
+- **Terminy płatności:** do formularza projektu/warsztatu dodano pole `paymentDue` („Termin płatności / rozliczenia”). Jeżeli nadal pozostała należność, w kalendarzu pojawi się termin i kwota do otrzymania; po uregulowaniu całości wpis automatycznie znika. Na karcie szczegółów widać termin pozostałej płatności. Termin nie nalicza automatycznie nowych wpłat ani nie zmienia finansów.
+- **Własne przypomnienia:** tytuł, data, opcjonalna godzina i przypisanie do projektu. Przypomnienia można dodawać, edytować, oznaczać jako wykonane, cofać oznaczenie i usuwać.
+- **Najbliższe terminy:** karta na pulpicie i w kalendarzu pokazuje zaległe wpisy, dzisiejsze oraz nadchodzące w ciągu 7 dni. Operacje w kalendarzu odświeżają wyłącznie jego zawartość, zachowując przewinięcie i eliminując niepotrzebne animacje.
+- **Granica działania przypomnień:** powiadomienia są **wewnętrzne**, widoczne podczas korzystania z MANU. Nie ma jeszcze serwera, web push, budzenia aplikacji w tle, SMS ani gwarantowanego systemowego powiadomienia przy zamkniętym MANU. Godzina przypomnienia służy do prezentacji i sortowania wydarzeń, nie uruchamia alarmu.
+- **Przechowywanie i kompatybilność:** schema JSON `version:11`; klucze: `projects[].paymentDue`, `tasks[].due` (bez zmian) oraz `reminders[]`. Zostają niezmienione IndexedDB `pracownia_db_v1`, klucz `snapshot`, identyfikator PWA, układ okładki i motyw MANU. Kopie JSON wersji 10 i starszych są automatycznie uzupełniane o nowe pola, bez kasowania projektów i wpłat.
+- **Backup kodu:** `backup-manu-v2-9-1-before-calendar`.
+
+### Scenariusz testowy na Samsungu
+1. Najpierw pobierz kopię JSON z Ustawień. Zamknij i otwórz MANU ponownie po aktualizacji.
+2. Otwórz **Kalendarz** w dolnej nawigacji. Przewijaj stronę i zmieniaj miesiące: notes nie powinien skakać do góry.
+3. Wybierz dzień, dodaj przypomnienie z godziną i zapisz. Sprawdź, czy pozostajesz w tym samym miejscu.
+4. Odhacz przypomnienie, potem cofnij zaznaczenie i zmień jego datę.
+5. Dodaj zadanie z terminem i sprawdź, czy pokazuje się w kalendarzu; zmień termin bez opuszczania kalendarza.
+6. W formularzu próbnego projektu ustaw termin płatności i pozostaw niezapłaconą część ceny — zobaczysz ją w kalendarzu.
+7. Otwórz MANU bez internetu (po wcześniejszym pobraniu zasobów), sprawdź terminy i eksport JSON. Nie czyść pamięci aplikacji.
 
 ## MANU 2.9.1 — Naprawa przeskakiwania do góry w warsztatach
 - Przed otwarciem formularza z karty projektu (w tym **Dodaj materiał**), MANU zapamiętuje przewinięcie kartki i pozycję strony. Po **Zapisz** lub **Wróć** odtwarza otwartą kartkę w tym samym miejscu.
