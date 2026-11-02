@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='2.6.0';
+const APP_VERSION='2.7.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -16,7 +16,7 @@ const money=v=>Math.round((val(v)+Number.EPSILON)*100)/100;
 const $ico={home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/>',folder:'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v11H3z"/>',calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/>',wallet:'<rect x="3" y="6" width="18" height="15" rx="2"/><path d="M3 9V5a2 2 0 0 1 2-2h13M16 14h5"/>',check:'<path d="m5 12 4 4L19 6"/>',checks:'<path d="m3 8 2 2 4-4M13 8h8M3 17l2 2 4-4M13 17h8"/>',plus:'<path d="M12 5v14M5 12h14"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l-1.1 1.1a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.06 1.57V21h-3.4v-1.79A1.7 1.7 0 0 0 11.24 17.6a1.7 1.7 0 0 0-1.88.34l-1.1-1.1A1.7 1.7 0 0 0 8.6 15 1.7 1.7 0 0 0 7 13.95H5v-3.4h2A1.7 1.7 0 0 0 8.6 9a1.7 1.7 0 0 0-.34-1.88l1.1-1.1a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.06-1.57V3h3.4v1.79A1.7 1.7 0 0 0 16.76 6.4a1.7 1.7 0 0 0 1.88-.34l1.1 1.1A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 21 10.55h1v3.4h-1A1.7 1.7 0 0 0 19.4 15z"/>',download:'<path d="M12 3v12m-5-5 5 5 5-5M5 18v3h14v-3"/>',upload:'<path d="M12 21V9m-5 5 5-5 5 5M5 6V3h14v3"/>',brief:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',users:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6m2 4a6 6 0 0 1 3 5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',trend:'<path d="M3 17 9 11l4 4 8-8M15 7h6v6"/>',pencil:'<path d="m4 20 4-.8L20 7a2 2 0 0 0-3-3L5 16z"/>',trash:'<path d="M4 7h16M10 4h4M6 7l1 14h10l1-14M10 11v6M14 11v6"/>',archive:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v12h14V9m-9 5h4"/>',spark:'<path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>',arrow:'<path d="M5 12h14m-6-6 6 6-6 6"/>',filter:'<path d="M4 7h16M7 12h10M10 17h4"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',shield:'<path d="m12 2 9 4v6c0 6-4 9-9 10-5-1-9-4-9-10V6z"/><path d="m9 12 2 2 4-4"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.5"/>',map:'<path d="M3 6 9 3l6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',money:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-1.5-1.5-6-1.5-6 1s6 2 6 4.5-4 2.5-7 1M12 5v14"/>'};
 function icon(n){return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${$ico[n]||$ico.folder}</svg>`;}
 const validStatus=['Planowane','W trakcie','Zakończone','Anulowane'];
-const blank=()=>({version:7,projects:[],tasks:[],lastSaved:now()});
+const blank=()=>({version:8,projects:[],tasks:[],lastSaved:now()});
 let state=blank(),view='home',filter='all',search='',taskFilter='open',installEvent=null,isDemo=false;
 let notebookTurn='';
 let db=null, dbAvailable=true;
@@ -95,7 +95,54 @@ async function readRecovery(){
   return typeof old==='string'?JSON.parse(old):old;
  }catch(e){console.error('Nie można odczytać poprzedniej wersji',e);throw Error('Nie udało się odczytać lokalnego punktu przywracania')}
 }
-function normalize(obj){if(!obj || !Array.isArray(obj.projects)||!Array.isArray(obj.tasks))throw Error('Nieprawidłowy plik danych');return {version:7,lastSaved:obj.lastSaved||now(),projects:obj.projects.map(p=>({id:String(p.id||uid()),title:String(p.title||''),type:p.type==='Warsztat'?'Warsztat':'Zlecenie',client:String(p.client||''),date:String(p.date||''),status:validStatus.includes(p.status)?p.status:'Planowane',price:money(p.price),paid:money(p.paid),financeMode:p.financeMode==='participants'?'participants':'manual',participantFee:money(p.participantFee),hours:val(p.hours),capacity:val(p.capacity),quantity:Math.max(1,Math.floor(val(p.quantity)||1)),estimatedHours:val(p.estimatedHours),estimatedMaterials:money(p.estimatedMaterials),workLocation:String(p.workLocation||''),transportType:p.transportType==='paid'?'paid':p.transportType==='none'?'none':p.transportType==='car'?'car':(val(p.travelKm)>0||val(p.fuelConsumption)>0||val(p.fuelPrice)>0||val(p.travelRate)>0||val(p.travelExtra)>0?'car':'none'),paidTransportCost:money(p.paidTransportCost),paidTransportLabel:String(p.paidTransportLabel||''),travelKm:val(p.travelKm),travelMode:p.travelMode==='fuel'?'fuel':p.travelMode==='rate'?'rate':money(p.travelRate)>0?'rate':'fuel',fuelConsumption:val(p.fuelConsumption),fuelPrice:money(p.fuelPrice),travelRate:money(p.travelRate),travelExtra:money(p.travelExtra),location:String(p.location||''),startTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(String(p.startTime||''))?String(p.startTime):'',durationHours:val(p.durationHours),notes:String(p.notes||''),expenses:Array.isArray(p.expenses)?p.expenses.map(x=>({id:String(x.id||uid()),title:String(x.title||''),amount:val(x.amount)})):[],participants:Array.isArray(p.participants)?p.participants.map(x=>({id:String(x.id||uid()),name:String(x.name||''),fee:money(x.fee),paidAmount:money(x.paidAmount),legacyPaid:!!x.legacyPaid||(x.paidAmount==null&&x.paid===true)})):[],createdAt:p.createdAt||now()})),tasks:obj.tasks.map(t=>({id:String(t.id||uid()),title:String(t.title||''),due:String(t.due||''),done:!!t.done,projectId:String(t.projectId||''),createdAt:t.createdAt||now()}))};}
+const validTime=t=>typeof t==='string'&&Number.isFinite(Date.parse(t))?t:'';
+const TIMER_LIMIT=24*3600;
+function defaultStages(type,status='Planowane'){
+ const labels=type==='Warsztat'?['Plan i program','Zapisy uczestników','Przygotowanie materiałów','Prowadzenie warsztatu','Rozliczenie']:['Plan i projekt','Materiały','Wykonanie','Wykończenie','Odbiór zlecenia'];
+ return labels.map((title,index)=>({id:'s'+index,title,done:status==='Zakończone'}));
+}
+function normalizeStages(p){
+ const list=Array.isArray(p.stages)?p.stages:defaultStages(p.type,p.status);
+ return list.slice(0,40).filter(x=>x&&typeof x==='object').map(x=>({id:String(x.id||uid()),title:String(x.title||'Etap').slice(0,120),done:!!x.done}));
+}
+function normalizeWorkLog(list){
+ return(Array.isArray(list)?list:[]).slice(-2500).filter(x=>x&&typeof x==='object').map(x=>({
+ id:String(x.id||uid()),date:validTime(x.date)||now(),seconds:Math.min(31536000,Math.max(0,Math.floor(Number(x.seconds)||0))),
+ note:String(x.note||'').slice(0,350),source:x.source==='timer'?'timer':'manual'
+ }));
+}
+function normalizeActivityLog(list){
+ return(Array.isArray(list)?list:[]).slice(-200).filter(x=>x&&typeof x==='object').map(x=>({id:String(x.id||uid()),date:validTime(x.date)||now(),message:String(x.message||'').slice(0,200)}));
+}
+function normalizeTimer(timer){
+ if(!timer||typeof timer!=='object')return {startedAt:'',seconds:0};
+ return {startedAt:validTime(timer.startedAt),seconds:Math.min(TIMER_LIMIT,Math.max(0,Math.floor(Number(timer.seconds)||0)))};
+}
+function recordActivity(p,message){p.activityLog=(p.activityLog||[]).concat({id:uid(),date:now(),message}).slice(-200)}
+function durationSecs(s){
+ const n=Math.max(0,Math.floor(Number(s)||0)),h=Math.floor(n/3600),m=Math.floor((n%3600)/60),sec=n%60;
+ return h?h+' godz. '+String(m).padStart(2,'0')+' min':m?m+' min '+String(sec).padStart(2,'0')+' s':sec+' s';
+}
+function activeTimerSeconds(p,at=Date.now()){
+ const t=p.timer||{startedAt:'',seconds:0};
+ const started=t.startedAt?Math.max(0,Math.floor((at-Date.parse(t.startedAt))/1000)):0;
+ return Math.min(TIMER_LIMIT,Math.max(0,Math.floor(t.seconds||0))+started);
+}
+function progressPercent(p){const stages=p.stages||[];return stages.length?Math.round(stages.filter(s=>s.done).length/stages.length*100):p.status==='Zakończone'?100:0}
+function workSessionsTotal(p){return (p.workLog||[]).reduce((total,e)=>total+Number(e.seconds||0),0)}
+function timerButtons(p){
+ const active=!!p.timer?.startedAt,paused=!active&&!!p.timer?.seconds,id=htmlEscape(p.id);
+ const btns=active?'<button type="button" class="btn secondary sm" data-action="timer-pause" data-id="'+id+'">'+icon('clock')+' Pauza</button>':'<button type="button" class="btn sm" data-action="timer-start" data-id="'+id+'">'+icon('clock')+(paused?' Wznów':' Start')+'</button>';
+ return '<div class="work-timer"><span class="work-timer-value" data-timer-value="'+id+'" aria-live="off">'+durationSecs(activeTimerSeconds(p))+'</span><span class="work-timer-state">'+(active?'Stoper pracuje · liczy także przy zablokowanym ekranie':paused?'Pauza · wznów lub zakończ sesję':'Gotowy do mierzenia czasu pracy')+'</span><div class="work-timer-buttons">'+btns+'<button type="button" class="btn ghost sm" data-action="timer-stop" data-id="'+id+'" '+(active||paused?'':'disabled')+'>'+icon('check')+' Stop i zapisz</button></div></div>';
+}
+function liveTimerRefresh(){
+ for(const p of state.projects){
+  if(!p.timer?.startedAt)continue;
+  const el=$('[data-timer-value="'+p.id.replace(/"/g,'')+'"]');
+  if(el)el.textContent=durationSecs(activeTimerSeconds(p));
+ }
+}
+function normalize(obj){if(!obj || !Array.isArray(obj.projects)||!Array.isArray(obj.tasks))throw Error('Nieprawidłowy plik danych');return {version:8,lastSaved:obj.lastSaved||now(),projects:obj.projects.map(p=>({id:String(p.id||uid()),title:String(p.title||''),type:p.type==='Warsztat'?'Warsztat':'Zlecenie',client:String(p.client||''),date:String(p.date||''),status:validStatus.includes(p.status)?p.status:'Planowane',price:money(p.price),paid:money(p.paid),financeMode:p.financeMode==='participants'?'participants':'manual',participantFee:money(p.participantFee),hours:val(p.hours),capacity:val(p.capacity),quantity:Math.max(1,Math.floor(val(p.quantity)||1)),estimatedHours:val(p.estimatedHours),estimatedMaterials:money(p.estimatedMaterials),workLocation:String(p.workLocation||''),transportType:p.transportType==='paid'?'paid':p.transportType==='none'?'none':p.transportType==='car'?'car':(val(p.travelKm)>0||val(p.fuelConsumption)>0||val(p.fuelPrice)>0||val(p.travelRate)>0||val(p.travelExtra)>0?'car':'none'),paidTransportCost:money(p.paidTransportCost),paidTransportLabel:String(p.paidTransportLabel||''),travelKm:val(p.travelKm),travelMode:p.travelMode==='fuel'?'fuel':p.travelMode==='rate'?'rate':money(p.travelRate)>0?'rate':'fuel',fuelConsumption:val(p.fuelConsumption),fuelPrice:money(p.fuelPrice),travelRate:money(p.travelRate),travelExtra:money(p.travelExtra),location:String(p.location||''),startTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(String(p.startTime||''))?String(p.startTime):'',durationHours:val(p.durationHours),notes:String(p.notes||''),expenses:Array.isArray(p.expenses)?p.expenses.map(x=>({id:String(x.id||uid()),title:String(x.title||''),amount:val(x.amount)})):[],participants:Array.isArray(p.participants)?p.participants.map(x=>({id:String(x.id||uid()),name:String(x.name||''),fee:money(x.fee),paidAmount:money(x.paidAmount),legacyPaid:!!x.legacyPaid||(x.paidAmount==null&&x.paid===true)})):[],createdAt:p.createdAt||now(),stages:normalizeStages(p),workLog:normalizeWorkLog(p.workLog),activityLog:normalizeActivityLog(p.activityLog),timer:normalizeTimer(p.timer)})),tasks:obj.tasks.map(t=>({id:String(t.id||uid()),title:String(t.title||''),due:String(t.due||''),done:!!t.done,projectId:String(t.projectId||''),createdAt:t.createdAt||now()}))};}
 const enteredExpenses=p=>money((p.expenses||[]).reduce((n,x)=>n+val(x.amount),0));
 const transportType=p=>p.transportType==='paid'?'paid':p.transportType==='none'?'none':p.transportType==='car'?'car':(val(p.travelKm)>0||val(p.fuelConsumption)>0||val(p.fuelPrice)>0||val(p.travelRate)>0||val(p.travelExtra)>0?'car':'none');
 const travelMode=p=>p.travelMode==='rate'?'rate':p.travelMode==='fuel'?'fuel':money(p.travelRate)>0?'rate':'fuel';
@@ -361,7 +408,7 @@ function demo(){let base=Date.now();const future=days=>new Date(base+days*864000
 function validateBackup(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('To nie jest kopia danych MANU');
  if(!Array.isArray(raw.projects)||!Array.isArray(raw.tasks))throw Error('Brakuje listy projektów lub zadań');
- if(raw.version!=null&&(!Number.isInteger(raw.version)||raw.version<1||raw.version>7))throw Error('Nieobsługiwana wersja pliku. Nie nadpisano danych.');
+ if(raw.version!=null&&(!Number.isInteger(raw.version)||raw.version<1||raw.version>8))throw Error('Nieobsługiwana wersja pliku. Nie nadpisano danych.');
  if(raw.projects.length>10000||raw.tasks.length>25000)throw Error('Plik zawiera zbyt wiele rekordów');
  for(const p of raw.projects){
   if(!p||typeof p!=='object'||Array.isArray(p)||typeof p.title!=='string')throw Error('Nieprawidłowy rekord projektu');
