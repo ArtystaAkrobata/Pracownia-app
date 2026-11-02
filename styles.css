@@ -225,3 +225,10 @@ h1,h2,h3{font-synthesis:none}
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
   .manu-intro{display:none!important}
 }
+
+
+/* MANU · ustawienie animacji */
+.manu-motion-control{display:flex;align-items:center;gap:12px;width:fit-content;max-width:100%;cursor:pointer;font-size:13px;font-weight:650;color:#e7d2bf;background:#342720;border:1px solid #654837;padding:12px 15px;border-radius:12px}
+.manu-motion-control input{width:20px;height:20px;accent-color:#c48763;cursor:pointer}
+.manu-motion-control:focus-within{outline:2px solid var(--gold);outline-offset:3px}
+.settings-group:has(.manu-motion-control) .tiny{margin:10px 0 0}
