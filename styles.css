@@ -55,3 +55,12 @@
 .travel-cost-entry span{max-width:70%}
 .travel-cost-entry small{color:var(--muted);font-size:10px}
 @media(max-width:390px){.travel-fields{padding:12px}.travel-fields .form-cols{grid-template-columns:1fr}}
+
+/* PRACOWNIA 1.4 — kalkulator spalania z podglądem kosztu */
+.travel-live-preview{display:flex;flex-direction:column;gap:5px;background:rgba(224,185,125,.08);border:1px solid rgba(224,185,125,.35);border-radius:12px;padding:12px 13px;margin:3px 0 12px}
+.travel-live-preview strong{color:var(--gold2);font-size:14px;line-height:1.35}
+.travel-live-preview small{color:var(--muted);font-size:11px;line-height:1.45}
+.travel-fields select{background:#1c2a40;color:var(--text);border:1px solid #364862;border-radius:10px;width:100%;padding:12px}
+.travel-fields [data-travel-mode][hidden]{display:none!important}
+.travel-fields .form-cols{gap:0 12px}
+@media(max-width:420px){.travel-fields [data-travel-mode="fuel"]{grid-template-columns:1fr 1fr;gap:0 8px}.travel-fields [data-travel-mode="fuel"] label{min-height:29px;font-size:10px}}
