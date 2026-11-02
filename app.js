@@ -39,7 +39,7 @@ function saveMessage(){
  if(storageBlocked)return 'Wstrzymany zapis — sprawdź odzyskiwanie danych';
  if(saveStatus==='error')return 'BŁĄD zapisu — wyeksportuj kopię i sprawdź pamięć telefonu';
  if(pendingWrites||saveStatus==='saving')return 'Zapisywanie na urządzeniu…';
- return state.lastSaved?'Zapis lokalny · '+new Intl.DateTimeFormat('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(state.lastSaved)):'Dane tylko na tym urządzeniu';
+ return state.lastSaved&&Number.isFinite(Date.parse(state.lastSaved))?'Zapis lokalny · '+new Intl.DateTimeFormat('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(state.lastSaved)):'Dane tylko na tym urządzeniu';
 }
 function updateSaveIndicator(){const el=$('#manu-save-status');if(el){el.textContent=saveMessage();el.classList?.toggle('is-error',storageBlocked||saveStatus==='error')}}
 async function load(){
