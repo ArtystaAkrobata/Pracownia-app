@@ -826,7 +826,7 @@ function validateBackup(raw){
 }
 function backupSummary(data){
  const workshops=data.projects.filter(p=>p.type==='Warsztat').length;
- return {projects:data.projects.length,workshops,tasks:data.tasks.length,participants:data.projects.reduce((n,p)=>n+(p.participants?.length||0),0)};
+ return {projects:data.projects.length,workshops,tasks:data.tasks.length,participants:data.projects.reduce((n,p)=>n+(p.participants?.length||0),0),quotes:(data.quotes||[]).length};
 }
 function backupDownload(){
  const exportedAt=now(),data={...state,exportedAt,app:'MANU',appVersion:APP_VERSION};
@@ -843,8 +843,8 @@ function showBackupPreview(){
  const title=item.mode==='check'?'Sprawdzenie kopii MANU':item.mode==='recovery'?'Poprzedni zapis MANU':'Przywracanie kopii MANU';
  const action=item.mode==='check'?'':'<button class="btn" type="button" data-action="backup-apply">'+icon('upload')+' Zastąp obecne dane</button>';
  const summary='<p class="muted small">'+htmlEscape(item.filename)+'</p><div class="backup-preview-info"><strong>'+(item.mode==='check'?'Plik został odczytany poprawnie.':'Sprawdzono strukturę danych. Przed przywróceniem porównaj zawartość.')+'</strong>'
- +'<p>Obecnie w MANU: <b>'+current.projects+' projektów</b>, '+current.tasks+' zadań, '+current.participants+' uczestników.</p>'
- +'<p>W wybranej kopii: <b>'+next.projects+' projektów</b>, w tym '+next.workshops+' warsztatów, '+next.tasks+' zadań, '+next.participants+' uczestników.</p>'
+ +'<p>Obecnie w MANU: <b>'+current.projects+' projektów</b>, '+current.tasks+' zadań, '+current.participants+' uczestników, '+current.quotes+' wycen.</p>'
+ +'<p>W wybranej kopii: <b>'+next.projects+' projektów</b>, w tym '+next.workshops+' warsztatów, '+next.tasks+' zadań, '+next.participants+' uczestników, '+next.quotes+' wycen.</p>'
  +'<p class="muted small">Zapis kopii: '+htmlEscape(item.snapshot.lastSaved||'Brak daty')+'. Sprawdź liczbę zapisanych rekordów.</p></div>';
  const warning=item.mode==='check'?'<p class="form-note">To była tylko kontrola pliku. Nic nie zostało przywrócone ani zmienione.</p>':
  '<p class="form-note backup-warning">Uwaga: przywrócenie ZASTĄPI obecne dane. Najpierw pobierz kopię obecnego stanu. Lokalny punkt przywracania nie zastępuje kopii poza telefonem.</p>';
