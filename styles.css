@@ -1405,3 +1405,152 @@ body{background:#08090b;color:var(--text)}
  .finance-month-select input{width:160px}
  .monthly-row{flex-wrap:wrap}
 }
+
+
+/* ═══ MANU 2.9 · Warsztaty — zapisy, obecności, kolejka i przygotowania ═══ */
+.notebook-detail-page .workshop-registration,
+.notebook-detail-page .workshop-preparation,
+.notebook-detail-page .workshop-outcome{
+ margin:22px 0 17px;
+ padding:19px 16px;
+ border-radius:14px;
+ background:linear-gradient(146deg,#f8eee0,#ead9c5);
+ border:1px solid #d4b89e;
+ color:#4d392c;
+}
+.notebook-detail-page .workshop-registration .section-head,
+.notebook-detail-page .workshop-preparation .section-head,
+.notebook-detail-page .workshop-outcome .section-head{
+ display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+}
+.notebook-detail-page .workshop-registration h3,
+.notebook-detail-page .workshop-preparation h3,
+.notebook-detail-page .workshop-outcome h3{
+ color:#50372c;font-size:18px;font-family:Georgia,"Times New Roman",serif;
+}
+.notebook-detail-page .workshop-registration h4{
+ margin:23px 0 9px;font-size:14px;font-weight:650;color:#734831;
+}
+.workshop-counts{
+ display:flex;gap:7px;flex-wrap:wrap;margin:13px 0 11px;
+}
+.workshop-counts span{
+ padding:8px 9px;border-radius:9px;
+ background:#ecdbc8;border:1px solid #d6bba2;
+ font-size:11px;color:#634e40;line-height:1.3;
+}
+.workshop-counts strong{color:#975b3c;font-size:13px}
+.notebook-detail-page .workshop-registration .participant-summary{
+ grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.notebook-detail-page .workshop-registration .participant-summary>div{
+ background:#f8ecdb;border-color:#d7bba3;
+}
+.notebook-detail-page .workshop-registration .participant-summary strong{
+ color:#4a382b;
+}
+.workshop-person-card{
+ padding:13px 12px;margin:8px 0;
+ border:1px solid #d6bba2;border-radius:12px;
+ background:#f9f0e5;
+ box-shadow:0 2px 5px #603c1d09;
+}
+.workshop-person-top{
+ display:flex;align-items:start;justify-content:space-between;
+ gap:13px;flex-wrap:wrap;
+}
+.workshop-person-top .participant-info{min-width:155px}
+.workshop-person-card .participant-info b{color:#51392d}
+.workshop-person-card .participant-info small{color:#795f50}
+.workshop-person-card .participant-info small.money-negative{color:#aa4d4b}
+.workshop-person-card .participant-info small.money-positive{color:#387059}
+.workshop-person-top .participant-actions{justify-content:flex-start}
+.workshop-person-card .participant-actions .btn{
+ font-size:11px;min-height:34px;
+}
+.workshop-attendance{
+ display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:8px;margin-top:11px;padding-top:10px;
+ border-top:1px solid #e2cdb8;
+}
+.workshop-attendance>span{font-size:11px;font-weight:650;color:#745340}
+.workshop-attendance>div{display:flex;flex-wrap:wrap;gap:6px}
+.workshop-attendance-btn{
+ padding:8px 10px;min-height:36px;
+ background:#faf5ed;border:1px solid #c8a98f;border-radius:9px;
+ color:#694b3a;cursor:pointer;font-size:11px;font-weight:650;
+}
+.workshop-attendance-btn.active{
+ color:#fff6eb;background:#985b3d;border-color:#985b3d;
+ box-shadow:inset 0 1px 0 #ffffff36;
+}
+.workshop-soft-action{
+ margin-top:9px;padding:6px 0;
+ background:transparent;border:none;color:#92684f;
+ text-decoration:underline;text-underline-offset:3px;
+ cursor:pointer;font-size:11px;
+}
+.workshop-waiting-row{
+ display:flex;align-items:center;gap:10px;
+ padding:11px 8px;margin:7px 0;
+ background:#f9eddf;border:1px solid #dbc2a8;border-radius:11px;
+}
+.workshop-queue-index{
+ display:grid;place-items:center;flex:0 0 28px;
+ width:28px;height:28px;border-radius:50%;
+ background:#b78365;color:white;font-weight:750;font-size:12px;
+}
+.workshop-waiting-row>div:nth-child(2){
+ flex:1;min-width:100px;display:flex;flex-direction:column;gap:3px;
+}
+.workshop-waiting-row b{font-size:12px;overflow-wrap:anywhere}
+.workshop-waiting-row small{font-size:10px;color:#7d6659}
+.workshop-waiting-row .participant-actions .btn{font-size:11px}
+.workshop-queue-notice{
+ background:#f4e2cb!important;color:#75482d!important;
+ border-color:#bc926e!important;
+}
+.workshop-material-list{display:grid;gap:8px;margin-top:12px}
+.workshop-material-row{
+ display:flex;align-items:center;gap:10px;
+ padding:9px 10px;border:1px solid #dac1a5;border-radius:10px;
+ background:#f9f0e5;
+}
+.workshop-material-row>span{
+ display:flex;gap:7px;flex-wrap:wrap;align-items:center;flex:1;min-width:0;
+ font-size:12px;font-weight:600;overflow-wrap:anywhere;
+}
+.workshop-material-row>span.stage-completed{opacity:.7;text-decoration:line-through}
+.workshop-material-row>span small{font-size:10px;color:#7c6b61;text-decoration:none}
+.workshop-outcome-stats{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;margin:12px 0;
+}
+.workshop-outcome-stats>div{
+ min-width:0;padding:11px 9px;
+ background:#f9f1e6;border:1px solid #d3bba5;border-radius:10px;
+ display:flex;flex-direction:column;gap:6px;
+}
+.workshop-outcome-stats small{font-size:10px;line-height:1.35;color:#775e4e}
+.workshop-outcome-stats strong{font-size:14px;color:#493329;overflow-wrap:anywhere}
+.workshop-outcome-stats strong.money-negative{color:#a34a48}
+.workshop-outcome-stats strong.money-positive{color:#3e7256}
+.workshop-completed-tag{
+ display:inline-flex;align-items:center;
+ background:#e6d7c3;border:1px solid #b79a7f;color:#70513d;
+ border-radius:20px;padding:6px 10px;font-size:11px;font-weight:700;
+}
+@media(max-width:690px){
+ .notebook-detail-page .workshop-registration,
+ .notebook-detail-page .workshop-preparation,
+ .notebook-detail-page .workshop-outcome{padding:14px 10px;margin:16px 0}
+ .notebook-detail-page .workshop-registration .participant-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workshop-outcome-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .workshop-person-top .participant-actions{width:100%;justify-content:flex-start}
+ .workshop-attendance{align-items:start}
+ .workshop-attendance>div{width:100%}
+ .workshop-attendance-btn{flex:1;padding:9px 7px}
+ .workshop-waiting-row{flex-wrap:wrap}
+ .workshop-waiting-row .participant-actions{width:100%;justify-content:flex-start}
+ .workshop-material-row{padding:8px 6px}
+}
