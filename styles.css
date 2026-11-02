@@ -1315,3 +1315,93 @@ body{background:#08090b;color:var(--text)}
  scroll-behavior:auto!important;
  overflow-anchor:none;
 }
+
+
+/* ══ MANU 2.8 · karty finansów, wpłaty, wydatki i raport miesięczny ══ */
+.finance-ledger{margin-top:20px}
+.finance-ledger .section-head{align-items:center;flex-wrap:wrap;gap:10px}
+.finance-quick-grid,.monthly-stat-grid{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+ margin:12px 0;
+}
+.finance-quick-grid>div,.monthly-stat-grid>div{
+ display:flex;flex-direction:column;gap:7px;min-width:0;
+ padding:12px 9px;border-radius:10px;
+ border:1px solid #d4b89f;
+ background:linear-gradient(155deg,#fbf0e2,#e8d9c6);
+}
+.finance-quick-grid small,.monthly-stat-grid small{font-size:10px;color:#846854;line-height:1.4}
+.finance-quick-grid b,.monthly-stat-grid strong{
+ font-size:14px;line-height:1.25;overflow-wrap:anywhere;color:#483428;
+}
+.finance-quick-grid+.muted{margin:10px 0 12px}
+.finance-record,.monthly-row{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:12px;padding:11px 7px;
+ border-bottom:1px solid #d4bca2;
+}
+.finance-record:last-child,.monthly-row:last-child{border-bottom:none}
+.finance-record>div,.monthly-row>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.finance-record small,.monthly-row small{font-size:10px;color:#816959}
+.finance-record strong,.monthly-row b{color:#51402f;font-weight:700;font-size:13px}
+.monthly-row strong{color:#453529;font-size:12px;overflow-wrap:anywhere}
+.monthly-row b{white-space:nowrap}
+.monthly-row b.money-positive{color:#326b50}
+.monthly-row b.money-negative{color:#a54446}
+.finance-comparison{
+ margin-top:19px;padding-top:16px;border-top:1px solid #ddc3a9;
+}
+.finance-comparison h3{margin:0 0 9px;color:#51372b;font-family:Georgia,serif;font-size:17px}
+.finance-inline-delete{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:19px;height:19px;padding:0;
+ background:#f6e0d3;border:1px solid #c39e86;border-radius:5px;
+ color:#85432f;cursor:pointer;font-weight:700;
+}
+.finance-month-section{margin-top:22px}
+.finance-month-section .section-head{
+ flex-wrap:wrap;align-items:end;gap:14px;
+}
+.finance-month-section .section-head h2{margin-bottom:4px}
+.finance-month-select{
+ display:flex;flex-direction:column;gap:5px;
+ font-size:10px;font-weight:650;color:var(--muted);
+}
+.finance-month-select input{
+ width:165px;max-width:100%;
+ border:1px solid #c6ab94;border-radius:9px;
+ padding:11px 12px;color:#433126;
+ background:#fff5e8;
+ font:inherit;font-size:13px;
+}
+.monthly-stat-grid{margin:15px 0}
+.monthly-stat-grid>div{padding:13px}
+.monthly-stat-grid strong.money-positive{color:#326b50}
+.monthly-stat-grid strong.money-negative{color:#a54446}
+.monthly-bars{display:grid;gap:9px;margin:16px 0 20px}
+.monthly-bars>div{
+ display:grid;grid-template-columns:74px 1fr;align-items:center;gap:9px;
+ font-size:11px;color:var(--muted);
+}
+.monthly-bars>div>div{
+ background:#d6c1ad;height:12px;border-radius:100px;overflow:hidden;
+}
+.monthly-bars i{
+ display:block;height:100%;min-width:0;
+ background:linear-gradient(90deg,#ac6b4b,#df9c72);border-radius:100px;
+}
+.monthly-bars>div:nth-child(2) i{background:linear-gradient(90deg,#5e5a60,#aa8e81)}
+.finance-month-section #finance-month-results>h3{
+ margin-top:20px;color:#51392c;font-size:16px;font-family:Georgia,serif;
+}
+.finance-month-section #finance-month-results>.muted{
+ margin-top:14px;line-height:1.6;
+}
+@media(max-width:690px){
+ .finance-quick-grid,.monthly-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .finance-quick-grid>div,.monthly-stat-grid>div{padding:10px 8px}
+ .finance-quick-grid b,.monthly-stat-grid strong{font-size:13px}
+ .finance-month-section .section-head{align-items:start}
+ .finance-month-select input{width:160px}
+ .monthly-row{flex-wrap:wrap}
+}
