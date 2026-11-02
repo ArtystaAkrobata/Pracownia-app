@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='2.7.0';
+const APP_VERSION='2.7.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -557,7 +557,7 @@ function afterDataChange(msg,detailId){
  const before=$('.modal');
  const preserve=!!(detailId&&before?.classList?.contains('notebook-detail-page'));
  const oldScroll=preserve?before.scrollTop:0;
- const oldPageX=preserve?window.scrollX:0,oldPageY=preserve?window.scrollY:0;
+ const oldPageX=window.scrollX,oldPageY=window.scrollY;
  const active=preserve?document.activeElement:null;
  const control=active?.dataset?.action?{
   action:active.dataset.action,
@@ -584,10 +584,11 @@ function afterDataChange(msg,detailId){
     }
     modalAfter.scrollTop=oldScroll;
    }
-   if(window.scrollY!==oldPageY||window.scrollX!==oldPageX){
-    window.scrollTo(oldPageX,oldPageY);
-   }
   }
+ }
+ // Dotyczy także odhaczania zadań na liście, nie tylko etapów w modalnym notesie.
+ if(window.scrollY!==oldPageY||window.scrollX!==oldPageX){
+  window.scrollTo(oldPageX,oldPageY);
  }
  if(msg)toast(msg);
 }
