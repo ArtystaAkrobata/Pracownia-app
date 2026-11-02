@@ -1,23 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MANU, miedziany monogram M na ciemnej skórze">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Ikona MANU — miedziana litera M numer 48 na czarnej skórze">
 <defs>
-  <linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2c2c2e"/><stop offset=".28" stop-color="#161719"/><stop offset=".62" stop-color="#08090a"/><stop offset="1" stop-color="#1b1b1e"/></linearGradient>
-  <radialGradient id="glow" cx=".29" cy=".12" r=".86"><stop stop-color="#c58a60" stop-opacity=".28"/><stop offset=".67" stop-color="#1c1c1f" stop-opacity="0"/><stop offset="1" stop-color="#060709" stop-opacity=".45"/></radialGradient>
-  <linearGradient id="foil" x1="0" y1="0" x2="1" y2=".9"><stop stop-color="#72452f"/><stop offset=".16" stop-color="#e3ad86"/><stop offset=".31" stop-color="#af6c4c"/><stop offset=".54" stop-color="#f2c49a"/><stop offset=".75" stop-color="#a1603f"/><stop offset="1" stop-color="#dda078"/></linearGradient>
-  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".36" numOctaves="3" seed="9" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".17"/></feComponentTransfer></filter>
-  <filter id="shadow" x="-25%" y="-25%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
+<linearGradient id="metal" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#b7724e"/><stop offset=".18" stop-color="#f3bb91"/><stop offset=".39" stop-color="#cf8057"/><stop offset=".62" stop-color="#e59e70"/><stop offset=".78" stop-color="#995135"/><stop offset="1" stop-color="#e9a87c"/></linearGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#ffe0b6" stop-opacity=".50"/><stop offset=".42" stop-color="#ffffff" stop-opacity=".05"/><stop offset="1" stop-color="#6c321e" stop-opacity=".4"/></linearGradient>
+<filter id="depth" x="-15%" y="-12%" width="140%" height="150%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
-<rect width="512" height="512" rx="100" fill="#08090b"/>
-<rect x="12" y="12" width="488" height="488" rx="89" fill="url(#leather)"/>
-<rect x="12" y="12" width="488" height="488" rx="89" fill="url(#glow)"/>
-<rect x="12" y="12" width="488" height="488" rx="89" filter="url(#grain)" opacity=".65"/>
-<rect x="30" y="30" width="452" height="452" rx="72" fill="none" stroke="#996145" stroke-width="7" opacity=".8"/>
-<rect x="42" y="42" width="428" height="428" rx="64" fill="none" stroke="#d49b74" stroke-width="2" stroke-dasharray="5 13" opacity=".48"/>
-<rect x="62" y="62" width="388" height="388" rx="50" fill="none" stroke="#0b0c0f" stroke-width="8" opacity=".65"/>
-<g transform="translate(3 5)" filter="url(#shadow)" opacity=".75" stroke="#070404" stroke-width="32" fill="none" stroke-linejoin="miter"><path d="M153 350V165L256 310L359 165V350"/></g>
-<g fill="none" stroke="url(#foil)" stroke-linejoin="miter" stroke-linecap="square">
-  <path d="M153 350V165L256 310L359 165V350" stroke-width="23"/>
-  <path d="M122 165H184 M328 165H390 M123 350H184 M328 350H391" stroke-width="13"/>
-</g>
-<g fill="none" stroke="#f6d3ac" opacity=".35" stroke-linecap="square"><path d="M144 344V177M367 177V344" stroke-width="3"/></g>
-<path d="M211 411h90" stroke="url(#foil)" stroke-width="2" opacity=".6"/>
+<defs><linearGradient id="leather" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#252427"/><stop offset=".37" stop-color="#0d0e10"/><stop offset="1" stop-color="#171719"/></linearGradient></defs>
+<rect width="512" height="512" rx="95" fill="#070809"/>
+<rect x="7" y="7" width="498" height="498" rx="92" fill="url(#leather)"/>
+<rect x="20" y="20" width="472" height="472" rx="73" fill="none" stroke="#9e6042" stroke-width="5"/>
+<rect x="32" y="32" width="448" height="448" rx="64" fill="none" stroke="#d49870" stroke-width="2.2" stroke-dasharray="5 10" opacity=".9"/>
+<g><path d="M425,138 L396,124 L361,99 L342,111 L315,122 L292,109 L259,86 L209,122 L187,113 L166,97 L127,120 L83,142 L81,146 L96,144 L106,147 L118,160 L123,173 L123,344 L118,358 L110,373 L91,389 L77,393 L77,395 L98,396 L131,389 L154,380 L191,360 L185,349 L185,160 L191,147 L205,137 L220,137 L228,142 L230,147 L230,277 L228,279 L230,281 L228,283 L230,285 L230,310 L228,312 L230,322 L228,324 L228,346 L220,360 L228,364 L247,378 L253,386 L259,400 L261,400 L261,395 L272,380 L298,358 L300,360 L290,335 L290,153 L294,144 L300,138 L313,137 L323,142 L334,164 L332,355 L329,362 L344,368 L356,377 L379,387 L408,395 L433,395 L435,393 L433,391 L429,391 L416,384 L406,373 L398,357 L394,337 L396,171 L400,158 L408,147 Z" transform="translate(4 6)" fill="#030305" opacity=".75" filter="url(#depth)"/><path d="M425,138 L396,124 L361,99 L342,111 L315,122 L292,109 L259,86 L209,122 L187,113 L166,97 L127,120 L83,142 L81,146 L96,144 L106,147 L118,160 L123,173 L123,344 L118,358 L110,373 L91,389 L77,393 L77,395 L98,396 L131,389 L154,380 L191,360 L185,349 L185,160 L191,147 L205,137 L220,137 L228,142 L230,147 L230,277 L228,279 L230,281 L228,283 L230,285 L230,310 L228,312 L230,322 L228,324 L228,346 L220,360 L228,364 L247,378 L253,386 L259,400 L261,400 L261,395 L272,380 L298,358 L300,360 L290,335 L290,153 L294,144 L300,138 L313,137 L323,142 L334,164 L332,355 L329,362 L344,368 L356,377 L379,387 L408,395 L433,395 L435,393 L433,391 L429,391 L416,384 L406,373 L398,357 L394,337 L396,171 L400,158 L408,147 Z" fill="url(#metal)" stroke="#ecb38b" stroke-width="1.5" stroke-linejoin="round"/><path d="M425,138 L396,124 L361,99 L342,111 L315,122 L292,109 L259,86 L209,122 L187,113 L166,97 L127,120 L83,142 L81,146 L96,144 L106,147 L118,160 L123,173 L123,344 L118,358 L110,373 L91,389 L77,393 L77,395 L98,396 L131,389 L154,380 L191,360 L185,349 L185,160 L191,147 L205,137 L220,137 L228,142 L230,147 L230,277 L228,279 L230,281 L228,283 L230,285 L230,310 L228,312 L230,322 L228,324 L228,346 L220,360 L228,364 L247,378 L253,386 L259,400 L261,400 L261,395 L272,380 L298,358 L300,360 L290,335 L290,153 L294,144 L300,138 L313,137 L323,142 L334,164 L332,355 L329,362 L344,368 L356,377 L379,387 L408,395 L433,395 L435,393 L433,391 L429,391 L416,384 L406,373 L398,357 L394,337 L396,171 L400,158 L408,147 Z" fill="url(#sheen)" opacity=".55"/></g>
 </svg>
