@@ -1,10 +1,10 @@
 # PRACOWNIA — osobisty organizer dla twórców
 
-**Wersja 1.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 1.2.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
 
 ## Co działa
 - Projekty i warsztaty: tworzenie, edycja, powielanie, usuwanie, statusy i terminy.
-- **Formularze zależne od typu**: realizacja ma liczbę sztuk, planowany i rzeczywisty czas pracy oraz szacowane materiały; warsztat ma miejsce, godzinę startu, czas zajęć, liczbę miejsc, domyślną cenę i czas przygotowania.
+- **Formularze zależne od typu**: realizacja ma miejsce wykonania (własna pracownia lub zewnętrzny adres, np. mural), liczbę sztuk, planowany i rzeczywisty czas pracy oraz szacowane materiały; warsztat ma osobne miejsce, godzinę startu, czas zajęć, liczbę miejsc, domyślną cenę i czas przygotowania.
 - W szczegółach projektu widoczne są plan i porównanie z dotychczasową realizacją; planowane koszty są oddzielone od kosztów faktycznie wprowadzonych.
 - Lista kosztów realizacji, przychód, wpłaty, należności i szacunkowy wynik po kosztach.
 - Orientacyjna kwota za godzinę na podstawie czasu wpisanego przez użytkownika.
