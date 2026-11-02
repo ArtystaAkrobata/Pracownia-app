@@ -1105,3 +1105,36 @@ body{background:#08090b;color:var(--text)}
 @media(prefers-reduced-motion:reduce){
  .manu-intro .intro-book{transition:none!important}
 }
+
+
+/* MANU 2.6 · Widoczny stan zapisu i kontrola plików na kartce notesu */
+.save-state-line{
+ display:flex;align-items:center;gap:10px;
+ width:fit-content;max-width:100%;
+ margin:11px 0 14px;padding:10px 14px;
+ background:#e8dccb;border:1px solid #c7ab92;border-radius:12px;
+ color:#52392e;font-size:12px;line-height:1.5;font-weight:650;
+ overflow-wrap:anywhere;
+}
+.save-state-line:before{
+ content:"";width:9px;height:9px;flex:0 0 9px;
+ background:#53846d;border-radius:50%;box-shadow:0 0 0 3px #53846d19;
+}
+.save-state-line:has(+ .muted){border-color:#cfb69b}
+.backup-preview-info{
+ background:linear-gradient(165deg,#f5e9d9,#e9d9c6);
+ border:1px solid #cfb396;border-radius:13px;
+ padding:16px 17px;margin:13px 0;
+ color:#3b2e28;line-height:1.55;
+}
+.backup-preview-info strong{font-family:Georgia,serif;color:#60402e;font-weight:650}
+.backup-preview-info p{margin:10px 0 0;font-size:12px}
+.backup-preview-info b{color:#3c302a}
+.notebook-page .backup-warning{
+ background:#f1dec8;border-color:#b78666;color:#6c3926;
+}
+@media(max-width:690px){
+ .save-state-line{font-size:11px;padding:9px 10px}
+ .backup-preview-info{padding:13px 12px}
+ .backup-preview-info p{font-size:11px}
+}
