@@ -1,8 +1,9 @@
 (()=>{
 'use strict';
-const APP_VERSION='2.5.0';
+const APP_VERSION='2.6.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
+const RECOVERY_KEY='safety-previous-v1';
 const $=s=>document.querySelector(s);
 const htmlEscape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const now=()=>new Date().toISOString();
@@ -20,10 +21,80 @@ let state=blank(),view='home',filter='all',search='',taskFilter='open',installEv
 let notebookTurn='';
 let db=null, dbAvailable=true;
 function openDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB niedostępna'));return;}const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{request.result.createObjectStore('kv')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
-function idbGet(){return new Promise((resolve,reject)=>{let req=db.transaction('kv','readonly').objectStore('kv').get(DATA_KEY);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
-function idbSet(data){return new Promise((resolve,reject)=>{let tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(data,DATA_KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
-async function load(){try{db=await openDb();const x=await idbGet();if(x)state=normalize(x);else if(localStorage.getItem(DATA_KEY))state=normalize(JSON.parse(localStorage.getItem(DATA_KEY)))}catch(e){console.warn('Local DB fallback',e);dbAvailable=false;try{const x=localStorage.getItem(DATA_KEY);if(x)state=normalize(JSON.parse(x))}catch(_){} } }
-async function save(){state.lastSaved=now();try{if(dbAvailable)await idbSet(state);else localStorage.setItem(DATA_KEY,JSON.stringify(state))}catch(e){toast('Błąd zapisu. Zrób kopię danych!');console.error(e)}}
+function idbGet(key=DATA_KEY){return new Promise((resolve,reject)=>{let req=db.transaction('kv','readonly').objectStore('kv').get(key);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function idbSet(snapshot,keepPrevious=true){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('kv','readwrite'),store=tx.objectStore('kv');
+  if(keepPrevious){
+   const old=store.get(DATA_KEY);
+   old.onsuccess=()=>{if(old.result!=null)store.put(old.result,RECOVERY_KEY);store.put(snapshot,DATA_KEY)};
+  }else store.put(snapshot,DATA_KEY);
+  tx.oncomplete=()=>resolve();
+  tx.onerror=()=>reject(tx.error||new Error('Nie udało się zapisać bazy'));
+  tx.onabort=()=>reject(tx.error||new Error('Zapis został przerwany'));
+ });
+}
+let writeQueue=Promise.resolve(),pendingWrites=0,storageBlocked=false,saveStatus='ready',lastSaveError='',pendingBackup=null;
+function saveMessage(){
+ if(storageBlocked)return 'Wstrzymany zapis — sprawdź odzyskiwanie danych';
+ if(saveStatus==='error')return 'BŁĄD zapisu — wyeksportuj kopię i sprawdź pamięć telefonu';
+ if(pendingWrites||saveStatus==='saving')return 'Zapisywanie na urządzeniu…';
+ return state.lastSaved?'Zapis lokalny · '+new Intl.DateTimeFormat('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(state.lastSaved)):'Dane tylko na tym urządzeniu';
+}
+function updateSaveIndicator(){const el=$('#manu-save-status');if(el)el.textContent=saveMessage()}
+async function load(){
+ try{db=await openDb()}catch(e){dbAvailable=false;console.warn('IndexedDB niedostępna — localStorage',e)}
+ try{
+  let raw=dbAvailable?await idbGet():null;
+  if(raw==null){const legacy=localStorage.getItem(DATA_KEY);if(legacy)raw=JSON.parse(legacy)}
+  if(raw!=null)state=normalize(raw);
+  saveStatus='saved';
+ }catch(e){
+  storageBlocked=true;saveStatus='error';lastSaveError=String(e?.message||e);
+  console.error('MANU: wstrzymano zapis, aby nie nadpisać danych',e);
+ }
+}
+function writeLocalSnapshot(snapshot,keepPrevious){
+ const old=localStorage.getItem(DATA_KEY);
+ if(keepPrevious && old!=null)localStorage.setItem(RECOVERY_KEY,old);
+ localStorage.setItem(DATA_KEY,JSON.stringify(snapshot));
+}
+function save(candidate=state,force=false){
+ if(storageBlocked&&!force){saveStatus='error';updateSaveIndicator();toast('Zapis wstrzymany. Otwórz Ustawienia i sprawdź dane.');return Promise.resolve(false)}
+ const snapshot=structuredClone(candidate);
+ snapshot.lastSaved=now();
+ const keepPrevious=!storageBlocked;
+ pendingWrites++;saveStatus='saving';updateSaveIndicator();
+ const operation=writeQueue.then(async()=>{
+  if(storageBlocked&&!force)throw Error('Zapis wstrzymany z powodu wcześniejszego błędu');
+  if(dbAvailable)await idbSet(snapshot,keepPrevious);
+  else writeLocalSnapshot(snapshot,keepPrevious);
+ }).then(()=>{
+  if(candidate===state)state.lastSaved=snapshot.lastSaved;
+  if(force)storageBlocked=false;
+  lastSaveError='';
+  return true;
+ }).catch(e=>{
+  saveStatus='error';storageBlocked=true;lastSaveError=String(e?.message||e);
+  console.error('MANU: nie zapisano zmian',e);
+  toast('BŁĄD zapisu! Nie zamykaj aplikacji; pobierz kopię danych.');
+  return false;
+ }).finally(()=>{
+  pendingWrites--;
+  if(!storageBlocked)saveStatus=pendingWrites?'saving':'saved';
+  updateSaveIndicator();
+ });
+ writeQueue=operation.then(()=>{});
+ return operation;
+}
+async function readRecovery(){
+ try{
+  await writeQueue;
+  const old=dbAvailable?await idbGet(RECOVERY_KEY):localStorage.getItem(RECOVERY_KEY);
+  if(old==null)return null;
+  return typeof old==='string'?JSON.parse(old):old;
+ }catch(e){console.error('Nie można odczytać poprzedniej wersji',e);throw Error('Nie udało się odczytać lokalnego punktu przywracania')}
+}
 function normalize(obj){if(!obj || !Array.isArray(obj.projects)||!Array.isArray(obj.tasks))throw Error('Nieprawidłowy plik danych');return {version:7,lastSaved:obj.lastSaved||now(),projects:obj.projects.map(p=>({id:String(p.id||uid()),title:String(p.title||''),type:p.type==='Warsztat'?'Warsztat':'Zlecenie',client:String(p.client||''),date:String(p.date||''),status:validStatus.includes(p.status)?p.status:'Planowane',price:money(p.price),paid:money(p.paid),financeMode:p.financeMode==='participants'?'participants':'manual',participantFee:money(p.participantFee),hours:val(p.hours),capacity:val(p.capacity),quantity:Math.max(1,Math.floor(val(p.quantity)||1)),estimatedHours:val(p.estimatedHours),estimatedMaterials:money(p.estimatedMaterials),workLocation:String(p.workLocation||''),transportType:p.transportType==='paid'?'paid':p.transportType==='none'?'none':p.transportType==='car'?'car':(val(p.travelKm)>0||val(p.fuelConsumption)>0||val(p.fuelPrice)>0||val(p.travelRate)>0||val(p.travelExtra)>0?'car':'none'),paidTransportCost:money(p.paidTransportCost),paidTransportLabel:String(p.paidTransportLabel||''),travelKm:val(p.travelKm),travelMode:p.travelMode==='fuel'?'fuel':p.travelMode==='rate'?'rate':money(p.travelRate)>0?'rate':'fuel',fuelConsumption:val(p.fuelConsumption),fuelPrice:money(p.fuelPrice),travelRate:money(p.travelRate),travelExtra:money(p.travelExtra),location:String(p.location||''),startTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(String(p.startTime||''))?String(p.startTime):'',durationHours:val(p.durationHours),notes:String(p.notes||''),expenses:Array.isArray(p.expenses)?p.expenses.map(x=>({id:String(x.id||uid()),title:String(x.title||''),amount:val(x.amount)})):[],participants:Array.isArray(p.participants)?p.participants.map(x=>({id:String(x.id||uid()),name:String(x.name||''),fee:money(x.fee),paidAmount:money(x.paidAmount),legacyPaid:!!x.legacyPaid||(x.paidAmount==null&&x.paid===true)})):[],createdAt:p.createdAt||now()})),tasks:obj.tasks.map(t=>({id:String(t.id||uid()),title:String(t.title||''),due:String(t.due||''),done:!!t.done,projectId:String(t.projectId||''),createdAt:t.createdAt||now()}))};}
 const enteredExpenses=p=>money((p.expenses||[]).reduce((n,x)=>n+val(x.amount),0));
 const transportType=p=>p.transportType==='paid'?'paid':p.transportType==='none'?'none':p.transportType==='car'?'car':(val(p.travelKm)>0||val(p.fuelConsumption)>0||val(p.fuelPrice)>0||val(p.travelRate)>0||val(p.travelExtra)>0?'car':'none');
