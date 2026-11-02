@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.0.0';
+const APP_VERSION='3.0.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -218,7 +218,7 @@ function navBtn(tab,ic,label){return `<button class="nav-link ${tab===view?'acti
 function mobileBtn(tab,ic,label){return `<button class="mobile-tab ${tab===view?'active':''}" data-action="nav" data-view="${tab}">${icon(ic)}<span>${label}</span></button>`;}
 function openNotebook(content,page,turn=''){
  const pageLabels={projects:'REJESTR PROJEKTÓW',finance:'KSIĘGA FINANSÓW',tasks:'LISTA ZADAŃ',calendar:'KALENDARZ I TERMINY'};
- const edge=page==='finance'?'right':'left';
+ const edge=['finance','calendar'].includes(page)?'right':'left';
  const animation=turn==='next'||turn==='prev'?' page-turn-'+turn:'';
  return `<section class="open-notebook open-notebook--${edge}${animation}" aria-label="${pageLabels[page]||'Wnętrze notesu'}" data-book-page="${htmlEscape(page)}" data-book-edge="${edge}">
   <div class="open-notebook-binding" aria-hidden="true">
