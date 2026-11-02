@@ -407,6 +407,55 @@ function workEntryForm(id){
  const date=new Date().toLocaleDateString('en-CA');
  modal('Dopisz czas pracy',`<form id="work-entry-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="form-cols"><div class="field"><label>Data pracy</label><input name="date" type="date" required value="${date}"></div><div class="field"><label>Przepracowane minuty *</label><input name="minutes" type="number" min="1" max="1440" step="1" required placeholder="Np. 90"></div></div><div class="field"><label>Co zostało zrobione?</label><textarea name="note" maxlength="350" rows="3" placeholder="Np. Szkic muralu i przygotowanie kolorów"></textarea></div><p class="form-note">Wpis zostanie doliczony do łącznego czasu pracy i pojawi się w historii. Nie dodawaj ponownie godzin już ujętych w projekcie.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz czas</button></div></form>`);
 }
+function startTimer(id){
+ const p=state.projects.find(x=>x.id===id);if(!p)return;
+ const another=state.projects.find(x=>x.id!==id&&x.timer?.startedAt);
+ if(another){alert('Stoper już pracuje przy: '+another.title+'. Najpierw go wstrzymaj albo zakończ.');return}
+ p.timer=p.timer||{startedAt:'',seconds:0};if(p.timer.startedAt)return;
+ if(activeTimerSeconds(p)>=TIMER_LIMIT){alert('Sesja osiągnęła limit 24 godzin. Zakończ ją przed następną.');return}
+ p.timer.startedAt=now();afterDataChange('Stoper uruchomiony',id);
+}
+function pauseTimer(id){
+ const p=state.projects.find(x=>x.id===id);if(!p?.timer?.startedAt)return;
+ p.timer={startedAt:'',seconds:activeTimerSeconds(p)};afterDataChange('Stoper wstrzymany',id);
+}
+function registerWork(p,seconds,note,source='manual',date=now()){
+ p.workLog=(p.workLog||[]).concat({id:uid(),date,seconds,note,source}).slice(-2500);
+ p.hours=Math.round((val(p.hours)+seconds/3600)*10000)/10000;
+ recordActivity(p,'Zarejestrowano '+durationSecs(seconds)+' pracy');
+}
+function finishTimer(id){
+ const p=state.projects.find(x=>x.id===id);if(!p?.timer)return;
+ const seconds=activeTimerSeconds(p);if(seconds<1){toast('Sesja jest krótsza niż 1 sekunda.');return}
+ const exceeded=p.timer.startedAt&&((Date.now()-Date.parse(p.timer.startedAt))/1000+p.timer.seconds)>=TIMER_LIMIT;
+ registerWork(p,seconds,'Praca zmierzona stoperem','timer');
+ p.timer={startedAt:'',seconds:0};
+ afterDataChange(exceeded?'Zapisano maksymalnie 24 godziny — sprawdź czas pracy.':'Sesja zapisana: '+durationSecs(seconds),id);
+}
+function toggleStage(id,stageId){
+ const p=state.projects.find(x=>x.id===id);if(!p)return;
+ p.stages=p.stages||defaultStages(p.type,p.status);
+ const st=p.stages.find(x=>x.id===stageId);if(!st)return;
+ st.done=!st.done;recordActivity(p,(st.done?'Ukończono etap: ':'Cofnięto etap: ')+st.title);
+ afterDataChange('Postęp realizacji zapisany',id);
+}
+function removeStage(id,stageId){
+ const p=state.projects.find(x=>x.id===id);if(!p)return;
+ p.stages=p.stages||defaultStages(p.type,p.status);
+ const st=p.stages.find(x=>x.id===stageId);if(!st)return;
+ if(!confirm('Usunąć etap „'+st.title+'” z realizacji?'))return;
+ p.stages=p.stages.filter(x=>x.id!==stageId);recordActivity(p,'Usunięto etap: '+st.title);
+ afterDataChange('Etap usunięty',id);
+}
+function removeWork(id,entryId){
+ const p=state.projects.find(x=>x.id===id);if(!p)return;
+ const entry=(p.workLog||[]).find(e=>e.id===entryId);if(!entry)return;
+ if(!confirm('Usunąć zapis '+durationSecs(entry.seconds)+' i odjąć czas od projektu?'))return;
+ p.workLog=p.workLog.filter(x=>x.id!==entryId);
+ p.hours=Math.max(0,Math.round((val(p.hours)-entry.seconds/3600)*10000)/10000);
+ recordActivity(p,'Usunięto zapis pracy: '+durationSecs(entry.seconds));
+ afterDataChange('Usunięto zapis czasu',id);
+}
 function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;modal(p.title,`<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div><button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${htmlEscape(p.client||'Bez wskazanego klienta')} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fNum(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}<div class="detail-section"><div class="section-head"><h3>Koszty projektu</h3><button class="btn sm secondary" data-action="add-expense" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj koszt</button></div>${p.expenses.length?p.expenses.map(e=>`<div class="detail-entry"><span>${htmlEscape(e.title)}</span><div><b>${fMoney(e.amount)}</b> <button class="btn ghost sm" data-action="delete-expense" data-id="${htmlEscape(p.id)}" data-expense="${htmlEscape(e.id)}" aria-label="Usuń koszt">${icon('trash')}</button></div></div>`).join(''):travelCost(p)>0?'':'<p class="muted small">Brak dodanych kosztów.</p>'}${travelCost(p)>0?`<div class="detail-entry travel-cost-entry"><span>Planowany dojazd <small>(wyliczony automatycznie)</small></span><b>${fMoney(travelCost(p))}</b></div><p class="muted tiny">Szacowany koszt dojazdu jest już uwzględniony w wyniku projektu. Nie dodawaj tej samej kwoty ponownie jako wydatek ręczny.</p>`:''}</div>${p.type==='Warsztat'?showParticipants(p):''}<div class="detail-section"><h3>Notatki</h3><p class="muted small">${p.notes?htmlEscape(p.notes):'Brak notatek.'}</p></div>${workSection(p)}<div class="detail-section"><button class="btn secondary" data-action="duplicate-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Powiel projekt / warsztat</button></div><div class="danger-zone"><button class="btn danger sm" data-action="delete-project" data-id="${htmlEscape(p.id)}">${icon('trash')} Usuń projekt</button></div>`,{detail:true});}
 function expenseForm(id){let p=state.projects.find(p=>p.id===id);if(!p)return;modal('Dodaj koszt',`<form id="expense-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Nazwa wydatku *</label><input name="title" maxlength="100" required placeholder="Np. drewno, wynajem sali, tusz"></div><div class="field"><label>Kwota (zł) *</label><input name="amount" required type="number" step="0.01" min="0.01" placeholder="0,00"></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz koszt</button></div></form>`);}
 function participantForm(id,pid=''){
