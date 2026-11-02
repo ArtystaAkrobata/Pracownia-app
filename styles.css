@@ -1008,3 +1008,100 @@ body{background:#08090b;color:var(--text)}
 @media(prefers-reduced-motion:reduce){
  .modal.notebook-detail-page{animation:none!important;transform:none!important;filter:none!important}
 }
+
+
+/* ═══ MANU 2.5 · Large opening notebook / new monogram 48 ═══ */
+/* The old intro was capped at 242px by 314px and 50vh. It is now the
+   main visual element of the launch screen on phones and tablets. */
+.manu-intro .intro-stage{
+ padding:clamp(12px,3vw,28px);
+ gap:clamp(12px,2.6dvh,24px);
+ perspective:1600px;
+}
+.manu-intro .intro-book{
+ width:min(87vw,430px,calc(72dvh * .76));
+ height:auto;
+ max-height:72dvh;
+ aspect-ratio:.76;
+ border-radius:17px;
+ filter:drop-shadow(18px 25px 24px #000c);
+ transition:transform 1.05s cubic-bezier(.18,.72,.28,1);
+}
+.manu-intro .intro-cover{
+ border-radius:14px 21px 21px 14px;
+}
+.manu-intro .intro-cover-outline{
+ inset:clamp(14px,3.5vw,21px);
+ border-radius:10px 16px 16px 10px;
+}
+.manu-intro .intro-cover-mark{
+ width:min(55%,225px);
+ height:auto;
+ max-height:46%;
+ flex:none;
+ object-fit:contain;
+ filter:drop-shadow(0 3px 4px #000b);
+}
+.manu-intro .intro-page-mark{
+ width:min(53%,215px);
+ height:auto;
+ max-height:43%;
+ object-fit:contain;
+ filter:sepia(1) brightness(.64);
+}
+.manu-intro .intro-cover-brand{
+ font-size:clamp(32px,7.5vw,44px);
+ letter-spacing:.21em;
+}
+.manu-intro .intro-page-brand{
+ font-size:clamp(29px,7vw,42px);
+ letter-spacing:.21em;
+}
+.manu-intro .intro-cover-label,
+.manu-intro .intro-page-label{
+ font-size:clamp(9px,2.2vw,12px);
+ letter-spacing:.18em;
+}
+.manu-intro .intro-caption{
+ font-size:clamp(12px,2.7vw,15px);
+ max-width:340px;
+ line-height:1.6;
+}
+.manu-intro .intro-strap{
+ right:-19px;
+ width:clamp(55px,16vw,72px);
+ height:clamp(32px,9vw,43px);
+}
+.manu-intro .intro-strap:after{
+ margin:clamp(8px,2.1vw,12px) 0 0 clamp(27px,7.5vw,37px);
+ width:clamp(12px,3.5vw,16px);
+ height:clamp(12px,3.5vw,16px);
+}
+.manu-intro.is-opening .intro-book{
+ transform:translateX(min(14vw,64px));
+}
+.manu-intro .intro-skip{
+ bottom:max(15px,env(safe-area-inset-bottom));
+}
+@media(max-width:390px){
+ .manu-intro .intro-book{
+  width:min(88vw,calc(69dvh * .76));
+  height:auto;
+  aspect-ratio:.76;
+  max-height:69dvh;
+ }
+ .manu-intro .intro-cover-mark{width:53%}
+ .manu-intro .intro-page-mark{width:51%}
+}
+@media(orientation:landscape) and (max-height:560px){
+ .manu-intro .intro-book{
+  width:min(40vw,calc(61dvh * .76));
+  height:auto;max-height:61dvh;
+ }
+ .manu-intro .intro-cover-mark{width:42%}
+ .manu-intro .intro-caption{font-size:11px}
+ .manu-intro .intro-stage{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .manu-intro .intro-book{transition:none!important}
+}
