@@ -3,19 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d1524">
-  <meta name="description" content="Pracownia — osobisty organizer projektów, warsztatów i zarobków dla twórców.">
+  <meta name="theme-color" content="#17100f">
+  <meta name="description" content="MANU — Organizer twórcy. Twoje projekty, warsztaty, zadania i finanse w eleganckim notesie.">
+  <meta name="application-name" content="MANU">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Pracownia">
-  <link rel="icon" type="image/png" href="icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="MANU">
+  <link rel="icon" type="image/svg+xml" href="manu-icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
-  <title>Pracownia — Twoja przestrzeń do tworzenia</title>
+  <title>MANU — Organizer twórcy</title>
 </head>
 <body>
-  <div id="app" aria-live="polite"><div class="splash"><div class="brandmark">P<span>•</span></div><p>Otwieramy Twoją pracownię…</p></div></div>
+  <div id="manu-intro" class="manu-intro" role="status" aria-label="Otwieranie MANU">
+    <div class="intro-atmosphere"></div>
+    <div class="intro-stage">
+      <div class="intro-book" aria-hidden="true">
+        <div class="intro-pages">
+          <img src="manu-mark.svg" alt="" class="intro-page-mark">
+          <span class="intro-page-brand">MANU</span>
+          <span class="intro-page-label">ORGANIZER TWÓRCY</span>
+          <span class="intro-page-rule"></span>
+        </div>
+        <div class="intro-cover">
+          <span class="intro-cover-outline"></span>
+          <img src="manu-mark.svg" alt="" class="intro-cover-mark">
+          <span class="intro-cover-brand">MANU</span>
+          <span class="intro-cover-label">ORGANIZER TWÓRCY</span>
+          <span class="intro-strap"></span>
+        </div>
+      </div>
+      <p class="intro-caption">Twoje pomysły. Twoje projekty. Twoje dzieło.</p>
+    </div>
+    <button id="skip-intro" class="intro-skip" type="button">Pomiń animację</button>
+  </div>
+  <div id="app" aria-live="polite">
+    <div class="splash"><img src="manu-mark.svg" alt="MANU" width="64" height="64"><p>Otwieramy Twój notes…</p></div>
+  </div>
   <div id="modal-root"></div>
   <div id="toast-root" aria-live="polite"></div>
   <script src="app.js" defer></script>
