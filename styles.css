@@ -1306,3 +1306,12 @@ body{background:#08090b;color:var(--text)}
  margin-left:3px;flex-shrink:0;
 }
 .notebook-detail-page .work-history-row>div{flex:1}
+
+/* MANU 2.7.1 · odhaczanie etapów bez podskoku kartki do góry */
+.modal.notebook-detail-page.notebook-refresh{
+ animation:none!important;
+ transform:none!important;
+ filter:none!important;
+ scroll-behavior:auto!important;
+ overflow-anchor:none;
+}
