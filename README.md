@@ -1,6 +1,26 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.8.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 2.9.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 2.9 — Etap 4: profesjonalna organizacja warsztatów
+- **Rejestracja uczestników:** każdy warsztat posiada listę **potwierdzonych** miejsc i **listę rezerwową**. Limit z formularza warsztatu obejmuje wyłącznie potwierdzonych. `0` oznacza brak limitu. Po zapełnieniu miejsc nowi uczestnicy trafiają automatycznie na listę rezerwową; nie mogą wpłacić pieniędzy przed potwierdzeniem.
+- **Kolejka rezerwowa:** po zwolnieniu miejsca w karcie warsztatu pojawia się przycisk „Potwierdź miejsce” dla pierwszej osoby z kolejki. Promowanie następuje na żądanie (bez automatycznej zmiany rozliczeń) i zachowuje kolejność zapisów. Potwierdzonego uczestnika można przenieść na koniec rezerwowej wyłącznie, jeśli nie ma wpłat ani oznaczonej obecności.
+- **Bezpieczny limit:** edycja warsztatu nie pozwala zmniejszyć limitu poniżej już potwierdzonych miejsc. Nieograniczona liczba rezerwowych nie zawyża przychodu: prognozowana wartość, otrzymane wpłaty i zaległości w trybie rozliczania z uczestników pochodzą tylko z miejsc potwierdzonych.
+- **Obecności:** przy każdym potwierdzonym uczestniku przyciski „Obecny”, „Nieobecny”, „Nieustalone”. Wpisy mogą być zmieniane i są zapisywane w projekcie; sama obecność nie powoduje automatycznych zwrotów ani zmiany ceny.
+- **Materiały i przygotowania:** lista rzeczy do przygotowania z nazwą, liczbą sztuk, odhaczaniem gotowych pozycji i możliwością usunięcia. Materiały na checkliście nie tworzą automatycznie wydatków (wydatki wpisuje się nadal w finansach).
+- **Podsumowanie warsztatu:** podgląd potwierdzonych uczestników, obecności, rezerwowych, planowanego przychodu, wpłat, kosztów, uproszczonego wyniku i zarobku za godzinę. Osobny przycisk „Oznacz warsztat jako zakończony” zmienia status, zachowując możliwość poprawy rozliczeń i obecności.
+- **Zachowanie danych:** stare warsztaty przechodzą na `bookingStatus: confirmed` i `attendance: unknown`, nie tracąc nazw, wpłat, kosztów, etapów, stoperów i historii. Istniejąca struktura `pracownia_db_v1`, `snapshot` oraz identyfikator PWA pozostają bez zmian. Schemat kopii to `version:10`; import przyjmuje poprzednie wersje.
+- **Dostępność i ograniczenia:** są to zapisy **obsługiwane ręcznie przez organizatora w lokalnej aplikacji**, nie publiczny formularz internetowy ani automatyczne wiadomości do uczestników. MANU nadal nie udostępnia serwerowej synchronizacji, kont, automatycznych powiadomień, refundacji ani integracji z płatnościami. Rezerwowi nie mogą wpłacać w aplikacji. Nie wpisuj danych osobowych prawdziwych uczestników bez właściwego zabezpieczenia i podstawy prawnej.
+- **Kopia kodu sprzed etapu:** `backup-manu-v2-8-before-workshops`.
+
+### Test na telefonie
+1. W Ustawieniach zrób kopię JSON przed testowaniem na istniejących danych.
+2. Utwórz **próbny** warsztat z limitem dwóch miejsc. Dodaj dwie potwierdzone osoby, następnie trzecią na rezerwową.
+3. Odhacz obecność potwierdzonych, dodaj preparaty/materiały na checklistę i zaznacz jeden przygotowany.
+4. Usuń nieopłaconego, potwierdzonego uczestnika; powinno zwolnić się miejsce. Potwierdź pierwszą osobę z rezerwowej.
+5. Zapisz dla nowo potwierdzonej osoby wpłatę; sprawdź sumy, podsumowanie warsztatu i saldo finansów.
+6. Użyj „Oznacz warsztat jako zakończony”, po czym sprawdź dostępność historii i możliwości edycji.
+7. Wyeksportuj JSON i sprawdź poprawność kopii. Nie usuwaj ani nie instaluj ponownie aplikacji bez sprawdzonej kopii.
 
 ## MANU 2.8 — Etap 3: zaawansowane finanse
 - **Historia wpłat:** do zleceń oraz warsztatów rozliczanych ręcznie można dopisywać wpłaty i zaliczki z datą, kwotą i opisem. Dotychczasowe ręczne pole `paid` nie jest kasowane ani powielane; nowe wpłaty są do niego dodawane. Nadpłaty ponad niewyrównaną cenę są blokowane. Wpisy można usuwać po potwierdzeniu.
