@@ -1,12 +1,12 @@
 # PRACOWNIA — osobisty organizer dla twórców
 
-**Wersja 1.3 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 1.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
 
 ## Co działa
 - Projekty i warsztaty: tworzenie, edycja, powielanie, usuwanie, statusy i terminy.
 - **Formularze zależne od typu**: realizacja ma miejsce wykonania (własna pracownia lub zewnętrzny adres, np. mural), liczbę sztuk, planowany i rzeczywisty czas pracy oraz szacowane materiały; warsztat ma osobne miejsce, godzinę startu, czas zajęć, liczbę miejsc, domyślną cenę i czas przygotowania.
 - W szczegółach projektu widoczne są plan i porównanie z dotychczasową realizacją; planowane koszty materiałów są oddzielone od kosztów faktycznie wprowadzonych.
-- **Dojazd do realizacji:** przycisk „Nawiguj w Mapach Google” otwiera wskazówki trasy pod wpisany adres (bez klucza API). Wpisana przez użytkownika łączna liczba kilometrów w obie strony × własna stawka zł/km + dodatkowe opłaty daje szacowany koszt dojazdu. Aplikacja nie pobiera dystansu z map ani danych GPS. Koszt jest pokazany osobno i uwzględniony **raz** w całkowitych kosztach realizacji i w wyniku finansowym; nie dodawaj go ponownie jako wydatek ręczny.
+- **Dojazd do realizacji:** przycisk „Nawiguj w Mapach Google” otwiera wskazówki pod wpisany adres. **Domyślnie** koszt wylicza się z dystansu w obie strony × spalania w l/100 km × ceny paliwa w zł/l + dodatkowych opłat (np. parkingu). Formularz pokazuje na żywo przewidywaną liczbę litrów i kwotę. Osoby stosujące koszt zł/km mogą przełączyć metodę; istniejące realizacje ze stawką zł/km zachowują poprzednie rozliczenie po aktualizacji. Aplikacja nie pobiera automatycznie dystansu, spalania, ceny paliwa ani danych GPS. Szacunek paliwa **nie obejmuje amortyzacji, serwisu i innych kosztów eksploatacji auta**. Koszt jest uwzględniany tylko raz w całkowitych kosztach realizacji i w wyniku finansowym; nie dodawaj go ponownie jako wydatek ręczny.
 - Lista kosztów realizacji, przychód, wpłaty, należności i szacunkowy wynik po kosztach.
 - Orientacyjna kwota za godzinę na podstawie czasu wpisanego przez użytkownika.
 - Uczestnicy warsztatów: cena udziału, kwota otrzymanej zaliczki/wpłaty, automatyczne obliczanie dopłaty oraz edycja rozliczenia.
