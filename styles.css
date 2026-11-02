@@ -1148,3 +1148,146 @@ body{background:#08090b;color:var(--text)}
 .save-state-line.is-error:before{
  background:#c04b48;box-shadow:0 0 0 3px #c04b4826;
 }
+
+
+/* ══ MANU 2.7 · Przebieg realizacji, historia i zegar pracy ══ */
+.notebook-detail-page .workflow-section{
+ margin-top:22px;
+ padding:22px 18px 20px;
+ background:linear-gradient(140deg,#f6ede0,#ebe0d1);
+ border:1px solid #d5bda3;
+ border-radius:14px;
+}
+.workflow-section .section-head{
+ align-items:center;
+ flex-wrap:wrap;
+ gap:12px;
+}
+.workflow-percent{
+ padding:6px 10px;
+ border:1px solid #cfa989;
+ border-radius:30px;
+ color:#915b3e;
+ background:#eddbcb;
+ font-size:12px;font-weight:750;
+}
+.workflow-bar{
+ height:9px;overflow:hidden;border-radius:100px;
+ background:#d8c7b4;
+ box-shadow:inset 0 1px 2px #72583a2b;
+ margin:11px 0 18px;
+}
+.workflow-bar>span{
+ display:block;height:100%;min-width:0;
+ background:linear-gradient(90deg,#a36345,#e1a27a);
+ border-radius:100px;
+ box-shadow:inset 0 1px 1px #fff7ed60;
+ transition:width .28s ease;
+}
+.workflow-stages{display:grid;gap:7px;margin-bottom:12px}
+.workflow-step{
+ display:flex;align-items:center;gap:10px;min-height:43px;
+ padding:7px 8px;
+ border:1px solid #dac4ac;
+ border-radius:10px;
+ background:#f9f1e5b3;
+ color:#45362e;
+}
+.workflow-step>span{flex:1;overflow-wrap:anywhere;font-size:13px}
+.workflow-step>span.stage-completed{
+ color:#796f63;text-decoration:line-through;
+ text-decoration-color:#ad876f;
+}
+.workflow-check{
+ flex:0 0 27px;width:27px;height:27px;
+ border:1.5px solid #c19a7d;border-radius:7px;
+ display:grid;place-items:center;
+ color:#b27c57;background:#fdf7ee;
+ cursor:pointer;font-weight:700;font-size:18px;
+}
+.workflow-check .ico{width:16px;height:16px;stroke-width:3}
+.workflow-check.is-done{
+ color:#fff4e7;background:#9a6548;border-color:#9a6548;
+}
+.workflow-step .stage-remove{
+ flex:0 0 32px;width:32px;height:32px;min-width:0;
+ padding:6px;opacity:.78;border:0;
+ color:#8d6652;background:transparent;box-shadow:none;
+}
+.workflow-plan-area,.workflow-time-area,.workflow-log{
+ padding-top:20px;margin-top:21px;
+ border-top:1px solid #d9c2a8;
+}
+.workflow-section h3{
+ margin:0 0 10px;
+ font-family:Georgia,"Times New Roman",serif;
+ color:#4e382e;font-size:17px;font-weight:600;
+}
+.workflow-plan{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;
+}
+.workflow-plan>div{
+ padding:11px 10px;
+ background:#f9f0e5;
+ border:1px solid #d6baa0;
+ border-radius:11px;
+ display:flex;flex-direction:column;gap:7px;
+ min-width:0;
+}
+.workflow-plan small{color:#7a6558;font-size:10px;line-height:1.4}
+.workflow-plan strong{color:#3c2e27;font-size:15px;overflow-wrap:anywhere}
+.workflow-plan strong.money-negative{color:#a04745}
+.work-timer{
+ display:flex;flex-direction:column;gap:9px;
+ padding:17px 15px;
+ border-radius:13px;
+ background:linear-gradient(135deg,#141315,#272022);
+ border:1px solid #a96a4c;
+ box-shadow:inset 0 1px 0 #df9e7650,0 5px 16px #6a493d2b;
+}
+.work-timer-value{
+ color:#edbd99;
+ font-family:Georgia,"Times New Roman",serif;
+ font-size:clamp(25px,5vw,36px);
+ font-variant-numeric:tabular-nums;
+ letter-spacing:.015em;
+}
+.work-timer-state{color:#d2b4a0;font-size:11px;line-height:1.45}
+.work-timer-buttons{
+ display:flex;gap:9px;flex-wrap:wrap;margin-top:4px;
+}
+.work-timer-buttons .btn{flex:1;justify-content:center;min-width:110px}
+.work-timer .btn.secondary{background:#493128;color:#f7dfca;border-color:#8d5b45}
+.work-timer .btn.ghost{background:transparent;color:#ebc4ac;border-color:#95674e}
+.work-timer .btn:disabled{opacity:.4;cursor:not-allowed}
+.workflow-time-actions{margin-top:12px}
+.workflow-time-area .muted,.workflow-plan-area .muted{margin-top:10px}
+.work-history-row{
+ display:flex;gap:10px;align-items:center;justify-content:space-between;
+ border-bottom:1px solid #dcc7b1;padding:10px 3px;
+ color:#45352d;
+}
+.work-history-row:last-child{border-bottom:none}
+.work-history-row>div{
+ min-width:0;display:flex;flex-direction:column;gap:3px;
+}
+.work-history-row b{font-size:12px;font-weight:650;overflow-wrap:anywhere}
+.work-history-row small{font-size:10px;color:#806b5e}
+.work-history-row .btn{flex:0 0 auto}
+@media(max-width:690px){
+ .notebook-detail-page .workflow-section{
+  padding:17px 11px 15px;
+  margin-top:18px;
+ }
+ .workflow-plan{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workflow-plan>div{padding:10px 8px}
+ .workflow-time-area,.workflow-plan-area,.workflow-log{padding-top:16px;margin-top:17px}
+ .workflow-step{gap:8px;padding:7px 5px}
+ .workflow-step>span{font-size:12px}
+ .work-timer{padding:14px 10px}
+ .work-timer-buttons .btn{min-width:105px}
+}
+@media(prefers-reduced-motion:reduce){
+ .workflow-bar>span{transition:none}
+}
