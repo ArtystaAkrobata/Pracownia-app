@@ -63,7 +63,7 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
 function modal(title,body){
  const paper=body.trimStart().startsWith('<form');
  const paperBinding=paper?'<div class="paper-binding" aria-hidden="true"><span class="paper-binding-edge"></span><span class="paper-binding-stitches"></span><span class="paper-binding-pages"></span></div>':'';
- $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paperBinding}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><span class="modal-page-title">${paper?'<small class="paper-kicker">MANU · KARTA PRACY</small>':''}<h2>${htmlEscape(title)}</h2></span><button class="close" data-action="close" aria-label="Zamknij">×</button></div><div class="modal-body">${body}</div></div></div></div>`;
+ $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paperBinding}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">MANU · KARTA PRACY</small>':''}<h2>${htmlEscape(title)}</h2></div><button class="close" data-action="close" aria-label="Zamknij">×</button></div><div class="modal-body">${body}</div></div></div></div>`;
  $('.modal')?.scrollTo(0,0);
 }
 function closeModal(){$('#modal-root').innerHTML='';}
