@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.9.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 2.9.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 2.9.1 — Naprawa przeskakiwania do góry w warsztatach
+- Przed otwarciem formularza z karty projektu (w tym **Dodaj materiał**), MANU zapamiętuje przewinięcie kartki i pozycję strony. Po **Zapisz** lub **Wróć** odtwarza otwartą kartkę w tym samym miejscu.
+- Przy odhaczaniu i usuwaniu materiałów, obecności i etapów zachowano wcześniejszy mechanizm przewijania bez ponownej animacji notesu.
+- Poprawiono odtwarzanie fokusu właściwego przycisku przy wielu podobnych kontrolkach materiałów. Każdy element odróżniany jest po pełnym zestawie atrybutów identyfikujących, a fokus wraca bez przewijania.
+- Poprawka obejmuje także inne formularze otwierane z karty realizacji, jeśli prowadzą z powrotem do tej samej karty.
+- **Bez zmiany danych:** schema JSON nadal `version:10`, baza `pracownia_db_v1`, klucz `snapshot`; nie zmieniano uczestników, list rezerwowych, czasu pracy ani finansów.
+- Kopia kodu sprzed aktualizacji: `backup-manu-v2-9-before-material-scroll-fix`.
+
+### Jak sprawdzić na telefonie
+1. Otwórz próbny warsztat, przewiń do „Przygotowanie warsztatu”.
+2. Wybierz „Dodaj materiał”, wpisz materiał i zapisz. Karta powinna wrócić w to samo miejsce.
+3. Odhacz drugi lub trzeci materiał, a następnie cofnij zaznaczenie — kartka nie powinna skakać do góry.
+4. Kliknij „Dodaj materiał” i „Wróć” bez zapisywania. Pozycja powinna zostać zachowana również wtedy.
+5. Spróbuj usunąć próbny materiał. Pozostałe dane warsztatu powinny pozostać bez zmian.
 
 ## MANU 2.9 — Etap 4: profesjonalna organizacja warsztatów
 - **Rejestracja uczestników:** każdy warsztat posiada listę **potwierdzonych** miejsc i **listę rezerwową**. Limit z formularza warsztatu obejmuje wyłącznie potwierdzonych. `0` oznacza brak limitu. Po zapełnieniu miejsc nowi uczestnicy trafiają automatycznie na listę rezerwową; nie mogą wpłacić pieniędzy przed potwierdzeniem.
