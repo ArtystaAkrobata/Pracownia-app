@@ -1,4 +1,4 @@
-const CACHE_NAME='manu-app-v2.0.0';
+const CACHE_NAME='manu-app-v2.1.0';
 const APP_SHELL=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./manu-icon.svg','./manu-mark.svg'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
