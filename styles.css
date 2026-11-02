@@ -1138,3 +1138,13 @@ body{background:#08090b;color:var(--text)}
  .backup-preview-info{padding:13px 12px}
  .backup-preview-info p{font-size:11px}
 }
+
+
+/* Ostrzeżenie, jeśli telefon odmówi zapisu lub odczytu danych */
+.save-state-line.is-error{
+ color:#8e2f2e;background:#fae2db;border-color:#cb7771;
+ font-weight:750;
+}
+.save-state-line.is-error:before{
+ background:#c04b48;box-shadow:0 0 0 3px #c04b4826;
+}
