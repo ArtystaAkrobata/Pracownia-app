@@ -467,3 +467,31 @@ body{background:#08090b;color:var(--text)}
 @media(prefers-reduced-motion:reduce){
  .modal.notebook-page{animation:none!important}
 }
+
+
+/* MANU 2.1 · zapięcie jako prawdziwy przycisk i czarny ekran otwarcia */
+.cover-strap{cursor:pointer;pointer-events:auto;font:inherit;padding:0;color:inherit;transition:filter .18s,transform .22s}
+.cover-strap:hover{filter:brightness(1.13);transform:translateX(-2px)}
+.cover-strap:active{transform:translateX(0) scale(.96)}
+.cover-strap:focus-visible{outline:3px solid #ebb18b;outline-offset:4px}
+.cover-strap:focus-visible .cover-strap-button{box-shadow:0 0 0 2px #fff2e3,0 3px 7px #000c}
+.manu-intro{background:#08090b}
+.intro-atmosphere{
+ background:radial-gradient(ellipse at 43% 39%,#4b3c3542 0%,#191719 43%,#08090b 85%),
+ linear-gradient(145deg,#171617,#070809);
+}
+.intro-cover{
+ background:
+  repeating-linear-gradient(36deg,transparent 0 3px,#d1a68a0a 4px,transparent 5px 9px),
+  radial-gradient(ellipse at 32% 14%,#a9775c18,transparent 66%),
+  linear-gradient(124deg,#202022,#08090b 62%,#1d1a1b);
+ border-color:#b57253;
+ box-shadow:inset 0 0 0 8px #0c0c0f,inset 0 0 0 10px #b978553c,inset 0 0 28px #030406d0,8px 5px 0 #08090b;
+}
+.intro-cover-outline{border-color:#c38866a1}
+.intro-strap{background:linear-gradient(130deg,#2c2222,#0c0c0e);border-color:#a66a4c}
+.intro-cover-brand{color:#efb895}
+.intro-cover-label{color:#dca584}
+.intro-page-label{color:#70412f}
+.intro-skip{border-color:#936349;color:#ebbd9b}
+@media(prefers-reduced-motion:reduce){.cover-strap{transition:none}}
