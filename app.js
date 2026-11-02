@@ -41,7 +41,7 @@ function saveMessage(){
  if(pendingWrites||saveStatus==='saving')return 'Zapisywanie na urządzeniu…';
  return state.lastSaved?'Zapis lokalny · '+new Intl.DateTimeFormat('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(state.lastSaved)):'Dane tylko na tym urządzeniu';
 }
-function updateSaveIndicator(){const el=$('#manu-save-status');if(el)el.textContent=saveMessage()}
+function updateSaveIndicator(){const el=$('#manu-save-status');if(el){el.textContent=saveMessage();el.classList?.toggle('is-error',storageBlocked||saveStatus==='error')}}
 async function load(){
  try{db=await openDb()}catch(e){dbAvailable=false;console.warn('IndexedDB niedostępna — localStorage',e)}
  try{
@@ -148,7 +148,7 @@ function financePage(m){let perHour=m.hours?m.profit/m.hours:0;let margin=m.inco
 function taskRow(t){let p=state.projects.find(p=>p.id===t.projectId);return `<div class="task-row"><button class="check-btn ${t.done?'checked':''}" data-action="toggle-task" data-id="${htmlEscape(t.id)}" aria-label="${t.done?'Cofnij wykonanie':'Oznacz jako wykonane'}">${t.done?icon('check'):''}</button><div class="task-text"><b class="${t.done?'done':''}">${htmlEscape(t.title)}</b><small>${p?htmlEscape(p.title)+' · ':''}${t.due?'Termin: '+fDate(t.due):'Bez terminu'}</small></div><button class="btn ghost sm" data-action="delete-task" data-id="${htmlEscape(t.id)}" aria-label="Usuń zadanie">${icon('trash')}</button></div>`;}
 function tasksPage(){let tasks=[...state.tasks].filter(t=>taskFilter==='all'||(taskFilter==='done'?t.done:!t.done)).sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||'9999').localeCompare(b.due||'9999'));return `${pageHeading('Zadania','Nie zapomnij o tym, co trzeba zrobić.',`<button class="btn" data-action="new-task">${icon('plus')}<span>Nowe zadanie</span></button>`)}<div class="surface"><div class="section-head"><h2>Lista zadań</h2><div class="filters"><button class="filter ${taskFilter==='open'?'active':''}" data-action="task-filter" data-filter="open">Do zrobienia</button><button class="filter ${taskFilter==='done'?'active':''}" data-action="task-filter" data-filter="done">Gotowe</button><button class="filter ${taskFilter==='all'?'active':''}" data-action="task-filter" data-filter="all">Wszystkie</button></div></div>${tasks.length?tasks.map(taskRow).join(''):empty('Lista jest pusta','Dodaj zadanie albo wybierz inny filtr.',`<button class="btn sm" data-action="new-task">Nowe zadanie</button>`)}</div>`;}
 function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack"><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
- <p id="manu-save-status" class="save-state-line" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
+ <p id="manu-save-status" class="save-state-line ${storageBlocked?'is-error':''}" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
  <p class="small">MANU zapisuje dane na tym urządzeniu po każdej zmianie. Zostawia też jeden poprzedni lokalny stan, który możesz przywrócić. Nie chroni to przed utratą telefonu ani usunięciem danych przeglądarki.</p>
  <div class="settings-actions"><button class="btn" data-action="export">${icon('download')} Pobierz kopię JSON</button>
  <button class="btn secondary" data-action="backup-check">${icon('shield')} Sprawdź plik kopii</button>
@@ -169,7 +169,7 @@ function modal(title,body,options={}){
  $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''} ${detail?'notebook-detail-page':''} ${right?'notebook-page--right':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paper&&!right?paperBinding:''}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">'+pageLabel+'</small>':''}<h2>${htmlEscape(title)}</h2></div><button class="close" data-action="close" aria-label="Zamknij">×</button></div><div class="modal-body">${body}</div></div>${paper&&right?paperBinding:''}</div></div>`;
  $('.modal')?.scrollTo(0,0);
 }
-function closeModal(){$('#modal-root').innerHTML='';}
+function closeModal(){pendingBackup=null;$('#modal-root').innerHTML='';}
 function optionsStatus(selected){return validStatus.map(x=>`<option value="${x}" ${x===selected?'selected':''}>${x}</option>`).join('');}
 function projectForm(p){
   const edit=!!p;
@@ -418,15 +418,20 @@ async function recoverPrevious(){
   showBackupPreview();
  }catch(e){alert('Nie można odczytać poprzedniego zapisu: '+String(e.message||e))}
 }
+let backupApplying=false;
 async function applyBackup(){
+ if(backupApplying)return;
  const data=pendingBackup;if(!data||data.mode==='check')return;
  const counts=backupSummary(data.snapshot);
  const message='Zastąpić wszystkie obecne projekty i zadania danymi z kopii ('+counts.projects+' projektów, '+counts.tasks+' zadań)?\nZalecane: najpierw pobierz kopię obecnych danych.';
  if(!confirm(message))return;
- const restored=structuredClone(data.snapshot),ok=await save(restored,true);
- if(!ok){alert('Nie udało się zapisać przywracanych danych. Obecny stan pozostawiono bez zmian.');return}
- state=restored;state.lastSaved=now();pendingBackup=null;
- closeModal();render();toast('Przywrócono dane i zapisano je na urządzeniu.');
+ backupApplying=true;
+ try{
+  const restored=structuredClone(data.snapshot),ok=await save(restored,true);
+  if(!ok){alert('Nie udało się zapisać przywracanych danych. Obecny stan pozostawiono bez zmian.');return}
+  state=restored;state.lastSaved=now();
+  closeModal();render();toast('Przywrócono dane i zapisano je na urządzeniu.');
+ }finally{backupApplying=false}
 }
 function afterDataChange(msg,detailId){save();render();if(detailId)projectDetail(detailId);if(msg)toast(msg)}
 function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'nav':{
