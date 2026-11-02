@@ -503,3 +503,14 @@ body{background:#08090b;color:var(--text)}
 @media(max-width:690px){
  .modal.notebook-page .paper-binding{height:auto}
 }
+
+
+/* W długich formularzach skórzany grzbiet pozostaje widoczny podczas przewijania strony */
+.modal.notebook-page:has(#project-form) .paper-binding{
+ position:sticky;top:0;align-self:flex-start;height:min(94dvh,1000px);
+}
+@media(max-width:690px){
+ .modal.notebook-page:has(#project-form) .paper-binding{
+  height:calc(100dvh - 16px - env(safe-area-inset-bottom));
+ }
+}
