@@ -221,7 +221,7 @@ function monthCashflow(period){
   for(const ex of p.expenses||[])if(ex.date?.startsWith(period))outgoing.push({...ex,project:p.title});
  }
  const received=money(incoming.reduce((n,x)=>n+money(x.amount),0)),spent=money(outgoing.reduce((n,x)=>n+money(x.amount),0));
- return {received,spent,balance:money(received-spent),incoming,outgoing};
+ return {received,spent,balance:Math.round((received-spent)*100)/100,incoming,outgoing};
 }
 function monthlyReportMarkup(period){
  const m=monthCashflow(period),records=[
