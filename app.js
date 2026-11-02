@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='2.9.0';
+const APP_VERSION='2.9.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -20,6 +20,7 @@ const validStatus=['Planowane','W trakcie','Zakończone','Anulowane'];
 const blank=()=>({version:10,projects:[],tasks:[],lastSaved:now()});
 let state=blank(),view='home',filter='all',search='',taskFilter='open',installEvent=null,isDemo=false;
 let notebookTurn='';
+let detailReturnScroll=null;
 let financeMonth=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0')].join('-');
 let db=null, dbAvailable=true;
 function openDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB niedostępna'));return;}const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{request.result.createObjectStore('kv')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
@@ -275,12 +276,30 @@ function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
  const right=detail;
+ // Zachowaj pozycję otwartej kartki przed otwarciem formularza projektu.
+ const previous=$('.modal');
+ if(!detail&&paper&&previous?.classList?.contains('notebook-detail-page')){
+  const formProjectId=body.trimStart().match(/^<form\b[^>]*\bdata-id="([^"]+)"/i)?.[1];
+  if(formProjectId)detailReturnScroll={
+   projectId:formProjectId,top:previous.scrollTop,pageX:window.scrollX,pageY:window.scrollY
+  };
+ }
  const paperBinding=paper?'<div class="paper-binding" aria-hidden="true"><span class="paper-binding-edge"></span><span class="paper-binding-stitches"></span><span class="paper-binding-pages"></span></div>':'';
  const pageLabel=detail?'MANU · KARTA REALIZACJI':'MANU · KARTA PRACY';
  $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''} ${detail?'notebook-detail-page':''} ${right?'notebook-page--right':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paper&&!right?paperBinding:''}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">'+pageLabel+'</small>':''}<h2>${htmlEscape(title)}</h2></div><button class="close" data-action="close" aria-label="Zamknij">×</button></div><div class="modal-body">${body}</div></div>${paper&&right?paperBinding:''}</div></div>`;
- $('.modal')?.scrollTo(0,0);
+ const next=$('.modal');
+ if(detail&&detailReturnScroll?.projectId===options.projectId&&next){
+  next.classList.add('notebook-refresh');
+  next.scrollTop=detailReturnScroll.top;
+  const {pageX,pageY}=detailReturnScroll;
+  detailReturnScroll=null;
+  if(window.scrollX!==pageX||window.scrollY!==pageY)window.scrollTo(pageX,pageY);
+ }else{
+  next?.scrollTo(0,0);
+  if(detail)detailReturnScroll=null;
+ }
 }
-function closeModal(){pendingBackup=null;$('#modal-root').innerHTML='';}
+function closeModal(){detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';}
 function optionsStatus(selected){return validStatus.map(x=>`<option value="${x}" ${x===selected?'selected':''}>${x}</option>`).join('');}
 function projectForm(p){
   const edit=!!p;
@@ -580,7 +599,7 @@ function workNoteForm(id,entryId){
  const p=state.projects.find(x=>x.id===id),e=p?.workLog?.find(x=>x.id===entryId);if(!e)return;
  modal('Opis sesji pracy',`<form id="work-note-form" data-id="${htmlEscape(id)}" data-entry="${htmlEscape(entryId)}"><p class="muted small">${htmlEscape(p.title)} · ${durationSecs(e.seconds)}</p><div class="field"><label>Co zostało zrobione?</label><textarea name="note" rows="4" maxlength="350" placeholder="Np. Malowanie konturów i poprawki">${htmlEscape(e.note)}</textarea></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button type="submit" class="btn">Zapisz opis</button></div></form>`);
 }
-function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;modal(p.title,`<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div><button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${htmlEscape(p.client||'Bez wskazanego klienta')} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}${financeDetail(p)}<div class="detail-section"><div class="section-head"><h3>Koszty projektu</h3><button class="btn sm secondary" data-action="add-expense" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj koszt</button></div>${p.expenses.length?p.expenses.map(e=>`<div class="detail-entry"><span>${htmlEscape(e.title)} <small>· ${expenseCategoryName(e.category)} ${e.date?'· '+htmlEscape(e.date):'· bez daty'}</small></span><div><b>${fMoney(e.amount)}</b> <button class="btn ghost sm" data-action="delete-expense" data-id="${htmlEscape(p.id)}" data-expense="${htmlEscape(e.id)}" aria-label="Usuń koszt">${icon('trash')}</button></div></div>`).join(''):travelCost(p)>0?'':'<p class="muted small">Brak dodanych kosztów.</p>'}${estimatedTravelApplied(p)>0?`<div class="detail-entry travel-cost-entry"><span>Planowany dojazd <small>(wyliczony automatycznie)</small></span><b>${fMoney(travelCost(p))}</b></div><p class="muted tiny">Szacowany koszt dojazdu jest już uwzględniony w wyniku projektu. Nie dodawaj tej samej kwoty ponownie jako wydatek ręczny.</p>`:''}</div>${p.type==='Warsztat'?showParticipants(p)+workshopOperations(p):''}<div class="detail-section"><h3>Notatki</h3><p class="muted small">${p.notes?htmlEscape(p.notes):'Brak notatek.'}</p></div>${workSection(p)}<div class="detail-section"><button class="btn secondary" data-action="duplicate-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Powiel projekt / warsztat</button></div><div class="danger-zone"><button class="btn danger sm" data-action="delete-project" data-id="${htmlEscape(p.id)}">${icon('trash')} Usuń projekt</button></div>`,{detail:true});}
+function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;modal(p.title,`<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div><button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${htmlEscape(p.client||'Bez wskazanego klienta')} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}${financeDetail(p)}<div class="detail-section"><div class="section-head"><h3>Koszty projektu</h3><button class="btn sm secondary" data-action="add-expense" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj koszt</button></div>${p.expenses.length?p.expenses.map(e=>`<div class="detail-entry"><span>${htmlEscape(e.title)} <small>· ${expenseCategoryName(e.category)} ${e.date?'· '+htmlEscape(e.date):'· bez daty'}</small></span><div><b>${fMoney(e.amount)}</b> <button class="btn ghost sm" data-action="delete-expense" data-id="${htmlEscape(p.id)}" data-expense="${htmlEscape(e.id)}" aria-label="Usuń koszt">${icon('trash')}</button></div></div>`).join(''):travelCost(p)>0?'':'<p class="muted small">Brak dodanych kosztów.</p>'}${estimatedTravelApplied(p)>0?`<div class="detail-entry travel-cost-entry"><span>Planowany dojazd <small>(wyliczony automatycznie)</small></span><b>${fMoney(travelCost(p))}</b></div><p class="muted tiny">Szacowany koszt dojazdu jest już uwzględniony w wyniku projektu. Nie dodawaj tej samej kwoty ponownie jako wydatek ręczny.</p>`:''}</div>${p.type==='Warsztat'?showParticipants(p)+workshopOperations(p):''}<div class="detail-section"><h3>Notatki</h3><p class="muted small">${p.notes?htmlEscape(p.notes):'Brak notatek.'}</p></div>${workSection(p)}<div class="detail-section"><button class="btn secondary" data-action="duplicate-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Powiel projekt / warsztat</button></div><div class="danger-zone"><button class="btn danger sm" data-action="delete-project" data-id="${htmlEscape(p.id)}">${icon('trash')} Usuń projekt</button></div>`,{detail:true,projectId:p.id});}
 const localDay=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 function paymentForm(id,participantId=''){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
@@ -694,12 +713,7 @@ function afterDataChange(msg,detailId){
  const oldScroll=preserve?before.scrollTop:0;
  const oldPageX=window.scrollX,oldPageY=window.scrollY;
  const active=preserve?document.activeElement:null;
- const control=active?.dataset?.action?{
-  action:active.dataset.action,
-  id:active.dataset.id,
-  stage:active.dataset.stage,
-  entry:active.dataset.entry
- }:null;
+ const control=active?.dataset?.action?{...active.dataset}:null;
  save();
  render();
  if(detailId){
@@ -712,8 +726,7 @@ function afterDataChange(msg,detailId){
     // Zachowaj fokus na tym samym etapie (ważne też przy klawiaturze).
     if(control){
      const same=[...modalAfter.querySelectorAll('[data-action]')].find(el=>
-      el.dataset.action===control.action&&el.dataset.id===control.id&&
-      el.dataset.stage===control.stage&&el.dataset.entry===control.entry
+      Object.entries(control).every(([key,value])=>el.dataset[key]===value)
      );
      if(same?.focus){try{same.focus({preventScroll:true})}catch(e){}}
     }
