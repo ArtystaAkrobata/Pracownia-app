@@ -35,3 +35,7 @@
 .specific-detail-grid b{display:block;overflow-wrap:anywhere;font-size:12px}
 @media(max-width:690px){.project-kind-section{margin:14px 0 18px;padding:14px}.type-select-row{grid-template-columns:1fr 1fr;gap:8px}.type-select-row .field select{padding-left:9px;padding-right:7px;font-size:12px}.kind-heading h3{font-size:13px}}
 @media(max-width:370px){.type-select-row{grid-template-columns:1fr}.specific-detail-grid{grid-template-columns:1fr 1fr}}
+
+/* Miejsce realizacji może zawierać długi adres klienta lub opis lokalizacji */
+.specific-detail-location{grid-column:1/-1}
+.specific-detail-location b{white-space:pre-wrap;overflow-wrap:anywhere}
