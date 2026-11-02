@@ -1554,3 +1554,121 @@ body{background:#08090b;color:var(--text)}
  .workshop-waiting-row .participant-actions{width:100%;justify-content:flex-start}
  .workshop-material-row{padding:8px 6px}
 }
+
+
+/* ═══ MANU 3.0 · Kalendarz i lokalne przypomnienia ═══ */
+.home-upcoming{margin-top:20px}
+.calendar-alert-surface{margin:0 0 18px}
+.calendar-alert-surface .section-head{flex-wrap:wrap;gap:10px}
+.calendar-alert-list{display:grid;gap:7px}
+.calendar-alert-item{
+ display:grid;grid-template-columns:minmax(65px,auto) 1fr auto;
+ align-items:center;gap:10px;text-align:left;
+ border:1px solid #d9c1ab;border-radius:10px;
+ background:#f9eee1;color:#4b362c;padding:11px 12px;
+ font-size:12px;cursor:pointer;
+}
+.calendar-alert-item>span{
+ background:#e9d7c4;border-radius:7px;
+ padding:6px 7px;text-align:center;color:#82563f;
+ font-size:10px;font-weight:750;
+}
+.calendar-alert-item.is-overdue{border-color:#b87764;background:#f3e2d6}
+.calendar-alert-item.is-overdue>span{background:#f1c6b6;color:#943f33}
+.calendar-alert-item>b{min-width:0;font-size:12px;overflow-wrap:anywhere}
+.calendar-alert-item>small{font-size:10px;color:#836b5b}
+.manu-calendar-surface{
+ padding:18px 19px;
+ background:linear-gradient(155deg,#f8edde,#e9dac9);
+ border:1px solid #caa88c;
+ color:#43352f;
+}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.calendar-head h2{
+ font-family:Georgia,serif;font-size:22px;font-weight:600;
+ text-transform:capitalize;margin:0;color:#5b3c2b;
+}
+.calendar-month-actions{display:flex;align-items:center;gap:6px}
+.calendar-month-actions .btn{min-height:35px;min-width:35px;padding:7px 10px}
+.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.calendar-weekdays{margin-bottom:8px}
+.calendar-weekdays>span{
+ text-align:center;font-size:11px;font-weight:750;
+ color:#9c7058;padding:7px 0;
+}
+.calendar-day{
+ display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px;
+ min-width:0;min-height:62px;padding:9px 4px 7px;
+ background:#fdf6eb;border:1px solid #d8bd9f;border-radius:10px;
+ color:#503b30;font-size:13px;cursor:pointer;outline-offset:2px;
+}
+.calendar-day.is-outside{opacity:.38;background:#eadcc9}
+.calendar-day.is-today{border:2px solid #a96c49;font-weight:750}
+.calendar-day.is-selected{background:#b87c59;color:white;border-color:#985d3d;box-shadow:0 4px 10px #63331e24}
+.calendar-dots{min-height:8px;display:flex;justify-content:center;align-items:center;gap:3px;flex-wrap:wrap}
+.calendar-dot{width:6px;height:6px;border-radius:100%;display:block;background:#ac7257}
+.calendar-dot-workshop{background:#9c6144}
+.calendar-dot-project{background:#c38b64}
+.calendar-dot-task{background:#779b77}
+.calendar-dot-payment{background:#5e8c9c}
+.calendar-dot-reminder{background:#ae7cad}
+.calendar-day.is-selected .calendar-dot{box-shadow:0 0 0 1px #fff8}
+.calendar-agenda{
+ margin-top:20px;padding:18px 13px;
+ background:#f9f0e4;border:1px solid #dcc5ac;border-radius:12px;
+}
+.calendar-agenda .section-head{flex-wrap:wrap;gap:8px}
+.calendar-agenda .section-head h3{
+ margin:0;text-transform:capitalize;font:600 17px Georgia,serif;color:#664631;
+}
+.calendar-agenda-row{
+ display:flex;align-items:center;gap:11px;min-height:67px;
+ margin:9px 0;padding:11px 9px;border:1px solid #e0cab2;
+ border-left:4px solid #ad7e5d;border-radius:9px;
+ background:#fff8ed;color:#45352d;
+}
+.calendar-kind-workshop{border-left-color:#9b5b43}
+.calendar-kind-task{border-left-color:#6e936d}
+.calendar-kind-payment{border-left-color:#5b8b9b}
+.calendar-kind-reminder{border-left-color:#ac7ba4}
+.calendar-agenda-row.calendar-done{opacity:.6}
+.calendar-agenda-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.calendar-agenda-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:#886247;font-weight:700;font-size:10px}
+.calendar-agenda-meta small{color:#557d5b;font-size:10px}
+.calendar-agenda-meta small.calendar-late{color:#a0443c}
+.calendar-agenda-info strong{font-size:12px;color:#4d3c30;overflow-wrap:anywhere}
+.calendar-agenda-info>small{font-size:10px;color:#7e6958;overflow-wrap:anywhere}
+.calendar-agenda-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.calendar-agenda-actions .btn{min-width:0;padding:8px;font-size:10px}
+.calendar-check{
+ display:grid;place-items:center;flex:0 0 29px;
+ height:29px;width:29px;padding:0;border:1px solid #b79377;
+ border-radius:8px;background:#fcf5ea;color:#8e6147;cursor:pointer;
+ font-size:17px;
+}
+.calendar-check.is-done{background:#729374;color:#fff;border-color:#729374}
+.calendar-privacy{margin-top:12px;line-height:1.6}
+@media(max-width:690px){
+ /* Szósta zakładka bez likwidowania środkowego przycisku „Dodaj”. */
+ .mobile-nav{grid-template-columns:repeat(6,minmax(0,1fr));padding-left:3px;padding-right:3px}
+ .mobile-tab{font-size:9px;gap:4px;padding-left:0;padding-right:0}
+ .mobile-tab .ico{width:18px;height:18px}
+ .manu-calendar-surface{padding:11px 8px}
+ .calendar-head{gap:7px;padding:1px 4px}
+ .calendar-head h2{font-size:18px}
+ .calendar-weekdays,.calendar-days{gap:3px}
+ .calendar-weekdays>span{font-size:10px}
+ .calendar-day{min-height:49px;border-radius:7px;font-size:12px;padding:6px 2px 5px;gap:4px}
+ .calendar-dots{gap:2px}
+ .calendar-dot{width:5px;height:5px}
+ .calendar-alert-item{grid-template-columns:60px 1fr;gap:7px;padding:9px 7px}
+ .calendar-alert-item>small{grid-column:2}
+ .calendar-agenda{padding:13px 8px}
+ .calendar-agenda-row{gap:8px;flex-wrap:wrap;padding:9px 7px}
+ .calendar-agenda-actions{width:100%;justify-content:flex-end}
+}
+@media(max-width:370px){
+ .mobile-tab span{font-size:8px}
+ .calendar-day{min-height:45px}
+ .calendar-head h2{font-size:16px}
+}
