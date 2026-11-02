@@ -1,6 +1,13 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.7.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 2.7.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 2.7.1 — Poprawka płynności przewijania
+- Odhaczenie etapu w otwartym projekcie lub warsztacie nie przesuwa już karty na samą górę. Przy ponownym wygenerowaniu szczegółów zapamiętywana jest i przywracana pozycja przewinięcia karty.
+- Zachowywana jest także pozycja strony w tle; dotyczy to również zmian wykonywanych na listach zadań.
+- Aktualizacja otwartej karty nie uruchamia ponownie animacji przewracania strony. Fokus klawiatury pozostaje na tym samym kontrolnym przycisku, jeśli nadal jest dostępny.
+- Zmiana wyłącznie interfejsowa: brak migracji bazy, brak resetowania sesji stopera, historii i danych. Zachowano dotychczasową strukturę kopii JSON `version:8`.
+- Kopia kodu sprzed poprawki: `backup-manu-v2-7-before-scrollfix`.
 
 ## MANU 2.7 — Etap 2: przebieg realizacji i ewidencja czasu
 - **Postęp etapów:** każdy nowy projekt i warsztat ma pięć sugerowanych etapów. Starsze projekty otrzymują etapy bez usuwania dotychczasowych kosztów, godzin ani uczestników. Można je odhaczać, cofać, usuwać i dopisywać własne (do 40). Procent ukończenia wynika wyłącznie z odhaczonych etapów i jest widoczny w projekcie oraz na jego karcie na liście.
