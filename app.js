@@ -901,6 +901,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(rawDue&&!due){alert('Podaj prawidłową datę zadania');return}
  const projectId=String(data.get('projectId')||'');
  if(original)Object.assign(original,{title,due,projectId});else state.tasks.push({id:uid(),title,due,done:false,projectId,createdAt:now()});
+ if(view==='calendar'&&due){calendarSelected=due;calendarMonth=due.slice(0,7)}
  closeModal();afterDataChange(original?'Zapisano zadanie':'Zadanie dodane');break;
 }case 'reminder-form':{
  const title=String(data.get('title')||'').trim().slice(0,180),date=validDate(data.get('date')),rawTime=String(data.get('time')||''),time=/^([01]\d|2[0-3]):[0-5]\d$/.test(rawTime)?rawTime:'';
