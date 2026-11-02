@@ -39,3 +39,19 @@
 /* Miejsce realizacji może zawierać długi adres klienta lub opis lokalizacji */
 .specific-detail-location{grid-column:1/-1}
 .specific-detail-location b{white-space:pre-wrap;overflow-wrap:anywhere}
+
+
+/* PRACOWNIA 1.3 — nawigacja i kalkulator dojazdu */
+.travel-fields{background:rgba(13,24,43,.46);border:1px dashed var(--stroke);border-radius:13px;padding:14px;margin:0 0 16px}
+.travel-heading{display:flex;align-items:center;gap:7px;margin-bottom:14px;font-size:12px}
+.travel-heading .ico{color:var(--gold);width:17px;height:17px}
+.travel-heading .muted{font-size:10px;margin-left:auto}
+.travel-fields .form-cols{gap:0 12px}
+.travel-fields .form-cols .field-full{grid-column:1/-1}
+.travel-fields>p{line-height:1.55;margin:2px 0 0}
+.location-navigation{text-decoration:none;margin-top:9px;white-space:normal;max-width:100%;text-align:center}
+.travel-estimate{display:block;color:var(--gold2);font-size:13px;margin-top:7px}
+.travel-cost-entry{align-items:center}
+.travel-cost-entry span{max-width:70%}
+.travel-cost-entry small{color:var(--muted);font-size:10px}
+@media(max-width:390px){.travel-fields{padding:12px}.travel-fields .form-cols{grid-template-columns:1fr}}
