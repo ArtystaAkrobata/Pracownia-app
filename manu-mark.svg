@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="100 105 312 305" role="img" aria-label="Monogram M MANU">
+<defs><linearGradient id="copper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8c563d"/><stop offset=".26" stop-color="#f0bc92"/><stop offset=".6" stop-color="#b97a55"/><stop offset=".78" stop-color="#e7ad80"/><stop offset="1" stop-color="#935438"/></linearGradient></defs>
+<g fill="none" stroke="url(#copper)" stroke-linejoin="miter" stroke-linecap="square">
+<path d="M153 350V165L256 310L359 165V350" stroke-width="24"/>
+<path d="M122 165H184 M328 165H390 M123 350H184 M328 350H391" stroke-width="13"/></g>
+</svg>
