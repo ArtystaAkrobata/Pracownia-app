@@ -1,13 +1,13 @@
 {
-  "name": "Pracownia — osobisty organizer twórcy",
-  "short_name": "Pracownia",
-  "description": "Projekty, warsztaty, terminy, koszty i zarobki w jednym miejscu.",
+  "name": "MANU — Organizer twórcy",
+  "short_name": "MANU",
+  "description": "Elegancki notes twórcy: projekty, realizacje, warsztaty, zadania i finanse.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0d1524",
+  "background_color": "#15100f",
+  "theme_color": "#17100f",
   "lang": "pl",
   "icons": [
     {
@@ -21,6 +21,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "manu-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
