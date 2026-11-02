@@ -1,6 +1,26 @@
 # MANU — Organizer twórcy
 
-**Wersja 2.7.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 2.8.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 2.8 — Etap 3: zaawansowane finanse
+- **Historia wpłat:** do zleceń oraz warsztatów rozliczanych ręcznie można dopisywać wpłaty i zaliczki z datą, kwotą i opisem. Dotychczasowe ręczne pole `paid` nie jest kasowane ani powielane; nowe wpłaty są do niego dodawane. Nadpłaty ponad niewyrównaną cenę są blokowane. Wpisy można usuwać po potwierdzeniu.
+- **Warsztaty i uczestnicy:** przy każdym uczestniku jest nowy przycisk „Wpłata”. Zapisane wcześniej `paidAmount` staje się kwotą bazową bez daty, a kolejne zaliczki i dopłaty trafiają do historii uczestnika. Łączne sumy finansowe warsztatu nadal wynikają z uczestników tylko w trybie `participants`; w trybie ręcznym używana jest suma ręczna z historią wpłat na poziomie warsztatu.
+- **Koszty faktyczne:** nowy koszt ma kategorię (materiały, usługi, dojazd faktyczny, inne), datę i kwotę. Wcześniejsze koszty pozostają bez przypisanej daty, ponieważ nie znamy historycznego dnia ich poniesienia.
+- **Budżet kontra wydatki:** karta projektu pokazuje planowane materiały + szacowany dojazd, koszty wpisane jako faktycznie poniesione oraz całkowity koszt używany w uproszczonej kalkulacji wyniku.
+- **Bez podwójnego dojazdu:** jeśli wpisano przynajmniej jeden faktyczny wydatek typu „Dojazd”, szacunkowa wartość z kalkulatora nie jest drugi raz doliczana do wyniku. Suma wydatków dojazdu pochodzi wówczas z wpisów rzeczywistych. Stare wydatki bez kategorii nie są rozpoznawane automatycznie jako dojazd — przejrzyj je przed dodaniem nowego wydatku.
+- **Raport miesięczny:** w Finanse → Raport miesięczny można wybrać miesiąc i zobaczyć otrzymane wpłaty, rzeczywiście wpisane wydatki, dodatnie lub ujemne saldo gotówkowe oraz listę transakcji. Ten raport obejmuje **wyłącznie rekordy z datą**; dawne bazowe kwoty, koszty bez daty, niezapłacone należności i planowany dojazd nie są przydzielane do miesiąca. Raport przychodów według daty ukończenia projektu nie jest jeszcze wprowadzony.
+- **Zestawienie ogólne:** nieanulowane projekty nadal pokazują wartość realizacji, uproszczony wynik po kosztach i rentowność za godzinę. **Wartość projektów to nie otrzymane pieniądze**, a saldo miesięczne to nie dochód podatkowy.
+- **Powielanie projektów:** nie kopiuje nowych wpłat, a kopiowanym wydatkom usuwa daty, żeby nie trafiły ponownie do miesięcznego raportu. Przed potraktowaniem powielonych wydatków jako rzeczywistych trzeba je skorygować.
+- **Schemat kopii:** `version:9` przy niezmienionej bazie `pracownia_db_v1`, kluczu `snapshot` oraz identyfikatorze PWA. Kopie wersji 8 i starsze są rozpoznawane; ponowny eksport JSON zachowa nowe pola finansowe.
+- **Kopia kodu przed zmianami:** `backup-manu-v2-7-1-before-finance`.
+
+### Scenariusz sprawdzenia na Samsungu
+1. Otwórz Ustawienia → Pobierz kopię JSON i zachowaj ją poza telefonem.
+2. Na próbnym zleceniu użyj „Dodaj wpłatę” i wpisz zaliczkę, a następnie dopłatę. Upewnij się, że kwoty sumują się z wcześniejszymi, bez duplikacji.
+3. W warsztacie otwórz uczestnika i zapisz nową wpłatę. Sprawdź „Wpłacono” i „Do dopłaty”.
+4. Dodaj testowy wydatek z datą. Dla projektu z planowanym dojazdem sprawdź kategorię „Dojazd faktyczny” i zweryfikuj, czy szacowany koszt przestał być doliczany.
+5. W Finanse wybierz miesiąc, do którego wpisałeś transakcje. Zobacz daty, otrzymane kwoty, wydatki i różnicę.
+6. Wyeksportuj ponownie JSON i wybierz „Sprawdź plik kopii”. Nie kasuj ani nie odinstalowuj aplikacji w celu testowania nowej wersji.
 
 ## MANU 2.7.1 — Poprawka płynności przewijania
 - Odhaczenie etapu w otwartym projekcie lub warsztacie nie przesuwa już karty na samą górę. Przy ponownym wygenerowaniu szczegółów zapamiętywana jest i przywracana pozycja przewinięcia karty.
