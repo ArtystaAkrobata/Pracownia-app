@@ -551,7 +551,46 @@ async function applyBackup(){
   closeModal();render();toast('Przywrócono dane i zapisano je na urządzeniu.');
  }finally{backupApplying=false}
 }
-function afterDataChange(msg,detailId){save();render();if(detailId)projectDetail(detailId);if(msg)toast(msg)}
+function afterDataChange(msg,detailId){
+ // Aktualizacja etapów odświeża całą kartę projektu. Nie może jednak
+ // przenosić czytelnika na początek strony ani restartować animacji kartki.
+ const before=$('.modal');
+ const preserve=!!(detailId&&before?.classList?.contains('notebook-detail-page'));
+ const oldScroll=preserve?before.scrollTop:0;
+ const oldPageX=preserve?window.scrollX:0,oldPageY=preserve?window.scrollY:0;
+ const active=preserve?document.activeElement:null;
+ const control=active?.dataset?.action?{
+  action:active.dataset.action,
+  id:active.dataset.id,
+  stage:active.dataset.stage,
+  entry:active.dataset.entry
+ }:null;
+ save();
+ render();
+ if(detailId){
+  projectDetail(detailId);
+  if(preserve){
+   const modalAfter=$('.modal');
+   if(modalAfter){
+    modalAfter.classList.add('notebook-refresh');
+    modalAfter.scrollTop=oldScroll;
+    // Zachowaj fokus na tym samym etapie (ważne też przy klawiaturze).
+    if(control){
+     const same=[...modalAfter.querySelectorAll('[data-action]')].find(el=>
+      el.dataset.action===control.action&&el.dataset.id===control.id&&
+      el.dataset.stage===control.stage&&el.dataset.entry===control.entry
+     );
+     if(same?.focus){try{same.focus({preventScroll:true})}catch(e){}}
+    }
+    modalAfter.scrollTop=oldScroll;
+   }
+   if(window.scrollY!==oldPageY||window.scrollX!==oldPageX){
+    window.scrollTo(oldPageX,oldPageY);
+   }
+  }
+ }
+ if(msg)toast(msg);
+}
 function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'nav':{
  if(b.dataset.view==='add'){projectForm();return;}
  const previous=view,next=b.dataset.view;
