@@ -267,6 +267,83 @@ function financePage(m){
  return `${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
 }
 function taskRow(t){let p=state.projects.find(p=>p.id===t.projectId);return `<div class="task-row"><button class="check-btn ${t.done?'checked':''}" data-action="toggle-task" data-id="${htmlEscape(t.id)}" aria-label="${t.done?'Cofnij wykonanie':'Oznacz jako wykonane'}">${t.done?icon('check'):''}</button><div class="task-text"><b class="${t.done?'done':''}">${htmlEscape(t.title)}</b><small>${p?htmlEscape(p.title)+' · ':''}${t.due?'Termin: '+fDate(t.due):'Bez terminu'}</small></div><button class="btn ghost sm" data-action="delete-task" data-id="${htmlEscape(t.id)}" aria-label="Usuń zadanie">${icon('trash')}</button></div>`;}
+function calendarEvents(){
+ const events=[];
+ for(const p of state.projects){
+  if(p.status==='Anulowane')continue;
+  if(validDate(p.date))events.push({key:'project:'+p.id,date:p.date,time:p.type==='Warsztat'?p.startTime:'',kind:p.type==='Warsztat'?'workshop':'project',title:p.title,info:p.type==='Warsztat'?'Termin warsztatu':'Termin realizacji',projectId:p.id,done:p.status==='Zakończone'});
+  if(validDate(p.paymentDue)&&projectIncome(p)-projectPaid(p)>0.001)events.push({key:'payment:'+p.id,date:p.paymentDue,time:'',kind:'payment',title:p.title,info:'Do otrzymania: '+fMoney(Math.max(0,projectIncome(p)-projectPaid(p))),projectId:p.id,done:false});
+ }
+ for(const t of state.tasks){
+  if(validDate(t.due))events.push({key:'task:'+t.id,date:t.due,time:'',kind:'task',title:t.title,info:'Zadanie',taskId:t.id,projectId:t.projectId,done:!!t.done});
+ }
+ for(const r of state.reminders||[]){
+  if(validDate(r.date))events.push({key:'reminder:'+r.id,date:r.date,time:r.time||'',kind:'reminder',title:r.title,info:'Przypomnienie',reminderId:r.id,projectId:r.projectId,done:!!r.done});
+ }
+ return events.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||a.kind.localeCompare(b.kind));
+}
+function plusDaysDate(day,count){
+ const [y,m,d]=day.split('-').map(Number);
+ const next=new Date(Date.UTC(y,m-1,d+count));
+ return [next.getUTCFullYear(),String(next.getUTCMonth()+1).padStart(2,'0'),String(next.getUTCDate()).padStart(2,'0')].join('-');
+}
+function calendarAlerts(today=localDay()){
+ const end=plusDaysDate(today,7);
+ return calendarEvents().filter(e=>!e.done&&e.date<=end).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+}
+function calendarEventType(kind){
+ return ({project:'Zlecenie',workshop:'Warsztat',task:'Zadanie',payment:'Płatność',reminder:'Przypomnienie'})[kind]||'Termin';
+}
+function calendarAgendaRow(ev){
+ const action=ev.kind==='task'?'calendar-task':ev.kind==='reminder'?'calendar-reminder':'open-project';
+ const id=ev.taskId||ev.reminderId||ev.projectId||'';
+ const project=ev.projectId?state.projects.find(p=>p.id===ev.projectId):null;
+ const status=ev.done?'Zrobione':ev.date<localDay()?'Po terminie':ev.date===localDay()?'Dzisiaj':'';
+ const label=ev.time?ev.time+' · '+ev.info:ev.info;
+ const actionButton=ev.kind==='task'?`<button type="button" data-action="calendar-task" data-id="${htmlEscape(id)}" class="calendar-check ${ev.done?'is-done':''}" aria-label="${ev.done?'Cofnij wykonanie':'Oznacz zadanie jako wykonane'}">${ev.done?icon('check'):'○'}</button>`:ev.kind==='reminder'?`<button type="button" data-action="calendar-reminder" data-id="${htmlEscape(id)}" class="calendar-check ${ev.done?'is-done':''}" aria-label="${ev.done?'Cofnij przypomnienie':'Oznacz przypomnienie jako zrobione'}">${ev.done?icon('check'):'○'}</button>`:'';
+ const links=ev.kind==='reminder'?`<button type="button" class="btn ghost sm" data-action="reminder-edit" data-id="${htmlEscape(id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost sm" data-action="reminder-delete" data-id="${htmlEscape(id)}" aria-label="Usuń przypomnienie">${icon('trash')}</button>`:ev.kind==='task'?'':`<button type="button" class="btn secondary sm" data-action="open-project" data-id="${htmlEscape(ev.projectId)}">Otwórz</button>`;
+ return `<div class="calendar-agenda-row calendar-kind-${ev.kind} ${ev.done?'calendar-done':''}">${actionButton}<div class="calendar-agenda-info"><div class="calendar-agenda-meta"><span>${calendarEventType(ev.kind)}</span>${status?`<small class="${status==='Po terminie'?'calendar-late':''}">${status}</small>`:''}</div><strong>${htmlEscape(ev.title)}</strong><small>${htmlEscape(label)}${project&&ev.kind!=='project'&&ev.kind!=='workshop'?' · '+htmlEscape(project.title):''}</small></div><div class="calendar-agenda-actions">${links}</div></div>`;
+}
+function calendarMonthMarkup(){
+ const month=/^\d{4}-(0[1-9]|1[0-2])$/.test(calendarMonth)?calendarMonth:localDay().slice(0,7);
+ const [yr,mo]=month.split('-').map(Number),first=(new Date(Date.UTC(yr,mo-1,1)).getUTCDay()+6)%7;
+ const total=new Date(Date.UTC(yr,mo,0)).getUTCDate();
+ const events=calendarEvents(),perDay=new Map();
+ for(const e of events)perDay.set(e.date,(perDay.get(e.date)||[]).concat(e));
+ const cells=[];
+ for(let i=0;i<Math.ceil((first+total)/7)*7;i++){
+  const day=plusDaysDate(month+'-01',i-first);
+  const inside=day.startsWith(month),count=perDay.get(day)||[],selected=day===calendarSelected;
+  cells.push(`<button type="button" class="calendar-day ${inside?'':'is-outside'} ${day===localDay()?'is-today':''} ${selected?'is-selected':''}" data-action="calendar-day" data-date="${day}" aria-label="${htmlEscape(day)}${count.length?' · '+count.length+' wydarzeń':''}" aria-pressed="${selected}"><span>${Number(day.slice(-2))}</span><span class="calendar-dots">${count.slice(0,3).map(e=>`<i class="calendar-dot calendar-dot-${e.kind}" aria-hidden="true"></i>`).join('')}</span></button>`);
+ }
+ const dayEvents=events.filter(e=>e.date===calendarSelected);
+ const chosen=validDate(calendarSelected)?new Intl.DateTimeFormat('pl-PL',{weekday:'long',day:'numeric',month:'long'}).format(new Date(calendarSelected+'T12:00:00')):'';
+ return `<div class="calendar-head"><h2 id="calendar-month-label">${htmlEscape(new Intl.DateTimeFormat('pl-PL',{month:'long',year:'numeric'}).format(new Date(Date.UTC(yr,mo-1,1))))}</h2><div class="calendar-month-actions"><button class="btn secondary sm" data-action="calendar-prev" aria-label="Poprzedni miesiąc">${icon('arrow-left')}</button><button class="btn secondary sm" data-action="calendar-today">Dziś</button><button class="btn secondary sm" data-action="calendar-next" aria-label="Następny miesiąc">${icon('arrow')}</button></div></div><div class="calendar-weekdays">${['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(x=>`<span>${x}</span>`).join('')}</div><div class="calendar-days">${cells.join('')}</div><div class="calendar-agenda"><div class="section-head"><h3>${htmlEscape(chosen)}</h3><span class="muted small">${dayEvents.length} terminów</span></div>${dayEvents.length?dayEvents.map(calendarAgendaRow).join(''):'<p class="muted small">Na ten dzień nie ma zaplanowanych wpisów.</p>'}<button class="btn secondary sm" data-action="reminder-add" data-date="${htmlEscape(calendarSelected)}">${icon('plus')} Przypomnienie na ten dzień</button></div>`;
+}
+function calendarAlertMarkup(limit=6){
+ const alerts=calendarAlerts();
+ if(!alerts.length)return '<p class="muted small">Brak zaległych i nadchodzących terminów w ciągu 7 dni.</p>';
+ return `<div class="calendar-alert-list">${alerts.slice(0,limit).map(ev=>`<button type="button" class="calendar-alert-item ${ev.date<localDay()?'is-overdue':''}" data-action="calendar-jump" data-date="${htmlEscape(ev.date)}"><span>${ev.date<localDay()?'Zaległe':ev.date===localDay()?'Dzisiaj':ev.date.slice(8)+'.'+ev.date.slice(5,7)}</span><b>${htmlEscape(ev.title)}</b><small>${calendarEventType(ev.kind)}</small></button>`).join('')}${alerts.length>limit?`<small class="muted">I jeszcze ${alerts.length-limit} terminów.</small>`:''}</div>`;
+}
+function calendarPage(){
+ return `${pageHeading('Kalendarz i przypomnienia','Terminy realizacji, warsztatów, zadań i płatności w jednym miejscu.',`<button class="btn" data-action="reminder-add">${icon('plus')} Przypomnienie</button>`)}<section class="surface calendar-alert-surface"><div class="section-head"><h2>Najbliższe terminy</h2><span class="muted small">Zaległe, dziś i następne 7 dni</span></div><div id="calendar-alert-results">${calendarAlertMarkup()}</div></section><section class="surface manu-calendar-surface" id="calendar-panel">${calendarMonthMarkup()}</section><p class="muted tiny calendar-privacy">Przypomnienia są lokalne. MANU pokazuje je po otwarciu aplikacji — ta wersja nie wysyła automatycznych powiadomień, gdy jest całkowicie zamknięta.</p>`;
+}
+function calendarShift(direction){
+ const [y,m]=calendarMonth.split('-').map(Number),date=new Date(Date.UTC(y,m-1+direction,1));
+ calendarMonth=[date.getUTCFullYear(),String(date.getUTCMonth()+1).padStart(2,'0')].join('-');
+ const maxDay=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth()+1,0)).getUTCDate();
+ calendarSelected=calendarMonth+'-'+String(Math.min(maxDay,Number(calendarSelected.slice(-2))||1)).padStart(2,'0');
+ refreshCalendarPanel();
+}
+function refreshCalendarPanel(){
+ const panel=$('#calendar-panel'),alertPanel=$('#calendar-alert-results');
+ if(panel)panel.innerHTML=calendarMonthMarkup();
+ if(alertPanel)alertPanel.innerHTML=calendarAlertMarkup();
+}
+function reminderForm(id='',date=''){
+ const r=(state.reminders||[]).find(x=>x.id===id),due=validDate(date)||r?.date||calendarSelected||localDay();
+ modal(r?'Edytuj przypomnienie':'Nowe przypomnienie',`<form id="reminder-form" data-id="${htmlEscape(id)}"><div class="field"><label>Co chcesz zapamiętać? *</label><input name="title" required maxlength="180" placeholder="Np. Zamówić materiały" value="${htmlEscape(r?.title||'')}"></div><div class="form-cols"><div class="field"><label>Data *</label><input name="date" type="date" required value="${htmlEscape(due)}"></div><div class="field"><label>Godzina (opcjonalnie)</label><input name="time" type="time" value="${htmlEscape(r?.time||'')}"></div></div><div class="field"><label>Powiązany projekt (opcjonalnie)</label><select name="projectId"><option value="">Bez projektu</option>${state.projects.filter(p=>p.status!=='Anulowane').map(p=>`<option value="${htmlEscape(p.id)}" ${p.id===r?.projectId?'selected':''}>${htmlEscape(p.title)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${r?'Zapisz zmiany':'Dodaj przypomnienie'}</button></div></form>`);
+}
 function tasksPage(){let tasks=[...state.tasks].filter(t=>taskFilter==='all'||(taskFilter==='done'?t.done:!t.done)).sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||'9999').localeCompare(b.due||'9999'));return `${pageHeading('Zadania','Nie zapomnij o tym, co trzeba zrobić.',`<button class="btn" data-action="new-task">${icon('plus')}<span>Nowe zadanie</span></button>`)}<div class="surface"><div class="section-head"><h2>Lista zadań</h2><div class="filters"><button class="filter ${taskFilter==='open'?'active':''}" data-action="task-filter" data-filter="open">Do zrobienia</button><button class="filter ${taskFilter==='done'?'active':''}" data-action="task-filter" data-filter="done">Gotowe</button><button class="filter ${taskFilter==='all'?'active':''}" data-action="task-filter" data-filter="all">Wszystkie</button></div></div>${tasks.length?tasks.map(taskRow).join(''):empty('Lista jest pusta','Dodaj zadanie albo wybierz inny filtr.',`<button class="btn sm" data-action="new-task">Nowe zadanie</button>`)}</div>`;}
 function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack"><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
  <p id="manu-save-status" class="save-state-line ${storageBlocked?'is-error':''}" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
