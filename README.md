@@ -1,6 +1,12 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.0.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.0.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.0.1 — Poprawa brzegu kartki Kalendarza
+- **Kalendarz ma teraz prawą krawędź notesu**, tak samo jak Finanse. Klasę `open-notebook--right` nadaje wspólna funkcja `openNotebook`; istniejące reguły CSS przenoszą skórzany grzbiet i detale na prawą stronę także na telefonie.
+- **Bez zmian**: Projekty i Zadania pozostają lewymi kartkami. Kalendarz i Finanse są prawymi kartkami. Animacja przewracania, przypomnienia, scroll, stoper, warsztaty, finanse i dane użytkownika pozostają bez zmian.
+- Wersja cache PWA to `manu-app-v3.0.1` dla pobrania poprawionej wersji na Androidzie; struktura JSON `version:11`, baza `pracownia_db_v1` i identyfikator instalacji są niezmienione.
+- Kopia kodu sprzed zmiany: `backup-manu-v3-0-before-calendar-edge-fix`.
 
 ## MANU 3.0 — Etap 5: kalendarz i przypomnienia
 - **Kalendarz miesięczny:** nowa zakładka „Kalendarz” w menu bocznym i dolnej nawigacji Androida, z dniami tygodnia od poniedziałku. Przełączanie miesięcy, wybór dnia i podgląd szczegółów odbywają się bez przeładowywania całego notesu i bez przeskoków do góry. Zachowano środkowy przycisk „Dodaj” w nawigacji mobilnej.
