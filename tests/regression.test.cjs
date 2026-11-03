@@ -19,6 +19,8 @@ assert.match(appSource, injectPoint, 'Nie udało się znaleźć końca aplikacji
 function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const alerts = [];
   const callbacks = {};
+  const persisted = new Map();
+  let rejectWrites = false;
   let seq = 0;
   const document = {
     querySelector: () => null,
@@ -38,7 +40,14 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     crypto: {randomUUID: () => 'test-' + (++seq)},
     navigator: {onLine: true},
     location: {search: '', protocol: 'https:'},
-    localStorage: {getItem: () => null, setItem: () => {}},
+    localStorage: {
+      getItem: key => persisted.has(key) ? persisted.get(key) : null,
+      setItem: (key,value) => {
+        if (rejectWrites) throw Error('Testowy błąd pamięci lokalnej');
+        persisted.set(key, String(value));
+      }
+    },
+    structuredClone,
     console,
     alert: message => alerts.push(String(message)),
     confirm: () => true,
@@ -55,13 +64,18 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
-    ' handleAction, handleSubmit,',
+    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot,',
+    ' waitForWrites: () => writeQueue,',
+    ' storageState: () => ({storageBlocked, pendingWrites, saveStatus}),',
+    ' useLocalStorage: () => {dbAvailable=false;},',
+    ' setPendingBackup: raw => {pendingBackup={snapshot:normalize(raw),mode:"restore",filename:"test.json"};},',
     ' setState: raw => { state = normalize(raw); },',
     ' getState: () => state,',
     ' opened: (id,key) => detailSectionStates.get(id)?.has(key),',
     ' stubEffects: () => {',
     '  afterDataChange = (message,detailId) => { globalThis.__lastChange = {message,detailId}; };',
     '  closeModal = () => {};',
+    '  toast = () => {};',
     '  render = () => {};',
     '  modal = (title,body,opts) => { globalThis.__lastModal={title,body,opts}; };',
     ' }',
@@ -73,7 +87,8 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const api = context.__MANU_TEST;
   api.setState(snapshot);
   api.stubEffects();
-  return {api, alerts, callbacks, context};
+  return {api, alerts, callbacks, context, persisted,
+    rejectWrites: value => {rejectWrites=!!value;} };
 }
 
 const job = (id, extra = {}) => ({
@@ -225,4 +240,83 @@ test('PWA: wersje plików i cache są spójne', () => {
   assert.ok(index.includes('styles.css?v='+version));
   assert.ok(sw.includes('manu-app-v'+version));
   assert.ok(sw.includes('app.js?v='+version));
+});
+
+
+test('Zapis lokalny: kolejka zapisów i punkt przywracania mają poprawną treść', async () => {
+  const {api, persisted} = boot({version:18, projects:[job('pierwsza')], tasks:[]});
+  api.useLocalStorage();
+  assert.equal(await api.save(), true);
+  const one = JSON.parse(persisted.get('snapshot'));
+  assert.equal(one.projects[0].id, 'pierwsza');
+  api.getState().projects.push(job('druga'));
+  assert.equal(await api.save(), true);
+  const second = JSON.parse(persisted.get('snapshot'));
+  const previous = JSON.parse(persisted.get('safety-previous-v1'));
+  assert.equal(second.projects.length, 2);
+  assert.equal(previous.projects.length, 1);
+  assert.equal(api.getState().lastSaved, second.lastSaved);
+});
+
+test('Błąd zapisu: MANU nie nadpisuje poprzedniej kopii i blokuje kolejne zapisy', async () => {
+  const {api, persisted, rejectWrites} = boot({version:18, projects:[job('a')], tasks:[]});
+  api.useLocalStorage();
+  assert.equal(await api.save(), true);
+  const original = persisted.get('snapshot');
+  api.getState().projects.push(job('b'));
+  rejectWrites(true);
+  assert.equal(await api.save(), false);
+  assert.equal(api.storageState().storageBlocked, true);
+  assert.equal(persisted.get('snapshot'), original);
+  assert.equal(await api.save(), false);
+  assert.equal(persisted.get('snapshot'), original);
+  rejectWrites(false);
+});
+
+test('Chmura: niepoprawna kopia jest odrzucana bez zmiany lokalnych danych', async () => {
+  const {api, persisted} = boot({version:18, projects:[job('lokalna')], tasks:[]});
+  api.useLocalStorage();
+  await api.save();
+  const before = persisted.get('snapshot');
+  await assert.rejects(api.applyCloudSnapshot({version:18,projects:'błąd',tasks:[]}));
+  assert.equal(api.getState().projects[0].id, 'lokalna');
+  assert.equal(persisted.get('snapshot'), before);
+});
+
+test('Chmura: poprawny import zapisuje dane, poprzednią wersję i ten sam znacznik czasu', async () => {
+  const {api, persisted} = boot({version:18, projects:[job('lokalna')], tasks:[]});
+  api.useLocalStorage();
+  await api.save();
+  const imported={version:18,projects:[job('chmurowa')],tasks:[]};
+  assert.equal(await api.applyCloudSnapshot(imported), true);
+  const persistedMain=JSON.parse(persisted.get('snapshot'));
+  const persistedOld=JSON.parse(persisted.get('safety-previous-v1'));
+  assert.equal(api.getState().projects[0].id, 'chmurowa');
+  assert.equal(persistedMain.projects[0].id, 'chmurowa');
+  assert.equal(persistedOld.projects[0].id, 'lokalna');
+  assert.equal(api.getState().lastSaved, persistedMain.lastSaved);
+});
+
+test('Chmura: błąd zapisu nie może zastąpić danych widocznych w aplikacji', async () => {
+  const {api, persisted, rejectWrites} = boot({version:18, projects:[job('bezpieczna')], tasks:[]});
+  api.useLocalStorage();
+  await api.save();
+  const before = persisted.get('snapshot');
+  rejectWrites(true);
+  assert.equal(await api.applyCloudSnapshot({version:18,projects:[job('zdalna')],tasks:[]}), false);
+  assert.equal(api.getState().projects[0].id, 'bezpieczna');
+  assert.equal(persisted.get('snapshot'), before);
+  assert.equal(api.storageState().storageBlocked, true);
+});
+
+test('Przywrócenie JSON: ostatni zapis w stanie zgadza się z danymi na urządzeniu', async () => {
+  const {api, persisted} = boot({version:18, projects:[job('przed')], tasks:[]});
+  api.useLocalStorage();
+  await api.save();
+  api.setPendingBackup({version:18, projects:[job('przywrocona')], tasks:[]});
+  await api.applyBackup();
+  const saved=JSON.parse(persisted.get('snapshot'));
+  assert.equal(api.getState().projects[0].id, 'przywrocona');
+  assert.equal(saved.projects[0].id, 'przywrocona');
+  assert.equal(api.getState().lastSaved, saved.lastSaved);
 });
