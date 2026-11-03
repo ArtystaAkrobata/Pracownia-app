@@ -73,7 +73,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' setListSearch: (kind,query) => {if(kind==="projects")search=query;else if(kind==="clients")clientSearch=query;},',
     ' setListType: type => {filter=type;},',
     ' setTaskFilter: type => {taskFilter=type;},',
-    ' waitForWrites: () => writeQueue,
+    ' waitForWrites: () => writeQueue,',
     ' storageState: () => ({storageBlocked, pendingWrites, saveStatus}),',
     ' useLocalStorage: () => {dbAvailable=false;},',
     ' failRender: () => {render=()=>{throw Error("Testowy błąd interfejsu")};},',
