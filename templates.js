@@ -256,6 +256,15 @@ function submit(form){
  api.closeModal();
  api.afterChange(exists?'Zapisano zmiany szablonu.':'Dodano nowy szablon.');
 }
-window.MANUTemplates={init:bridge=>{api=bridge},normalizeTemplates,
+function searchChanged(value){
+ search=String(value||'');
+ const list=document.getElementById('template-custom-grid');
+ if(list){
+  const found=(api?.getState()?.templates||[]).filter(t=>
+   [t.name,t.title,t.type].some(v=>String(v||'').toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl'))));
+  list.innerHTML=renderCustomList(found);
+ }
+}
+window.MANUTemplates={init:bridge=>{api=bridge},searchChanged,normalizeTemplates,
  page,renderCustomList,allTemplates,findTemplate,newProjectDraft,seededCosts,seededStages,fromProject,handleAction,submit};
 })();
