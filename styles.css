@@ -2289,3 +2289,74 @@ body.gallery-lightbox-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .project-tools-chevron{transition:none}
 }
+
+/* MANU 3.8.2 · Formularz podstawowy i opcjonalne ustawienia */
+.notebook-page #project-form .project-form-step-label{
+ color:#9e6545;font-size:10px;font-weight:850;letter-spacing:.13em;
+ text-transform:uppercase;margin:4px 0 13px;padding-bottom:9px;
+ border-bottom:1px solid #dfc9b0
+}
+.notebook-page #project-form .project-form-primary-workshop,
+.notebook-page #project-form .project-form-primary-price{
+ background:linear-gradient(165deg,#f4e8d8d9,#f0dfccad);
+ border:1px solid #d7b9a0;border-radius:12px;padding:14px;
+ margin:6px 0 15px
+}
+.notebook-page #project-form .project-form-primary-workshop .field:last-child,
+.notebook-page #project-form .project-form-primary-price .field:last-child{margin-bottom:0}
+.notebook-page #project-form .project-form-primary-workshop .form-cols{row-gap:0}
+.notebook-page #project-form .project-form-primary-workshop .form-cols .field{margin-bottom:0}
+.notebook-page #project-form .project-form-primary-price{margin:6px 0 18px}
+.notebook-page #project-form .project-form-advanced{
+ border:1px solid #c9a786;border-radius:12px;margin:4px 0 20px;overflow:hidden;
+ background:#f1e2cfc9;color:#3e2e27
+}
+.notebook-page #project-form .project-form-advanced[open]{border-color:#b88662}
+.notebook-page #project-form .project-form-advanced-trigger{
+ display:flex;align-items:center;gap:10px;
+ padding:15px 14px;list-style:none;cursor:pointer;user-select:none;
+ background:linear-gradient(135deg,#efe0cc,#f4e7d5)
+}
+.notebook-page #project-form .project-form-advanced-trigger::-webkit-details-marker{display:none}
+.notebook-page #project-form .project-form-advanced-trigger::marker{content:""}
+.notebook-page #project-form .project-form-advanced-trigger:focus-visible{
+ outline:2px solid #a46546;outline-offset:-3px
+}
+.notebook-page #project-form .project-form-advanced-trigger:hover{background:#ebd8c0}
+.notebook-page #project-form .project-form-advanced-icon{
+ width:34px;height:34px;flex:none;display:grid;place-items:center;
+ border:1px solid #d4b394;border-radius:9px;background:#e5cdb3;color:#955b39
+}
+.notebook-page #project-form .project-form-advanced-copy{
+ display:flex;flex-direction:column;gap:3px;flex:1;min-width:0
+}
+.notebook-page #project-form .project-form-advanced-copy strong{
+ color:#543a2c;font-size:13px;font-weight:800
+}
+.notebook-page #project-form .project-form-advanced-copy small{
+ color:#827062;font-size:10px;line-height:1.45
+}
+.notebook-page #project-form .project-form-advanced-chevron{
+ flex:none;color:#985d3c;font-size:23px;transition:transform .18s ease
+}
+.notebook-page #project-form .project-form-advanced[open] .project-form-advanced-chevron{
+ transform:rotate(180deg)
+}
+.notebook-page #project-form .project-form-advanced-content{
+ border-top:1px solid #d8bda2;padding:15px 12px 2px
+}
+.notebook-page #project-form .project-form-advanced-content>.project-kind-section{
+ margin:5px 0 14px;padding:13px
+}
+.notebook-page #project-form .project-form-manual-paid{margin-top:9px}
+.notebook-page #project-form [data-kind][hidden],
+.notebook-page #project-form [data-field][hidden]{display:none!important}
+@media(max-width:520px){
+ .notebook-page #project-form .project-form-advanced-trigger{padding:13px 10px}
+ .notebook-page #project-form .project-form-advanced-content{padding:12px 9px 2px}
+ .notebook-page #project-form .project-form-primary-workshop,
+ .notebook-page #project-form .project-form-primary-price{padding:12px 11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .notebook-page #project-form .project-form-advanced-chevron{transition:none}
+}
