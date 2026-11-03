@@ -2719,3 +2719,158 @@ body.gallery-lightbox-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .open-notebook .profitability-panel-chevron{transition:none}
 }
+
+/* MANU 3.11.0 · Porównanie dwóch realizacji — dodatkowe narzędzie ukryte w Finansach */
+.open-notebook .profitability-compare{
+ margin:18px 0 14px;border:1px solid #d2b498;border-radius:12px;
+ overflow:hidden;background:#f7ecdc;color:#48352b
+}
+.open-notebook .profitability-compare[open]{
+ border-color:#b88b6c;background:#f7eddf
+}
+.open-notebook .profitability-compare>summary.profitability-compare-summary{
+ display:grid;align-items:center;grid-template-columns:minmax(0,1fr) 18px;
+ gap:12px;list-style:none;padding:14px 13px;cursor:pointer;
+ user-select:none
+}
+.open-notebook .profitability-compare>summary::-webkit-details-marker{display:none}
+.open-notebook .profitability-compare>summary::marker{content:"";font-size:0}
+.open-notebook .profitability-compare>summary:focus-visible{
+ outline:2px solid #ac7250;outline-offset:-3px
+}
+.open-notebook .profitability-compare>summary:hover{background:#efdec9}
+.open-notebook .profitability-compare[open] .profitability-panel-chevron{
+ transform:rotate(180deg)
+}
+.open-notebook .comparison-summary-copy{
+ min-width:0;display:flex;flex-direction:column;gap:5px;
+}
+.open-notebook .comparison-summary-copy strong{
+ display:flex;align-items:center;gap:8px;
+ font:600 18px/1.3 Georgia,serif;color:#6b4630
+}
+.open-notebook .comparison-summary-copy .ico{
+ width:18px;height:18px;flex:none;color:#9c6645
+}
+.open-notebook .comparison-summary-copy small{
+ font-size:11px;color:#897360;line-height:1.5
+}
+.open-notebook .profitability-compare-body{
+ padding:15px 13px 17px;border-top:1px solid #dcc1a9
+}
+.open-notebook .comparison-selectors{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:11px;margin-bottom:16px
+}
+.open-notebook .comparison-selectors label{
+ display:flex;flex-direction:column;gap:6px;min-width:0;
+ font-size:11px;font-weight:750;color:#6c4d3b
+}
+.open-notebook .comparison-selectors select{
+ display:block;width:100%;min-width:0;max-width:100%;
+ font:500 12px/1.4 Arial,sans-serif;
+ padding:11px 9px;border:1px solid #c6a385;border-radius:10px;
+ background:#fbf5eb;color:#49342a;outline-offset:2px
+}
+.open-notebook .comparison-selectors select:focus-visible{
+ outline:2px solid #ab744f
+}
+.open-notebook .comparison-selectors select:disabled{
+ opacity:.5;cursor:not-allowed
+}
+.open-notebook .comparison-project-links{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+ margin-bottom:11px
+}
+.open-notebook .comparison-project-links button{
+ display:flex;align-items:center;justify-content:space-between;gap:6px;
+ min-width:0;min-height:48px;text-align:left;
+ padding:10px;border:1px solid #d5b899;border-radius:9px;
+ background:#efdec8;color:#704832;
+ font-size:12px;font-weight:700;cursor:pointer;
+ overflow-wrap:anywhere
+}
+.open-notebook .comparison-project-links button:hover{
+ background:#e7d0b8;border-color:#ad8464
+}
+.open-notebook .comparison-project-links button:focus-visible{
+ outline:2px solid #a56c4d;outline-offset:2px
+}
+.open-notebook .comparison-project-links .ico{
+ flex:none;width:14px;height:14px
+}
+.open-notebook .comparison-table{
+ border:1px solid #d5b89b;border-radius:10px;
+ background:#f8f0e5;overflow:hidden
+}
+.open-notebook .comparison-metric-row{
+ display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,1fr) minmax(0,1fr);
+ gap:9px;align-items:center;min-width:0;
+ padding:10px 11px;
+ border-bottom:1px solid #e0cbb4
+}
+.open-notebook .comparison-metric-row:nth-child(even){
+ background:#efe1cf
+}
+.open-notebook .comparison-metric-row:last-child{border-bottom:0}
+.open-notebook .comparison-metric-label{
+ color:#765b47;font-size:11px;line-height:1.42;
+ overflow-wrap:anywhere
+}
+.open-notebook .comparison-metric-value{
+ color:#583b2b;text-align:right;
+ font:650 12px/1.4 Arial,sans-serif;
+ overflow-wrap:anywhere;font-variant-numeric:tabular-nums
+}
+.open-notebook .comparison-is-negative{color:#ac5145}
+.open-notebook .comparison-metric-row:last-child{
+ background:#e9d4bd
+}
+.open-notebook .comparison-metric-row:last-child .comparison-metric-value{
+ color:#8b5436;font-weight:800
+}
+.open-notebook .comparison-metric-row:last-child .comparison-is-negative{
+ color:#ac5145
+}
+.open-notebook .comparison-empty{
+ margin:5px 0;padding:15px;
+ background:#f1e2d1;border:1px dashed #caa587;
+ border-radius:9px;color:#775b47;
+ font-size:12px;line-height:1.6
+}
+.open-notebook .comparison-disclaimer{
+ margin:13px 0 0;font-size:10px;color:#8f7867;line-height:1.65
+}
+@media(max-width:600px){
+ .open-notebook .profitability-compare>summary.profitability-compare-summary{
+  padding:12px 10px
+ }
+ .open-notebook .comparison-summary-copy strong{font-size:16px}
+ .open-notebook .comparison-summary-copy small{font-size:10px}
+ .open-notebook .profitability-compare-body{padding:11px 8px 13px}
+ .open-notebook .comparison-selectors{gap:7px}
+ .open-notebook .comparison-metric-row{
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);
+  gap:6px;padding:9px 7px
+ }
+ .open-notebook .comparison-metric-label{font-size:10px}
+ .open-notebook .comparison-metric-value{font-size:11px}
+ .open-notebook .comparison-project-links button{
+  padding:8px;font-size:11px
+ }
+}
+@media(max-width:380px){
+ .open-notebook .comparison-selectors{
+  grid-template-columns:1fr
+ }
+ .open-notebook .comparison-metric-row{
+  gap:5px;padding:9px 6px
+ }
+ .open-notebook .comparison-metric-label{font-size:9px}
+ .open-notebook .comparison-metric-value{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .open-notebook .profitability-compare .profitability-panel-chevron{
+  transition:none
+ }
+}
