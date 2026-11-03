@@ -908,6 +908,8 @@ function syncProjectFields(){
   const isOldManualWorkshop=workshop&&form.dataset.oldManual==='yes';
   const moneySection=form.querySelector('[data-field="money"]');
   moneySection.hidden=workshop&&!isOldManualWorkshop;
+  const manualPayment=form.querySelector('[data-field="manualPayment"]');
+  if(manualPayment)manualPayment.hidden=workshop&&!isOldManualWorkshop;
   const autoWorkshop=workshop&&form.dataset.originalAuto==='yes';
   for(const key of ['price','paid'])form.elements.namedItem(key).disabled=autoWorkshop;
   form.querySelector('[data-label="client"]').textContent='Klient / zamawiający';
