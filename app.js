@@ -347,6 +347,136 @@ function quotePreview(id){
  modal('Wycena '+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
 }
 function projectsPage(){return `${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions"><button class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><button class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button><button class="btn" data-action="new-project">${icon('plus')}<span>Dodaj nowy</span></button></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
+
+/* MANU 3.4.0 — lokalna księga klientów, zapisywana razem z projektami i wycenami. */
+function linkedProjects(clientId){
+ return state.projects.filter(p=>p.clientId===clientId)
+  .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+}
+function clientNumbers(clientId){
+ const projects=linkedProjects(clientId),billable=projects.filter(p=>p.status!=='Anulowane');
+ return {
+  projects,
+  value:money(billable.reduce((n,p)=>n+projectIncome(p),0)),
+  paid:money(billable.reduce((n,p)=>n+projectPaid(p),0))
+ };
+}
+function clientsPage(){
+ const count=state.clients.length;
+ const legacy=state.projects.filter(p=>!p.clientId&&String(p.client||'').trim()).length;
+ return pageHeading('Baza klientów','Kontakty, historia współpracy oraz rozliczenia w jednym miejscu.',
+   '<div class="crm-page-actions"><button type="button" class="btn ghost crm-close" data-action="nav" data-view="projects" title="Wróć do projektów" aria-label="Wróć do projektów">×</button>'+
+   '<button type="button" class="btn" data-action="client-new">'+icon('plus')+' Nowy klient</button></div>')+
+   '<div class="crm-summary">'+
+    '<div><small>Karty klientów</small><strong>'+count+'</strong></div>'+
+    '<div><small>Przypisane realizacje</small><strong>'+state.projects.filter(p=>p.clientId&&state.clients.some(c=>c.id===p.clientId)).length+'</strong></div>'+
+   '</div>'+
+   '<div class="crm-toolbar"><input class="search" id="client-search" aria-label="Szukaj klienta" placeholder="Szukaj klienta, firmy, e-maila…" value="'+htmlEscape(clientSearch)+'"></div>'+
+   (legacy?'<div class="crm-import-hint"><p>Masz '+legacy+' projektów z wpisaną nazwą klienta, ale bez powiązanej karty.</p>'+
+    '<button type="button" class="btn secondary sm" data-action="client-import">Utwórz i powiąż karty z istniejących projektów</button>'+
+    '<small>Zostaną pobrane tylko nazwy klientów z projektów, bez zmiany kwot i terminów. Przed wykonaniem potwierdzisz operację.</small></div>':'')+
+   '<div class="crm-list" id="client-list">'+renderClientList()+'</div>'+
+   '<p class="muted tiny">Dane klientów są zapisywane w kopii MANU i na Twoim koncie w chmurze, jeśli synchronizacja jest aktywna. Wpisuj tylko niezbędne dane osobowe.</p>';
+}
+function renderClientList(){
+ const value=clientSearch.trim().toLocaleLowerCase('pl');
+ const records=state.clients.slice().filter(c=>
+  [c.name,c.company,c.email,c.phone].some(x=>String(x||'').toLocaleLowerCase('pl').includes(value)))
+  .sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+ if(!records.length){
+  return '<div class="crm-empty"><h3>'+(value?'Nie znaleziono klienta':'Twoja baza klientów jest pusta')+'</h3>'+
+   '<p>'+(value?'Spróbuj innego wyszukiwania.':'Dodaj pierwszą kartę klienta lub powiąż istniejące projekty.')+'</p>'+
+   (!value?'<button type="button" class="btn" data-action="client-new">'+icon('plus')+' Dodaj klienta</button>':'')+'</div>';
+ }
+ return records.map(c=>{
+  const stats=clientNumbers(c.id);
+  return '<article class="crm-client-card">'+
+   '<div class="crm-card-main"><span class="crm-avatar" aria-hidden="true">'+htmlEscape(c.name.slice(0,1).toUpperCase())+'</span>'+
+   '<div><h3>'+htmlEscape(c.name)+'</h3>'+(c.company?'<p>'+htmlEscape(c.company)+'</p>':'')+
+   (c.phone?'<small>'+htmlEscape(c.phone)+'</small>':'')+'</div></div>'+
+   '<div class="crm-card-bottom"><span>'+stats.projects.length+' projektów · '+fMoney(stats.value)+' wartości</span>'+
+   '<button type="button" class="btn secondary sm" data-action="open-client" data-id="'+htmlEscape(c.id)+'">Otwórz kartę '+icon('arrow')+'</button></div>'+
+   '</article>';
+ }).join('');
+}
+function clientForm(c){
+ const item=c||{id:'',name:'',company:'',email:'',phone:'',address:'',notes:''};
+ const fields=[
+  ['name','Nazwa klienta / imię i nazwisko *','text',120],
+  ['company','Firma / marka','text',120],
+  ['email','E-mail','email',180],
+  ['phone','Telefon','tel',50],
+  ['address','Adres / miejsce kontaktu','text',280]
+ ];
+ let html='<form id="client-form" data-id="'+htmlEscape(item.id)+'">'+
+  '<p class="muted small">Podaj tylko informacje potrzebne do realizacji zleceń.</p>';
+ for(const [field,label,type,length] of fields){
+  html+='<div class="field"><label>'+label+'</label><input name="'+field+'" type="'+type+'" maxlength="'+length+'" '+
+   (field==='name'?'required ':'')+'value="'+htmlEscape(item[field]||'')+'"></div>';
+ }
+ html+='<div class="field"><label>Notatki o współpracy</label><textarea name="notes" maxlength="2500" rows="4">'+htmlEscape(item.notes||'')+'</textarea></div>'+
+  '<div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button>'+
+  '<button type="submit" class="btn">'+icon('check')+' Zapisz klienta</button></div></form>';
+ modal(c?'Edytuj klienta':'Nowa karta klienta',html);
+}
+function clientDetail(id){
+ const c=state.clients.find(x=>x.id===id);
+ if(!c)return;
+ const stats=clientNumbers(id);
+ const contact=[
+  c.company?'<div><small>Firma / marka</small><strong>'+htmlEscape(c.company)+'</strong></div>':'',
+  c.email?'<div><small>E-mail</small><strong>'+htmlEscape(c.email)+'</strong></div>':'',
+  c.phone?'<div><small>Telefon</small><strong>'+htmlEscape(c.phone)+'</strong></div>':'',
+  c.address?'<div><small>Adres</small><strong>'+htmlEscape(c.address)+'</strong></div>':''
+ ].join('');
+ const history=stats.projects.length?stats.projects.map(p=>
+   '<div class="crm-history-row"><div><strong>'+htmlEscape(p.title)+'</strong><small>'+htmlEscape(p.type)+' · '+htmlEscape(p.status)+' · '+fDate(p.date)+'</small></div>'+
+   '<div class="crm-history-right"><b>'+fMoney(projectIncome(p))+'</b><button type="button" class="btn secondary sm" data-action="open-project" data-id="'+htmlEscape(p.id)+'">Szczegóły</button></div></div>'
+ ).join(''):'<p class="muted small">Brak przypisanych projektów. Dodaj realizację z tej karty lub połącz istniejące zlecenie w jego edycji.</p>';
+ modal(c.name,
+  '<div class="crm-detail"><div class="crm-detail-actions">'+
+  '<button type="button" class="btn secondary sm" data-action="client-edit" data-id="'+htmlEscape(c.id)+'">'+icon('pencil')+' Edytuj</button>'+
+  '<button type="button" class="btn ghost sm" data-action="client-delete" data-id="'+htmlEscape(c.id)+'">'+icon('trash')+' Usuń kartę</button></div>'+
+  '<div class="crm-contact">'+(contact||'<p class="muted small">Brak dodatkowych danych kontaktowych.</p>')+'</div>'+
+  (c.notes?'<div class="crm-notes"><h3>Notatki</h3><p>'+htmlEscape(c.notes)+'</p></div>':'')+
+  '<div class="crm-totals"><div><small>Realizacje</small><strong>'+stats.projects.length+'</strong></div>'+
+  '<div><small>Wartość zleceń</small><strong>'+fMoney(stats.value)+'</strong></div>'+
+  '<div><small>Otrzymane wpłaty</small><strong>'+fMoney(stats.paid)+'</strong></div>'+
+  '<div><small>Pozostało do zapłaty</small><strong>'+fMoney(Math.max(0,stats.value-stats.paid))+'</strong></div></div>'+
+  '<div class="crm-detail-history"><div class="section-head"><h3>Historia współpracy</h3>'+
+  '<button type="button" class="btn sm" data-action="client-new-project" data-id="'+htmlEscape(c.id)+'">'+icon('plus')+' Nowy projekt</button></div>'+
+  history+'</div></div>',
+ {detail:true});
+}
+function deleteClient(id){
+ const c=state.clients.find(x=>x.id===id);
+ if(!c)return;
+ const linked=linkedProjects(id);
+ if(!confirm('Usunąć kartę „'+c.name+'”? '+(linked.length?'Powiązania z '+linked.length+' projektami zostaną usunięte, ale same projekty i wpłaty pozostaną.':'Projekty nie zostaną usunięte.')))return;
+ state.clients=state.clients.filter(x=>x.id!==id);
+ for(const p of state.projects)if(p.clientId===id)p.clientId='';
+ closeModal();afterDataChange('Usunięto kartę klienta; historia projektów została zachowana.');
+}
+function importLegacyClients(){
+ const list=state.projects.filter(p=>!p.clientId&&String(p.client||'').trim());
+ if(!list.length){toast('Nie ma projektów do powiązania.');return;}
+ if(!confirm('Utworzyć karty klientów na podstawie '+list.length+' istniejących projektów i przypisać do nich realizacje? Nazwy takie same zostaną połączone. Projekty, finanse i uczestnicy pozostaną bez zmian.'))return;
+ const byName=new Map(state.clients.map(c=>[c.name.toLocaleLowerCase('pl'),c]));
+ let made=0,linked=0;
+ for(const p of list){
+  const name=String(p.client||'').trim().slice(0,120);
+  if(!name)continue;
+  const key=name.toLocaleLowerCase('pl');
+  let c=byName.get(key);
+  if(!c){
+   if(state.clients.length>=5000){toast('Osiągnięto limit klientów.');break;}
+   c={id:uid(),name,company:'',email:'',phone:'',address:'',notes:'',createdAt:now()};
+   state.clients.push(c);byName.set(key,c);made++;
+  }
+  p.clientId=c.id;p.client=c.name;linked++;
+ }
+ afterDataChange('Dodano '+made+' kart klientów i powiązano '+linked+' projektów.');
+}
 function renderProjectGrid(){let list=[...state.projects].filter(p=>(filter==='all'||p.type===filter)&&[p.title,p.client,p.notes].some(x=>String(x||'').toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));return list.length?list.map(projectCard).join(''):`<div style="grid-column:1/-1">${empty('Brak projektów','Dodaj pierwszą realizację albo zmień filtr.',`<button class="btn sm" data-action="new-project">Dodaj projekt</button>`)}</div>`;}
 function projectCard(p){let expense=expenses(p);return `<article class="project-card" data-action="open-project" data-id="${htmlEscape(p.id)}" role="button" tabindex="0"><div class="pcard-head">${projectTypeIcon(p)}${pillStatus(p)}</div><h3>${htmlEscape(p.title)}</h3><div class="project-progress"><span>Postęp</span><strong>${progressPercent(p)}%</strong><div class="workflow-bar"><span style="width:${progressPercent(p)}%"></span></div></div><p>${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</p><div class="pcard-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(expense)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="pcard-footer"><span>${icon('clock')} ${fNum(p.hours)} godz. pracy</span><span>${p.type==='Warsztat'?`${confirmedParticipants(p).length}/${p.capacity||'∞'} miejsc${waitlistedParticipants(p).length?' · '+waitlistedParticipants(p).length+' rezerwowych':''}`:`Wpłacono ${fMoney(projectPaid(p))}`}</span></div></article>`;}
 function monthCashflow(period){
