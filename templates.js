@@ -132,7 +132,7 @@ function page(){
   '<input id="template-search" class="search" type="search" aria-label="Szukaj szablonu" placeholder="Szukaj własnych szablonów…" value="'+escape(search)+'">'+
   '<div class="template-grid" id="template-custom-grid">'+renderCustomList(filtered)+'</div></section>';
  return opening+presets+own+
- '<p class="muted tiny">Szablony zapisują się w kopii JSON i synchronizują z chmurą jak pozostałe dane MANU. Nie przechowują wpłat, klientów, uczestników ani fotografii.</p>';
+ '<p class="muted tiny">Szablony zapisują się w kopii JSON i synchronizują z chmurą jak pozostałe dane MANU. Nie przechowują wpłat, klientów, uczestników ani fotografii. Zapisane zadania i materiały są przenoszone tylko do nowo tworzonych projektów.</p>';
 }
 function renderCustomList(filtered){
  if(!filtered.length)return '<div class="template-empty">'+(search?'Brak szablonów o tej nazwie.':
@@ -165,7 +165,7 @@ function editor(t=null,sourceProject=''){
   '<div class="field"><label>'+label+'</label><input name="'+key+'" type="'+kind+'" '+(step?'step="'+step+'" min="0" ':'')+
   (max?'maxlength="'+max+'" ':'')+'value="'+escape(item[key]??'')+'"></div>';
  const html='<form id="template-form" data-id="'+escape(t?.id||'')+'" class="template-form">'+
- '<p class="muted small">Z projektu kopiowane są powtarzalne ustawienia, tytuły etapów i koszty, ale nie klienci, terminy, adresy, wpłaty ani zdjęcia. Przejrzyj nazwy i koszty przed zapisaniem, aby nie pozostawić w nich danych osobowych.</p>'+
+ '<p class="muted small">Z projektu kopiowane są powtarzalne ustawienia, tytuły etapów, zadania, materiały i koszty, ale nie klienci, terminy, adresy, wpłaty ani zdjęcia. Sprawdź nazwy, checklisty i kwoty — mogą zawierać dane konkretnego klienta.</p>'+
  field('name','Nazwa szablonu *','text','','90')+
  field('title','Proponowana nazwa nowego projektu *','text','','120')+
  '<div class="field"><label>Rodzaj projektu</label><select name="type">'+TYPES.map(x=>'<option value="'+x+'" '+(item.type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
