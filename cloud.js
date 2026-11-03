@@ -314,6 +314,7 @@ async function finishRecovery(event){
   if(error)throw error;
   form.reset();recoveryMode=false;errorText='';
   emit('Nowe hasło zapisano. Konto jest ponownie dostępne.');
+  void inspect();
  }catch(e){errorText=textError(e);window.alert('Nie udało się zapisać hasła: '+errorText);}
  finally{busy=false;renderIfSettings();}
 }
@@ -347,7 +348,8 @@ async function init(callbacks){
      bridge?.openSettings?.();
     }
     if(activeUserId!==next.id){
-     activeUserId=next.id;ready=false;conflict=false;void inspect();
+     activeUserId=next.id;ready=false;conflict=false;
+     if(!recoveryMode)void inspect();
     }
    }
    if(['SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY','USER_UPDATED','INITIAL_SESSION'].includes(event))renderIfSettings();
@@ -359,7 +361,7 @@ async function init(callbacks){
    recoveryMode=true;
    bridge?.openSettings?.();
   }
-  if(user)void inspect();
+  if(user&&!recoveryMode)void inspect();
   window.addEventListener('online',()=>{if(user)void inspect()});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user)void inspect()});
   setInterval(()=>{if(user&&document.visibilityState==='visible')void inspect()},90000);
