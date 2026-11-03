@@ -3,5 +3,5 @@
 // Nigdy nie wstawiaj tutaj service_role ani secret key.
 window.MANU_CLOUD_CONFIG = {
   url: 'https://ndxhubksvumfvxlfaaxg.supabase.co',
-  publishableKey: ''
+  publishableKey: 'sb_publishable_AJg4sR-gZPZhZmaKBT4Uig_8b3HLbL0'
 };
