@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.9.0';
+const APP_VERSION='3.10.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -24,6 +24,7 @@ let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
+let profitabilityExpanded=false,profitabilityScope='all';
 // Rozwinięte sekcje pamiętamy w UI, bez zmian zapisanych danych.
 const detailSectionStates=new Map();
 let financeMonth=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0')].join('-');
@@ -681,10 +682,71 @@ function monthlyReportMarkup(period){
  const max=Math.max(1,m.received,m.spent);
  return `<div class="monthly-stat-grid">${sumParts.map(([label,v],i)=>`<div><small>${label}</small><strong class="${i===2?(m.balance>=0?'money-positive':'money-negative'):''}">${fMoney(v)}</strong></div>`).join('')}</div><div class="monthly-bars"><div><span>Wpłaty</span><div><i style="width:${Math.round(m.received/max*100)}%"></i></div></div><div><span>Wydatki</span><div><i style="width:${Math.round(m.spent/max*100)}%"></i></div></div></div><h3>Transakcje w miesiącu (${records.length})</h3><div class="monthly-records">${rows}</div><p class="muted tiny">Raport pokazuje tylko NOWE wpłaty i wydatki z przypisaną datą. Dawne kwoty bez daty nie są tutaj wliczone. Przepływ środków nie jest zyskiem księgowym ani przychodem podatkowym. Nie uwzględnia szacowanego dojazdu i niezapłaconych należności.</p>`;
 }
+
+/* Etap 10.1 — odczytowe porównanie rentowności pracy, bez zmian projektów. */
+function profitabilityData(scope='all'){
+ const list=active().filter(p=>scope==='Zlecenie'||scope==='Warsztat'?p.type===scope:true);
+ const timed=list.filter(p=>val(p.hours)>0);
+ const totalHours=timed.reduce((sum,p)=>sum+val(p.hours),0);
+ const timedProfit=timed.reduce((sum,p)=>sum+profit(p),0);
+ const result=timed.map(p=>({
+  project:p,hours:val(p.hours),income:projectIncome(p),
+  costs:expenses(p),net:profit(p),rate:profit(p)/val(p.hours),
+  margin:projectIncome(p)>0?profit(p)/projectIncome(p)*100:null
+ })).sort((a,b)=>b.rate-a.rate||b.net-a.net||a.project.title.localeCompare(b.project.title,'pl'));
+ return {list,timed,totalHours,timedProfit,rate:totalHours>0?timedProfit/totalHours:null,result};
+}
+function profitabilityTypeCard(type){
+ const d=profitabilityData(type);
+ return '<div class="profitability-type-card"><span>'+htmlEscape(type==='Warsztat'?'Warsztaty':'Zlecenia')+'</span>'+
+ '<strong>'+d.list.length+' <small>realizacji</small></strong>'+
+ '<div class="profitability-type-rate">'+(d.rate==null?'—':fMoney(d.rate))+' <small>/ godz.</small></div>'+
+ '<small>Uzupełniony czas: '+d.timed.length+' z '+d.list.length+'</small></div>';
+}
+function profitabilityResults(scope=profitabilityScope){
+ const d=profitabilityData(scope);
+ const missing=d.list.length-d.timed.length;
+ const typeCards=scope==='all'?'<div class="profitability-types">'+profitabilityTypeCard('Zlecenie')+profitabilityTypeCard('Warsztat')+'</div>':'';
+ const rows=d.result.slice(0,10).map((r,i)=>
+  '<button type="button" class="profitability-rank-item" data-action="open-project" data-id="'+htmlEscape(r.project.id)+'">'+
+   '<span class="profitability-rank-number">'+(i+1)+'</span>'+
+   '<span class="profitability-rank-copy"><strong>'+htmlEscape(r.project.title)+'</strong>'+
+   '<small>'+htmlEscape(r.project.type)+' · '+htmlEscape(r.project.status)+' · '+fHours(r.hours)+' godz. pracy</small>'+
+   '<small>Wartość '+fMoney(r.income)+' · koszty '+fMoney(r.costs)+' · po kosztach '+fMoney(r.net)+'</small></span>'+
+   '<span class="profitability-rank-rate'+(r.rate<0?' is-negative':'')+'"><b>'+fMoney(r.rate)+'</b><small>/ godz.</small></span>'+
+  '</button>'
+ ).join('');
+ return '<div class="profitability-stats">'+
+  '<div><small>Realizacje</small><strong>'+d.list.length+'</strong></div>'+
+  '<div><small>Z zapisanym czasem</small><strong>'+d.timed.length+'</strong></div>'+
+  '<div><small>Wynik / godz. pracy</small><strong class="'+(d.rate!=null&&d.rate<0?'money-negative':'')+'">'+(d.rate==null?'—':fMoney(d.rate))+'</strong></div>'+
+ '</div>'+typeCards+
+ '<h3>Porównanie według wyniku na godzinę</h3>'+
+ (rows?'<div class="profitability-rank">'+rows+'</div>'+
+   (d.result.length>10?'<p class="muted tiny">Pokazano 10 pierwszych z '+d.result.length+' realizacji z wpisanym czasem.</p>':''):
+  '<p class="profitability-empty">'+(d.list.length?'Brak porównywalnych projektów. Uzupełnij przepracowane godziny w kartach realizacji.':'Nie masz jeszcze realizacji w wybranej kategorii.')+'</p>')+
+ (missing?'<p class="profitability-hint"><strong>'+missing+' realizacji bez zapisanego czasu pracy.</strong> Nie uwzględniamy ich w rankingu ani w średniej za godzinę. <button type="button" data-action="nav" data-view="projects">Przejdź do projektów</button></p>':'')+
+ '<p class="muted tiny profitability-disclaimer">Wynik na godzinę = (wartość realizacji − ujęte koszty) ÷ zapisane godziny. Średnia jest ważona czasem pracy i obejmuje wyłącznie realizacje z wpisanymi godzinami. Nie jest to stawka brutto/netto z umowy ani wynik księgowy. Wartość nie oznacza, że klient już zapłacił. Pominięto anulowane projekty; nie ujęto podatków, kosztów stałych ani brakujących wydatków.</p>';
+}
+function profitabilityPanel(){
+ const d=profitabilityData();
+ return '<details class="profitability-panel" '+(profitabilityExpanded?'open':'')+'>'+
+ '<summary class="profitability-panel-summary"><span class="profitability-panel-icon">'+icon('trend')+'</span>'+
+ '<span class="profitability-panel-name"><strong>Analiza opłacalności</strong>'+
+ '<small>'+d.timed.length+' realizacji z zapisanym czasem pracy · porównanie zleceń i warsztatów</small></span>'+
+ '<span class="profitability-panel-chevron" aria-hidden="true">⌄</span></summary>'+
+ '<div class="profitability-panel-body"><p class="profitability-intro">Sprawdź, które prace najbardziej opłacają się w przeliczeniu na godzinę, a nie tylko na cenę zlecenia.</p>'+
+ '<label class="profitability-filter" for="profitability-type">Pokaż realizacje'+
+ '<select id="profitability-type" aria-label="Filtr typu realizacji">'+
+ '<option value="all" '+(profitabilityScope==='all'?'selected':'')+'>Wszystkie</option>'+
+ '<option value="Zlecenie" '+(profitabilityScope==='Zlecenie'?'selected':'')+'>Zlecenia</option>'+
+ '<option value="Warsztat" '+(profitabilityScope==='Warsztat'?'selected':'')+'>Warsztaty</option></select></label>'+
+ '<div id="profitability-results">'+profitabilityResults()+'</div></div></details>';
+}
 function financePage(m){
- const perHour=m.hours?m.profit/m.hours:0,margin=m.income?Math.round(m.profit/m.income*100):0,projects=active().sort((a,b)=>profit(b)-profit(a)),pct=m.income?Math.min(100,Math.max(0,Math.round(m.cost/m.income*100))):0;
- const metricsBlock=(!m.income&&!m.cost)?empty('Finanse czekają na pierwszy projekt','Dodaj zlecenie lub warsztat z ceną i kosztami, aby zobaczyć podsumowanie.',`<button class="btn" data-action="new-project">Dodaj projekt</button>`):`<div class="stat-grid">${statsCard('Wartość realizacji',fMoney(m.income),'Wpisane ceny wszystkich nieanulowanych projektów','wallet')}${statsCard('Koszty do wyniku',fMoney(m.cost),'Wydatki + szacowany dojazd, gdy brak kosztu faktycznego','folder')}${statsCard('Po kosztach',fMoney(m.profit),'Przed podatkami i kosztami stałymi','trend',m.profit>=0?'accent':'warning')}${statsCard('Za godzinę',m.hours?fMoney(perHour):'—','Na podstawie zapisanych godzin','clock')}</div><div class="finance-grid"><section class="surface"><div class="section-head"><h2>Rentowność wszystkich realizacji</h2><span class="muted small">Bez anulowanych</span></div><div class="donut" style="--pct:${pct}%"><div class="donut-inner"><b>${fNum(margin)}%</b><small>marży*</small></div></div><div class="summary-line"><span>Wartość projektów</span><b>${fMoney(m.income)}</b></div><div class="summary-line"><span>Koszty</span><b>${fMoney(m.cost)}</b></div><div class="summary-line"><span>Otrzymano łącznie</span><b>${fMoney(m.paid)}</b></div><div class="summary-line"><span>Pozostało do zapłaty</span><b>${fMoney(m.unpaid)}</b></div></section><section class="surface"><div class="section-head"><h2>Opłacalność realizacji</h2></div>${projects.slice(0,12).map(p=>`<div class="detail-entry" role="button" tabindex="0" data-action="open-project" data-id="${htmlEscape(p.id)}"><span>${htmlEscape(p.title)} <small>· ${fHours(p.hours)} h</small></span><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div>`).join('')}</section></div><div class="form-note finance-detail">* Marża = (wpisana wartość projektów − ujęte koszty) / wartość. To wynik orientacyjny, nie księgowy zysk netto. Koszt faktycznego dojazdu zastępuje szacunek, jeśli został wpisany.</div>`;
- return `${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
+ const perHour=m.hours?m.profit/m.hours:0,margin=m.income?Math.round(m.profit/m.income*100):0,pct=m.income?Math.min(100,Math.max(0,Math.round(m.cost/m.income*100))):0;
+ const metricsBlock=(!m.income&&!m.cost)?empty('Finanse czekają na pierwszy projekt','Dodaj zlecenie lub warsztat z ceną i kosztami, aby zobaczyć podsumowanie.',`<button class="btn" data-action="new-project">Dodaj projekt</button>`):`<div class="stat-grid">${statsCard('Wartość realizacji',fMoney(m.income),'Wpisane ceny wszystkich nieanulowanych projektów','wallet')}${statsCard('Koszty do wyniku',fMoney(m.cost),'Wydatki + szacowany dojazd, gdy brak kosztu faktycznego','folder')}${statsCard('Po kosztach',fMoney(m.profit),'Przed podatkami i kosztami stałymi','trend',m.profit>=0?'accent':'warning')}${statsCard('Za godzinę',m.hours?fMoney(perHour):'—','Na podstawie zapisanych godzin','clock')}</div><div class="finance-grid finance-overview-grid"><section class="surface"><div class="section-head"><h2>Rentowność wszystkich realizacji</h2><span class="muted small">Bez anulowanych</span></div><div class="donut" style="--pct:${pct}%"><div class="donut-inner"><b>${fNum(margin)}%</b><small>marży*</small></div></div><div class="summary-line"><span>Wartość projektów</span><b>${fMoney(m.income)}</b></div><div class="summary-line"><span>Koszty</span><b>${fMoney(m.cost)}</b></div><div class="summary-line"><span>Otrzymano łącznie</span><b>${fMoney(m.paid)}</b></div><div class="summary-line"><span>Pozostało do zapłaty</span><b>${fMoney(m.unpaid)}</b></div></section></div><div class="form-note finance-detail">* Marża = (wpisana wartość projektów − ujęte koszty) / wartość. To wynik orientacyjny, nie księgowy zysk netto. Koszt faktycznego dojazdu zastępuje szacunek, jeśli został wpisany.</div>`;
+ return `${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}${profitabilityPanel()}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
 }
 function taskRow(t){let p=state.projects.find(p=>p.id===t.projectId);return `<div class="task-row"><button class="check-btn ${t.done?'checked':''}" data-action="toggle-task" data-id="${htmlEscape(t.id)}" aria-label="${t.done?'Cofnij wykonanie':'Oznacz jako wykonane'}">${t.done?icon('check'):''}</button><div class="task-text"><b class="${t.done?'done':''}">${htmlEscape(t.title)}</b><small>${p?htmlEscape(p.title)+' · ':''}${t.due?'Termin: '+fDate(t.due):'Bez terminu'}</small></div><button class="btn ghost sm" data-action="edit-task" data-id="${htmlEscape(t.id)}" aria-label="Edytuj zadanie">${icon('pencil')}</button><button class="btn ghost sm" data-action="delete-task" data-id="${htmlEscape(t.id)}" aria-label="Usuń zadanie">${icon('trash')}</button></div>`;}
 function calendarEvents(){
@@ -1497,6 +1559,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
 }}}
 function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
+ if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
@@ -1506,6 +1569,15 @@ function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el
  if(e.target.id==='smart-alert-lead'){
   const days=Number(e.target.value);
   if([1,3,7].includes(days)){state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,leadDays:days});afterDataChange('Zapisano wyprzedzenie przypomnień')}
+  return;
+ }
+ if(e.target.id==='profitability-type'){
+  const scope=e.target.value;
+  if(['all','Zlecenie','Warsztat'].includes(scope)){
+   profitabilityScope=scope;
+   const results=$('#profitability-results');
+   if(results)results.innerHTML=profitabilityResults(scope);
+  }
   return;
  }
  if(e.target.id==='project-filter'){filter=e.target.value;render();}if(e.target.id==='finance-month-picker'){const month=String(e.target.value||'');if(/^\d{4}-(0[1-9]|1[0-2])$/.test(month)){financeMonth=month;const results=$('#finance-month-results');if(results)results.innerHTML=monthlyReportMarkup(month)}}if(e.target.matches('#project-form select[name="type"]'))syncProjectFields();if(e.target.matches('#project-form select[name="clientId"]'))syncProjectClientField();if(e.target.matches('#project-form select[name="travelMode"]')||e.target.matches('#project-form input[name="transportType"]'))syncTravelFields();if(e.target.id==='manu-intro-preference'){try{localStorage.setItem('manu_intro_enabled',e.target.checked?'1':'0');toast(e.target.checked?'Animacja MANU włączona':'Animacja MANU wyłączona')}catch(err){toast('Nie udało się zapisać preferencji animacji')}}});window.addEventListener('afterprint',()=>{const printed=$('#quote-print-root');if(printed)printed.innerHTML=''});window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;if(view==='settings')render()});window.addEventListener('appinstalled',()=>{installEvent=null;toast('MANU zostało zainstalowane!')});window.addEventListener('online',()=>{if(view==='settings')render()});window.addEventListener('offline',()=>{if(view==='settings')render()});}
