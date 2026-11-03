@@ -1,6 +1,13 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.1.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.1.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.1.1 — Końcowe poprawki etapu 6
+- **Unikalna numeracja po usunięciu:** ostatni numer dla roku zapisywany jest w `quoteCounters` we wspólnej kopii JSON v12. Skasowanie wyceny nie pozwala ponownie użyć starego numeru.
+- **Powrót bez przeskakiwania:** anulowanie wyceny rozpoczętej z karty projektu przywraca projekt w miejscu przewinięcia sprzed otwarcia formularza. Dodawanie i usuwanie pozycji nie przeładowuje notesu.
+- **Wydruk bez pozostałości:** dokument do drukowania jest tworzony dopiero na polecenie użytkownika, a po zamknięciu podglądu lub zakończeniu drukowania ukryta kopia jest czyszczona.
+- **Jasna nomenklatura:** dokument prezentuje „WARTOŚĆ WYCENY”, nie wezwanie „do zapłaty”. Nie jest to faktura ani rozliczenie VAT.
+- Cache PWA `manu-app-v3.1.1`; schemat JSON nadal `version:12`, a nazwa lokalnej bazy i identyfikator instalacji pozostają niezmienione.
 
 ## MANU 3.1.0 — Etap 6: profesjonalne wyceny i dokumenty PDF
 - **Rejestr wycen:** nowy widok **Wyceny** dostępny z menu bocznego, a na Androidzie przyciskiem **Wyceny** na stronie Projektów. Każda wycena może być samodzielna lub połączona z konkretnym zleceniem/warsztatem. Ze szczegółów projektu dostępny jest przycisk **Przygotuj wycenę**.
