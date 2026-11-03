@@ -325,7 +325,7 @@ function commandItem(ev,today,showComplete=false){
  const type=calendarEventType(ev.kind);
  const project=ev.projectId?state.projects.find(p=>p.id===ev.projectId):null;
  const context=ev.kind==='payment'?ev.info:
-  project&&ev.kind!=='workshop'&&ev.kind!=='project'?project.title:ev.info;
+  (ev.kind==='task'||ev.kind==='reminder')?(project?.title||''):ev.info;
  const details=[type,ev.time||'',context].filter(Boolean).join(' · ');
  const doneAction=ev.kind==='task'?'toggle-task':ev.kind==='reminder'?'calendar-reminder':'';
  const check=showComplete&&doneAction?
