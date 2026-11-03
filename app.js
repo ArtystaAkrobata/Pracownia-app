@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.6.1';
+const APP_VERSION='3.7.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -292,7 +292,103 @@ function openNotebook(content,page,turn=''){
 function render(){let m=metrics();const turn=notebookTurn;notebookTurn='';const inside=['projects','clients','quotes','gallery','templates','finance','tasks','calendar'].includes(view);const pageContent=view==='home'?homePage(m):view==='projects'?projectsPage():view==='clients'?clientsPage():view==='gallery'?galleryPage():view==='templates'?templatesPage():view==='quotes'?quotesPage():view==='finance'?financePage(m):view==='tasks'?tasksPage():view==='calendar'?calendarPage():settingsPage();$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brandmark"><img class="brand-symbol" src="manu48-mark.svg" alt="" width="40" height="40"></div><div><h2>MANU</h2><p>Organizer twórcy</p></div></div><nav class="nav-list" aria-label="Nawigacja">${navBtn('home','home','Pulpit')}${navBtn('projects','folder','Projekty i warsztaty')}${navBtn('clients','users','Klienci')}${navBtn('gallery','folder','Galeria')}${navBtn('templates','copy','Szablony')}${navBtn('quotes','brief','Wyceny')}${navBtn('finance','wallet','Finanse')}${navBtn('tasks','checks','Zadania')}${navBtn('calendar','calendar','Kalendarz')}${navBtn('settings','settings','Ustawienia')}</nav><div class="sidebar-end">${icon('shield')}<strong>Twoja przestrzeń</strong><p>Wersja testowa · Dane przechowywane na tym urządzeniu. Regularnie eksportuj kopię.</p></div></aside><main class="main-area ${view==='home'?'manu-cover-home':inside?'manu-open-workspace':''}">${view==='home'?'<div class="cover-stitch" aria-hidden="true"></div><button type="button" class="cover-strap" data-action="new-project" aria-label="Otwórz notes i dodaj nowe zlecenie" title="Otwórz notes"><span class="cover-strap-button">M</span></button>':''}<header class="topbar"><div class="eyebrow">MANU · ORGANIZER TWÓRCY</div><div class="mobile-brand"><img src="manu48-mark.svg" alt="" width="34" height="34"><div><strong>MANU</strong><small>ORGANIZER TWÓRCY</small></div></div><div class="topbar-right"><div class="date-chip">${new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date())}</div><button class="avatar" data-action="nav" data-view="settings" aria-label="Ustawienia" title="Ustawienia">${icon('settings')}</button></div></header>${inside?openNotebook(pageContent,view,turn):pageContent}</main><nav class="mobile-nav" aria-label="Nawigacja mobilna">${mobileBtn('home','home','Start')}${mobileBtn('projects','folder','Projekty')}${mobileBtn('add','plus','Dodaj')}${mobileBtn('finance','wallet','Finanse')}${mobileBtn('tasks','checks','Zadania')}${mobileBtn('calendar','calendar','Terminy')}</nav></div>`;void window.MANUGallery?.hydrate?.($('#app'));}
 function pageHeading(title,desc,btn=''){return `<div class="page-heading"><div><h1 class="page-title">${title}</h1><p class="page-lede">${desc}</p></div>${btn}</div>`}
 function statsCard(label,number,note,ic,cls=''){return `<div class="stat"><div class="stat-top"><span>${label}</span><div class="stat-icon">${icon(ic)}</div></div><strong class="${cls}">${number}</strong><small>${note}</small></div>`}
-function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);let next=[...state.tasks].filter(t=>!t.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,5);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section><section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section><section class="content-grid"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div><div class="surface"><div class="section-head"><h2>Najbliższe zadania</h2><button class="link" data-action="new-task">${icon('plus')} Dodaj</button></div>${next.length?next.map(taskRow).join(''):empty('Wszystko pod kontrolą','Nie masz aktualnie otwartych zadań.',`<button class="btn secondary sm" data-action="new-task">Utwórz zadanie</button>`)}</div></section><section class="surface home-upcoming"><div class="section-head"><h2>Terminy i przypomnienia</h2><button class="link" data-action="nav" data-view="calendar">Kalendarz ${icon('arrow')}</button></div>${calendarAlertMarkup(5)}</section>`}
+/* Etap 9.1 — Centrum dowodzenia: wyłącznie odczyt istniejących zadań, terminów i wpłat. */
+function commandCenterData(today=localDay()){
+ const end=plusDaysDate(today,7);
+ const projectSoon=plusDaysDate(today,3);
+ const entries=calendarEvents().filter(e=>!e.done);
+ const actions=entries.filter(e=>(e.kind==='task'||e.kind==='reminder')&&e.date<=today);
+ const upcoming=entries.filter(e=>e.date>today&&e.date<=end);
+ const projects=entries.filter(e=>(e.kind==='project'||e.kind==='workshop')&&e.date<=projectSoon);
+ const payments=entries.filter(e=>e.kind==='payment'&&e.date<=today);
+ const late=entries.filter(e=>e.date<today);
+ const todayCount=entries.filter(e=>e.date===today).length;
+ const undated=state.tasks.filter(t=>!t.done&&!validDate(t.due)).length;
+ const unpaidLate=money(payments.filter(e=>e.date<today).reduce((sum,e)=>{
+  const p=state.projects.find(p=>p.id===e.projectId);
+  return sum+(p?Math.max(0,projectIncome(p)-projectPaid(p)):0);
+ },0));
+ return {today,end,actions,upcoming,projects,payments,late,todayCount,undated,unpaidLate};
+}
+function commandAction(ev){
+ if(ev.kind==='task')return {action:'edit-task',id:ev.taskId};
+ if(ev.kind==='reminder')return {action:'reminder-edit',id:ev.reminderId};
+ return {action:'open-project',id:ev.projectId};
+}
+function commandDateLabel(date,today){
+ return date<today?'Po terminie':date===today?'Dzisiaj':fDate(date);
+}
+function commandItem(ev,today,showComplete=false){
+ const target=commandAction(ev);
+ const tag=commandDateLabel(ev.date,today);
+ const overdue=ev.date<today;
+ const type=calendarEventType(ev.kind);
+ const project=ev.projectId?state.projects.find(p=>p.id===ev.projectId):null;
+ const context=ev.kind==='payment'?ev.info:
+  project&&ev.kind!=='workshop'&&ev.kind!=='project'?project.title:ev.info;
+ const details=[type,ev.time||'',context].filter(Boolean).join(' · ');
+ const doneAction=ev.kind==='task'?'toggle-task':ev.kind==='reminder'?'calendar-reminder':'';
+ const check=showComplete&&doneAction?
+  '<button type="button" class="command-mark" data-action="'+doneAction+'" data-id="'+htmlEscape(target.id)+'" aria-label="Oznacz jako wykonane" title="Oznacz jako wykonane">'+icon('check')+'</button>':'';
+ return '<div class="command-item'+(overdue?' is-late':'')+'">'+
+  '<button type="button" class="command-item-main" data-action="'+target.action+'" data-id="'+htmlEscape(target.id||'')+'">'+
+  '<span class="command-item-line"><strong>'+htmlEscape(ev.title)+'</strong>'+
+  '<span class="command-date'+(overdue?' is-late':'')+'">'+htmlEscape(tag)+'</span></span>'+
+  '<small>'+htmlEscape(details)+'</small></button>'+check+'</div>';
+}
+function commandMiniStat(value,label,navName,urgent=false){
+ return '<button type="button" class="command-pulse-item'+(urgent?' is-urgent':'')+
+  '" data-action="nav" data-view="'+navName+'"><strong>'+value+'</strong><span>'+label+'</span></button>';
+}
+function commandCenter(){
+ const d=commandCenterData();
+ const taskRows=d.actions.slice(0,5).map(e=>commandItem(e,d.today,true)).join('');
+ const weekRows=d.upcoming.slice(0,5).map(e=>commandItem(e,d.today)).join('');
+ const projectRows=d.projects.slice(0,4).map(e=>commandItem(e,d.today)).join('');
+ const payRows=d.payments.slice(0,3).map(e=>commandItem(e,d.today)).join('');
+ return '<section class="command-center" aria-label="Centrum dowodzenia MANU">'+
+  '<div class="command-head"><div><span class="command-kicker">TWÓJ DZIEŃ · MANU</span>'+
+  '<h2>Centrum dowodzenia</h2><p>Najważniejsze sprawy wynikające z zapisanych danych. Bez automatycznych powiadomień w tle.</p></div>'+
+  '<button type="button" class="btn secondary sm" data-action="nav" data-view="calendar">'+icon('calendar')+' Kalendarz</button></div>'+
+  '<div class="command-pulse">'+
+  commandMiniStat(d.late.length,'Spraw po terminie','calendar',d.late.length>0)+
+  commandMiniStat(d.todayCount,'Terminów dzisiaj','calendar')+
+  commandMiniStat(d.upcoming.length,'W kolejnych 7 dniach','calendar')+
+  commandMiniStat(d.payments.filter(e=>e.date<d.today).length,'Zaległych płatności','finance',d.unpaidLate>0)+
+  '</div>'+
+  '<div class="command-grid">'+
+   '<section class="command-panel"><div class="command-panel-heading"><h3>'+icon('checks')+' Na dziś i zaległe</h3>'+
+   '<button class="command-small-link" type="button" data-action="nav" data-view="tasks">Lista zadań '+icon('arrow')+'</button></div>'+
+   (taskRows||'<p class="command-empty">Nie ma zadań ani przypomnień z terminem na dziś lub wcześniejszym.</p>')+
+   (d.actions.length>5?'<p class="command-more">Jeszcze '+(d.actions.length-5)+' spraw do sprawdzenia w kalendarzu.</p>':'')+
+   (d.undated?'<p class="command-note">Otwarte zadania bez terminu: <strong>'+d.undated+'</strong>. Możesz nadać im daty w zakładce Zadania.</p>':'')+
+   '</section>'+
+   '<section class="command-panel"><div class="command-panel-heading"><h3>'+icon('calendar')+' Najbliższe 7 dni</h3>'+
+   '<button class="command-small-link" type="button" data-action="nav" data-view="calendar">Wszystkie '+icon('arrow')+'</button></div>'+
+   (weekRows||'<p class="command-empty">Brak terminów na kolejne 7 dni.</p>')+
+   (d.upcoming.length>5?'<p class="command-more">Jeszcze '+(d.upcoming.length-5)+' terminów w kalendarzu.</p>':'')+
+   '</section>'+
+  '</div>'+
+  '<div class="command-grid command-grid-bottom">'+
+   '<section class="command-panel"><div class="command-panel-heading"><h3>'+icon('folder')+' Realizacje do dopilnowania</h3>'+
+   '<button class="command-small-link" type="button" data-action="nav" data-view="projects">Projekty '+icon('arrow')+'</button></div>'+
+   '<p class="command-section-note">Niezakończone projekty po terminie lub z terminem w ciągu 3 dni.</p>'+
+   (projectRows||'<p class="command-empty">Nie ma obecnie realizacji z bliskim lub przekroczonym terminem.</p>')+
+   (d.projects.length>4?'<p class="command-more">Pozostałe: '+(d.projects.length-4)+' w zakładce Projekty.</p>':'')+
+   '</section>'+
+   '<section class="command-panel"><div class="command-panel-heading"><h3>'+icon('wallet')+' Płatności do dopilnowania</h3>'+
+   '<button class="command-small-link" type="button" data-action="nav" data-view="finance">Finanse '+icon('arrow')+'</button></div>'+
+   '<p class="command-section-note">Tylko należności z wpisanym terminem płatności. Zaległe: <strong>'+fMoney(d.unpaidLate)+'</strong>.</p>'+
+   (payRows||'<p class="command-empty">Brak zaległych płatności i płatności przypadających dziś.</p>')+
+   (d.payments.length>3?'<p class="command-more">Pozostałe: '+(d.payments.length-3)+' w kalendarzu.</p>':'')+
+   '</section>'+
+  '</div>'+
+  '<div class="command-shortcuts"><button type="button" class="btn sm" data-action="new-task">'+icon('plus')+' Nowe zadanie</button>'+
+   '<button type="button" class="btn secondary sm" data-action="reminder-add">'+icon('calendar')+' Przypomnienie</button>'+
+   '<button type="button" class="btn secondary sm" data-action="new-project">'+icon('plus')+' Projekt</button></div>'+
+  '</section>';
+}
+function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);let next=[...state.tasks].filter(t=>!t.done).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,5);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section>${commandCenter()}<section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section><section class="content-grid"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div><div class="surface"><div class="section-head"><h2>Najbliższe zadania</h2><button class="link" data-action="new-task">${icon('plus')} Dodaj</button></div>${next.length?next.map(taskRow).join(''):empty('Wszystko pod kontrolą','Nie masz aktualnie otwartych zadań.',`<button class="btn secondary sm" data-action="new-task">Utwórz zadanie</button>`)}</div></section><section class="surface home-upcoming"><div class="section-head"><h2>Terminy i przypomnienia</h2><button class="link" data-action="nav" data-view="calendar">Kalendarz ${icon('arrow')}</button></div>${calendarAlertMarkup(5)}</section>`}
 function projectRow(p){return `<div class="project-row" role="button" tabindex="0" data-action="open-project" data-id="${htmlEscape(p.id)}">${projectTypeIcon(p)}<div class="project-row-info"><b>${htmlEscape(p.title)}</b><span>${htmlEscape(p.type)} · ${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</span></div><div class="right-stats"><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b><small>po kosztach</small></div></div>`;}
 function quoteItemRow(item={}){
  return `<div class="quote-line" data-quote-row>
