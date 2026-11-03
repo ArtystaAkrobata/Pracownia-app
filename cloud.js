@@ -308,15 +308,15 @@ async function finishRecovery(event){
  const form=event.target;
  const newPassword=checkNewPassword(form);
  if(!newPassword)return;
+ let completed=false;
  busy=true;
  try{
   const {error}=await client.auth.updateUser({password:newPassword});
   if(error)throw error;
-  form.reset();recoveryMode=false;errorText='';
+  form.reset();recoveryMode=false;errorText='';completed=true;
   emit('Nowe hasło zapisano. Konto jest ponownie dostępne.');
-  void inspect();
  }catch(e){errorText=textError(e);window.alert('Nie udało się zapisać hasła: '+errorText);}
- finally{busy=false;renderIfSettings();}
+ finally{busy=false;renderIfSettings();if(completed)void inspect();}
 }
 function loadLibrary(){
  return new Promise((resolve,reject)=>{
