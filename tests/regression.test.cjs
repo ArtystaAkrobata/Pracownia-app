@@ -382,7 +382,9 @@ test('Mobile: doładowanie projektów dokleja elementy bez nadpisywania poprzedn
   assert.ok(removed);
   assert.match(inserted,/Pokaż kolejne 12/);
   assert.equal((initial.match(/class="project-card"/g)||[]).length,40);
-  assert.doesNotMatch(inserted,/data-id="p000"/);
+  const ids=html=>[...html.matchAll(/<article class="project-card" data-action="open-project" data-id="([^"]+)"/g)].map(match=>match[1]);
+  const firstIds=new Set(ids(initial));
+  assert.equal(ids(inserted).filter(id=>firstIds.has(id)).length,0);
 });
 
 test('Mobile: lista klientów pokazuje 40 kart, liczy wartości bez podwójnych przebiegów', () => {
