@@ -157,10 +157,13 @@ function timerButtons(p){
  return '<div class="work-timer"><span class="work-timer-value" data-timer-value="'+id+'" aria-live="off">'+durationSecs(activeTimerSeconds(p))+'</span><span class="work-timer-state">'+(active?'Stoper pracuje · liczy także przy zablokowanym ekranie':paused?'Pauza · wznów lub zakończ sesję':'Gotowy do mierzenia czasu pracy')+'</span><div class="work-timer-buttons">'+btns+'<button type="button" class="btn ghost sm" data-action="timer-stop" data-id="'+id+'" '+(active||paused?'':'disabled')+'>'+icon('check')+' Stop i zapisz</button></div></div>';
 }
 function liveTimerRefresh(){
- for(const p of state.projects){
-  if(!p.timer?.startedAt)continue;
-  const el=$('[data-timer-value="'+p.id.replace(/"/g,'')+'"]');
-  if(el)el.textContent=durationSecs(activeTimerSeconds(p));
+ // Nie obciążaj telefonu, gdy MANU działa w tle albo stoper nie jest widoczny.
+ if(document.visibilityState==='hidden')return;
+ const timers=document.querySelectorAll('[data-timer-value]');
+ if(!timers.length)return;
+ for(const el of timers){
+  const p=state.projects.find(project=>project.id===el.dataset.timerValue);
+  if(p?.timer?.startedAt)el.textContent=durationSecs(activeTimerSeconds(p));
  }
 }
 
@@ -549,13 +552,14 @@ function clientNumbers(clientId){
 }
 function clientsPage(){
  const count=state.clients.length;
+ const linkedClientIds=new Set(state.clients.map(c=>c.id));
  const legacy=state.projects.filter(p=>!p.clientId&&String(p.client||'').trim()).length;
  return pageHeading('Baza klientów','Kontakty, historia współpracy oraz rozliczenia w jednym miejscu.',
    '<div class="crm-page-actions"><button type="button" class="btn ghost crm-close" data-action="nav" data-view="projects" title="Wróć do projektów" aria-label="Wróć do projektów">×</button>'+
    '<button type="button" class="btn" data-action="client-new">'+icon('plus')+' Nowy klient</button></div>')+
    '<div class="crm-summary">'+
     '<div><small>Karty klientów</small><strong>'+count+'</strong></div>'+
-    '<div><small>Przypisane realizacje</small><strong>'+state.projects.filter(p=>p.clientId&&new Set(state.clients.map(c=>c.id)).has(p.clientId)).length+'</strong></div>'+
+    '<div><small>Przypisane realizacje</small><strong>'+state.projects.filter(p=>p.clientId&&linkedClientIds.has(p.clientId)).length+'</strong></div>'+
    '</div>'+
    '<div class="crm-toolbar"><input class="search" id="client-search" aria-label="Szukaj klienta" placeholder="Szukaj klienta, firmy, e-maila…" value="'+htmlEscape(clientSearch)+'"></div>'+
    (legacy?'<div class="crm-import-hint"><p>Masz '+legacy+' projektów z wpisaną nazwą klienta, ale bez powiązanej karty.</p>'+
