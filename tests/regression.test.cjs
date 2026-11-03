@@ -1,0 +1,228 @@
+'use strict';
+
+/**
+ * Etap 11 MANU — testy regresyjne. Uruchom:
+ *   node --test tests/regression.test.cjs
+ * Bez bibliotek zewnętrznych i bez dostępu do prawdziwych danych.
+ */
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const ROOT = path.join(__dirname, '..');
+const appSource = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+const injectPoint = /init\(\);\s*\}\)\(\);\s*$/;
+assert.match(appSource, injectPoint, 'Nie udało się znaleźć końca aplikacji MANU');
+
+function boot(snapshot = {version: 18, projects: [], tasks: []}) {
+  const alerts = [];
+  const callbacks = {};
+  let seq = 0;
+  const document = {
+    querySelector: () => null,
+    getElementById: () => null,
+    addEventListener: (name, fn, capture) => {
+      (callbacks[name] ||= []).push({fn, capture});
+    }
+  };
+  const window = {
+    MANUCloud: {},
+    MANUGallery: {},
+    addEventListener: () => {},
+    scrollTo: () => {}
+  };
+  const context = {
+    window, document,
+    crypto: {randomUUID: () => 'test-' + (++seq)},
+    navigator: {onLine: true},
+    location: {search: '', protocol: 'https:'},
+    localStorage: {getItem: () => null, setItem: () => {}},
+    console,
+    alert: message => alerts.push(String(message)),
+    confirm: () => true,
+    FormData: class {
+      constructor(form) { this.fields = form.values || {}; }
+      get(name) {
+        return Object.hasOwn(this.fields, name) ? this.fields[name] : null;
+      }
+    }
+  };
+  const expose = [
+    'globalThis.__MANU_TEST = {',
+    ' normalize, validateBackup, metrics, expenses, projectIncome, projectPaid,',
+    ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
+    ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
+    ' profitabilityResults, profitabilityPanel, projectDetail, events,',
+    ' handleAction, handleSubmit,',
+    ' setState: raw => { state = normalize(raw); },',
+    ' getState: () => state,',
+    ' opened: (id,key) => detailSectionStates.get(id)?.has(key),',
+    ' stubEffects: () => {',
+    '  afterDataChange = (message,detailId) => { globalThis.__lastChange = {message,detailId}; };',
+    '  closeModal = () => {};',
+    '  render = () => {};',
+    '  modal = (title,body,opts) => { globalThis.__lastModal={title,body,opts}; };',
+    ' }',
+    '};',
+    '})();'
+  ].join('\n');
+  const modified = appSource.replace(injectPoint, expose);
+  vm.runInNewContext(modified, context, {filename: 'app.js', timeout: 3000});
+  const api = context.__MANU_TEST;
+  api.setState(snapshot);
+  api.stubEffects();
+  return {api, alerts, callbacks, context};
+}
+
+const job = (id, extra = {}) => ({
+  id, title: 'Lustro ' + id, type: 'Zlecenie', status: 'Planowane',
+  price: 500, paid: 0, hours: 5, expenses: [], ...extra
+});
+
+test('Migracja danych: klient warsztatu pozostaje oddzielony od organizatora', () => {
+  const {api} = boot({
+    version: 17, tasks: [], projects: [
+      {id: 'w1', title: 'Hobbit', type: 'Warsztat',
+       client: 'Kali', organizer: 'Adam', participantFee: 200, participants: []}
+    ]
+  });
+  const p = api.getState().projects[0];
+  assert.equal(api.getState().version, 18);
+  assert.equal(p.client, 'Kali');
+  assert.equal(p.organizer, 'Adam');
+  assert.equal(p.type, 'Warsztat');
+});
+
+test('Kopie JSON: kompatybilność starszej wersji i odrzucanie niewłaściwej', () => {
+  const {api} = boot();
+  assert.equal(api.validateBackup({version: 17, projects: [], tasks: []}).version, 18);
+  assert.throws(() => api.validateBackup({version: 999, projects: [], tasks: []}));
+  assert.throws(() => api.validateBackup({version: 18, projects: [null], tasks: []}));
+  assert.throws(() => api.validateBackup({version: 18, projects: [], tasks: [], reminders: 'błąd'}));
+});
+
+test('Finanse: rzeczywisty koszt dojazdu zastępuje oszacowanie', () => {
+  const {api} = boot({version: 18, tasks: [], projects: [
+    job('a', {
+      transportType: 'car', travelMode: 'fuel',
+      travelKm: 100, fuelConsumption: 6, fuelPrice: 5,
+      expenses: [{id:'e1', title:'Folia', amount: 50, category:'materialy'}]
+    }),
+    job('b', {
+      transportType: 'car', travelMode: 'fuel',
+      travelKm: 100, fuelConsumption: 6, fuelPrice: 5,
+      expenses: [{id:'e2', title:'Transport', amount: 45, category:'dojazd'}]
+    })
+  ]});
+  const [a,b] = api.getState().projects;
+  assert.equal(api.expenses(a), 80);
+  assert.equal(api.expenses(b), 45);
+  assert.equal(api.metrics().cost, 125);
+});
+
+test('Warsztaty: suma z potwierdzonych miejsc, bez listy rezerwowej', () => {
+  const {api} = boot({version: 18, tasks: [], projects: [
+    {id:'w1', title:'Gotyk', type:'Warsztat', status:'W trakcie',
+     financeMode:'participants', participantFee: 200, participants: [
+       {id:'p1', name:'Pierwszy', fee:200, paidAmount:50, bookingStatus:'confirmed'},
+       {id:'p2', name:'Rezerwowy', fee:300, bookingStatus:'waitlist'}
+     ], expenses:[]}
+  ]});
+  const p = api.getState().projects[0];
+  assert.equal(api.projectIncome(p), 200);
+  assert.equal(api.projectPaid(p), 50);
+});
+
+test('Struktura kosztów: suma kategorii = koszty w Finansach', () => {
+  const {api} = boot({version: 18, tasks: [], projects: [
+    job('a', {expenses:[{id:'m', title:'Farba', amount:80, category:'materialy'}]}),
+    job('b', {expenses:[{id:'s', title:'Zlecenie podwykonawcy', amount:40, category:'uslugi'}]}),
+    job('c', {status:'Anulowane', expenses:[{id:'x', title:'Nie liczyć', amount:500, category:'materialy'}]})
+  ]});
+  const data = api.costCategoryData();
+  const totalCategories = data.categories.reduce((n,row) => n+row.amount, 0);
+  assert.equal(data.projects.length, 2);
+  assert.equal(data.total, 120);
+  assert.equal(totalCategories, api.metrics().cost);
+});
+
+test('Porównywarka: godziny nieznane nie są liczone jako zero', () => {
+  const {api} = boot({version:18, tasks:[], projects: [
+    job('a', {hours:0}),
+    job('b', {hours:10,price:400,
+      expenses:[{id:'e',title:'Koszt',amount:100,category:'inne'}]})
+  ]});
+  const [a,b] = api.getState().projects;
+  assert.equal(api.comparisonMetrics(a).hourly, null);
+  assert.equal(api.comparisonMetrics(b).hourly, 30);
+  assert.notEqual(api.comparisonSelection().left.id, api.comparisonSelection().right.id);
+});
+
+test('Terminy: wykonane zadania nie generują inteligentnych alertów', () => {
+  const {api} = boot();
+  const today = api.localDay();
+  const tomorrow = api.plusDaysDate(today,1);
+  api.setState({version: 18, projects: [], tasks: [
+    {id:'pending',title:'Przygotuj materiały',due:tomorrow,done:false},
+    {id:'done',title:'Gotowe',due:today,done:true}
+  ]});
+  const list = api.smartAlertsData(today);
+  assert.equal(list.filter(x=>x.taskId==='pending').length, 1);
+  assert.equal(list.filter(x=>x.taskId==='done').length, 0);
+});
+
+test('Zadania: limit rekordów i błędne powiązanie projektu nie psują danych', () => {
+  const {api,alerts} = boot();
+  api.getState().tasks = Array.from({length:25000},(_,i)=>({
+    id:'t'+i,title:'Pozycja '+i,projectId:'',done:false,due:''
+  }));
+  api.handleSubmit({id:'task-form',dataset:{id:'',returnProject:''},
+    values:{title:'Nowe',due:'',projectId:''}});
+  assert.equal(api.getState().tasks.length, 25000);
+  assert.match(alerts.at(-1), /limit 25 000/i);
+  api.getState().tasks = [];
+  api.handleSubmit({id:'task-form',dataset:{id:'',returnProject:''},
+    values:{title:'Nowe',due:'',projectId:'projekt-nieistniejący'}});
+  assert.equal(api.getState().tasks.length, 0);
+  assert.match(alerts.at(-1), /już nie istnieje/);
+});
+
+test('Usunięcie projektu: zadania i przypomnienia zachowują treść, ale tracą powiązanie', () => {
+  const {api} = boot({version:18,
+    projects:[job('a'),job('b')],
+    tasks:[{id:'t',title:'Materiały',projectId:'a',done:false}],
+    reminders:[{id:'r',title:'Oddaj',date:'2026-12-01',projectId:'a'}]
+  });
+  api.handleAction({dataset:{action:'delete-project',id:'a'}});
+  assert.equal(api.getState().projects.length, 1);
+  assert.equal(api.getState().tasks[0].title, 'Materiały');
+  assert.equal(api.getState().tasks[0].projectId, '');
+  assert.equal(api.getState().reminders[0].title, 'Oddaj');
+  assert.equal(api.getState().reminders[0].projectId, '');
+});
+
+test('Zwinięte sekcje: stan otwarcia projektu jest zachowywany', () => {
+  const {api, callbacks} = boot({version:18,projects:[job('a')],tasks:[]});
+  api.events();
+  const toggle = callbacks.toggle[0];
+  assert.equal(toggle.capture, true);
+  toggle.fn({target:{isConnected:true,
+    matches:selector=>selector==='details.manu-detail-fold',
+    dataset:{project:'a',section:'finance'},open:true}});
+  assert.equal(api.opened('a','finance'), true);
+  api.projectDetail('a');
+  assert.match(api.profitabilityPanel(), /profitability-panel/);
+  assert.match(api.getState().projects[0].title, /Lustro/);
+});
+
+test('PWA: wersje plików i cache są spójne', () => {
+  const index = fs.readFileSync(path.join(ROOT, 'index.html'),'utf8');
+  const sw = fs.readFileSync(path.join(ROOT, 'service-worker.js'),'utf8');
+  const version = appSource.match(/const APP_VERSION='([^']+)'/)[1];
+  assert.ok(index.includes('app.js?v='+version));
+  assert.ok(index.includes('styles.css?v='+version));
+  assert.ok(sw.includes('manu-app-v'+version));
+  assert.ok(sw.includes('app.js?v='+version));
+});
