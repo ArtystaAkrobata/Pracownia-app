@@ -373,7 +373,7 @@ test('Mobile: doładowanie projektów dokleja elementy bez nadpisywania poprzedn
   const {api,nodes} = boot({version:18,projects,tasks:[]});
   const initial=api.renderProjectGrid();
   let inserted='',removed=false;
-  const footer={insertAdjacentHTML:(position,html)=>{assert.equal(position,'beforebegin');inserted=html;},remove:()=>{removed=true}};
+  const footer={insertAdjacentHTML:(position,html)=>{assert.equal(position,'afterend');inserted=html;},remove:()=>{removed=true}};
   const container={querySelector:selector=>selector==='.manu-list-more'?footer:null};
   nodes['#project-list']=container;
   api.handleAction({dataset:{action:'list-more',list:'projects'}});
@@ -443,4 +443,34 @@ test('Mobile: stoper nie odświeża DOM w tle i aktualizuje tylko widoczne eleme
   api.liveTimerRefresh();
   assert.equal(scans,1);
   assert.ok(updated.length>0);
+});
+
+
+test('Mobile: filtr zadań aktualizuje tylko listę bez przewijania i zmiany karty', () => {
+  const {api,nodes,context} = boot({version:18,projects:[],tasks:[
+    {id:'a',title:'Zadanie otwarte',done:false},
+    {id:'b',title:'Zadanie zakończone',done:true}
+  ]});
+  let html='';
+  nodes['#task-list']={set innerHTML(value){html=value;}};
+  context.window.scrollTo=()=>{throw Error('Nie wolno przewijać strony');};
+  api.handleAction({dataset:{action:'task-filter',filter:'done'}});
+  assert.match(html,/Zadanie zakończone/);
+  assert.doesNotMatch(html,/Zadanie otwarte/);
+  assert.equal(api.getListVisible().tasks,40);
+});
+
+test('Mobile: zmiana filtra typu projektów nie przebudowuje całego notesu', () => {
+  const {api,nodes,callbacks,context} = boot({version:18,projects:[
+    job('z',{title:'Lustro tylko zlecenie'}),
+    {id:'w',title:'Hobbit tylko warsztat',type:'Warsztat',status:'Planowane',expenses:[]}
+  ],tasks:[]});
+  let html='';
+  nodes['#project-list']={set innerHTML(value){html=value;}};
+  context.window.scrollTo=()=>{throw Error('Nie wolno przewijać strony');};
+  api.events();
+  callbacks.change[0].fn({target:{id:'project-filter',value:'Warsztat'}});
+  assert.match(html,/Hobbit tylko warsztat/);
+  assert.doesNotMatch(html,/Lustro tylko zlecenie/);
+  assert.equal(api.getListVisible().projects,40);
 });
