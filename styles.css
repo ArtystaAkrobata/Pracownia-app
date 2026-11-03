@@ -2905,3 +2905,25 @@ body.gallery-lightbox-open{overflow:hidden}
 .open-notebook .cost-category-body>.muted{margin:12px 0 0;line-height:1.6}
 @media(max-width:520px){.open-notebook .cost-category-summary{grid-template-columns:minmax(0,1fr) auto 14px;gap:6px;padding:12px 9px}.open-notebook .cost-category-summary strong{font-size:15px}.open-notebook .cost-category-summary em{font-size:12px}.open-notebook .cost-category-body{padding:11px 9px}.open-notebook .cost-category-caption span{font-size:11px}}
 @media(max-width:365px){.open-notebook .cost-category-summary{grid-template-columns:minmax(0,1fr) 14px}.open-notebook .cost-category-summary em{grid-column:1;grid-row:2;justify-self:start}.open-notebook .cost-category-chevron{grid-column:2;grid-row:1}}
+
+/* MANU 3.13.0 · listy mobilne, ładowanie kolejnych pozycji bez przewijania */
+.manu-list-more{
+ display:flex;align-items:center;justify-content:center;
+ width:100%;min-width:0;padding:13px 7px 7px;
+}
+.projects-grid>.manu-list-more{grid-column:1/-1}
+.crm-list>.manu-list-more{grid-column:1/-1}
+#task-list>.manu-list-more{margin-top:8px}
+.manu-list-more .btn{
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ gap:5px;min-height:44px;max-width:100%;white-space:normal;
+ padding:11px 16px;font-size:12px;border-radius:11px
+}
+.manu-list-more .muted{color:inherit;opacity:.7;font-size:11px}
+.manu-list-more .btn:focus-visible{
+ outline:2px solid #aa7250;outline-offset:3px
+}
+@media(max-width:520px){
+ .manu-list-more{padding:12px 6px 6px}
+ .manu-list-more .btn{width:100%;font-size:12px}
+}
