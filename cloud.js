@@ -200,6 +200,7 @@ async function authSubmit(event){
  const email=String(form.elements.email.value||'').trim(),password=String(form.elements.password.value||'');
  const mode=event.submitter?.value||'login';
  if(!email||password.length<8){window.alert('Podaj e-mail i hasło mające co najmniej 8 znaków.');return;}
+ let shouldInspect=false;
  busy=true;
  try{
   const result=mode==='register'?
@@ -208,10 +209,10 @@ async function authSubmit(event){
   if(result.error)throw result.error;
   form.elements.password.value='';
   if(mode==='register'&&!result.data?.session)emit('Sprawdź pocztę i potwierdź adres e-mail. Następnie zaloguj się.');
-  else{user=result.data?.user||result.data?.session?.user||user;emit('Zalogowano. Sprawdź wersje danych przed synchronizacją.');void inspect();}
+  else{user=result.data?.user||result.data?.session?.user||user;emit('Zalogowano. Sprawdź wersje danych przed synchronizacją.');shouldInspect=true;}
   errorText='';
  }catch(e){errorText=textError(e);window.alert(errorText)}
- finally{busy=false;renderIfSettings();}
+ finally{busy=false;renderIfSettings();if(shouldInspect)void inspect();}
 }
 function loadLibrary(){
  return new Promise((resolve,reject)=>{
