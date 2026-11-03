@@ -1835,3 +1835,58 @@ body{background:#08090b;color:var(--text)}
  .cloud-section .settings-actions .btn{font-size:11px;white-space:normal;min-width:0}
  .cloud-section .settings-actions .btn:first-child{grid-column:1/-1}
 }
+
+/* MANU 3.3.0 · Profil i odzyskiwanie dostępu */
+.cloud-profile{
+ margin-top:20px;
+ padding-top:18px;
+ border-top:1px solid var(--stroke);
+ display:grid;
+ gap:13px;
+}
+.cloud-profile h4{
+ font:600 20px Georgia,"Times New Roman",serif;
+ color:var(--text);
+ margin:0;
+}
+.cloud-profile>p{margin:0;overflow-wrap:anywhere}
+.cloud-profile .cloud-auth-form{margin-top:0}
+.cloud-profile .cloud-auth-form .btn{justify-self:start}
+.cloud-auth-help{margin-top:12px}
+.cloud-auth-help .btn{border-color:var(--stroke)}
+.cloud-password-details{
+ border:1px solid var(--stroke);
+ border-radius:12px;
+ background:var(--panel2);
+ overflow:hidden;
+}
+.cloud-password-details summary{
+ cursor:pointer;
+ padding:13px 16px;
+ color:var(--text);
+ font-weight:700;
+ list-style-position:inside;
+}
+.cloud-password-details[open] summary{
+ border-bottom:1px solid var(--stroke);
+}
+.cloud-password-details .cloud-auth-form{
+ padding:16px;
+}
+.cloud-password-details .muted{padding:0 16px 16px;margin:0}
+.cloud-reset-link{width:max-content;max-width:100%;white-space:normal;text-align:center}
+.cloud-section .cloud-status{
+ background:#183328;
+ border:1px solid #558569;
+ color:#def7e4;
+ line-height:1.5;
+}
+.cloud-section .cloud-status-warning{
+ background:#473321;
+ border-color:#bf9252;
+ color:#ffe4b7;
+}
+@media(max-width:500px){
+ .cloud-profile .cloud-auth-form .btn,
+ .cloud-reset-link{width:100%}
+}
