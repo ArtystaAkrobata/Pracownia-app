@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.1.2';
+const APP_VERSION='3.1.3';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -313,7 +313,7 @@ function quotesPage(){
   const p=state.projects.find(p=>p.id===q.projectId);
   return `<article class="surface quote-list-card"><div><small>${htmlEscape(q.number)} · ${htmlEscape(q.issued)}</small><h3>${htmlEscape(q.title)}</h3><p>${htmlEscape(q.client||'Klient niepodany')}${p?' · '+htmlEscape(p.title):''}</p></div><div class="quote-list-aside"><strong>${fMoney(quoteTotal(q))}</strong><div><button type="button" class="btn secondary sm" data-action="quote-preview" data-id="${htmlEscape(q.id)}">Podgląd / PDF</button><button type="button" class="btn ghost sm" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost sm" data-action="quote-delete" data-id="${htmlEscape(q.id)}" aria-label="Usuń wycenę">${icon('trash')}</button></div></div></article>`;
  }).join('');
- return `${pageHeading('Wyceny dla klientów','Przygotuj wycenę i zapisz ją jako PDF.',`<div class="quote-heading-actions"><button class="btn" data-action="quote-new">${icon('plus')} Nowa wycena</button><button type="button" class="btn ghost quote-close-btn" data-action="nav" data-view="projects" aria-label="Zamknij wyceny i wróć do projektów" title="Wróć do projektów"><span aria-hidden="true">×</span></button></div>`)}
+ return `<div class="quote-close-row"><button type="button" class="quote-exit" data-action="nav" data-view="projects" aria-label="Zamknij wyceny i wróć do projektów" title="Wróć do projektów"><span aria-hidden="true">×</span></button></div>${pageHeading('Wyceny dla klientów','Przygotuj wycenę i zapisz ją jako PDF.',`<button class="btn" data-action="quote-new">${icon('plus')} Nowa wycena</button>`)}
  <div class="quote-list">${rows||'<div class="surface quote-empty"><h3>Nie masz jeszcze wycen</h3><p>Dodaj pierwszą wycenę albo rozpocznij ją ze zlecenia.</p><button class="btn" data-action="quote-new">Przygotuj wycenę</button></div>'}</div><p class="muted tiny">Wyceny są przechowywane lokalnie. Zapisuj kopie JSON w Ustawieniach. Wycena nie jest fakturą.</p>`;
 }
 function quoteDocument(q){
