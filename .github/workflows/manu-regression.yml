@@ -1,0 +1,30 @@
+name: MANU - testy regresyjne
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+      - name: Konfiguracja Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sprawdz skladnie JS
+        run: |
+          node --check app.js
+          node --check cloud.js
+          node --check gallery.js
+          node --check templates.js
+          node --check service-worker.js
+      - name: Uruchom testy MANU
+        run: node --test tests/regression.test.cjs
