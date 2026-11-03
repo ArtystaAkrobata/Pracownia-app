@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.13.3';
+const APP_VERSION='3.13.4';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -27,6 +27,8 @@ function nextListButton(kind,shown,total){
  return remaining?'<div class="manu-list-more"><button type="button" class="btn secondary" data-action="list-more" data-list="'+kind+'">Pokaż kolejne '+Math.min(LIST_BATCH_SIZE,remaining)+' <span class="muted">('+remaining+' pozostało)</span></button></div>':'';
 }
 let notebookTurn='';
+// Powrót do pozycji Startu po przejściu przez Centrum dowodzenia.
+let calendarReturnToHomeY=null;
 let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
@@ -984,7 +986,8 @@ function calendarAlertMarkup(limit=6){
  return `<div class="calendar-alert-list">${alerts.slice(0,limit).map(ev=>`<button type="button" class="calendar-alert-item ${ev.date<localDay()?'is-overdue':''}" data-action="calendar-jump" data-date="${htmlEscape(ev.date)}"><span>${ev.date<localDay()?'Zaległe':ev.date===localDay()?'Dzisiaj':ev.date.slice(8)+'.'+ev.date.slice(5,7)}</span><b>${htmlEscape(ev.title)}</b><small>${calendarEventType(ev.kind)}</small></button>`).join('')}${alerts.length>limit?`<small class="muted">I jeszcze ${alerts.length-limit} terminów.</small>`:''}</div>`;
 }
 function calendarPage(){
- return `${pageHeading('Kalendarz i przypomnienia','Terminy realizacji, warsztatów, zadań i płatności w jednym miejscu.',`<button class="btn" data-action="reminder-add">${icon('plus')} Przypomnienie</button>`)}<section class="surface calendar-alert-surface"><div class="section-head"><h2>Najbliższe terminy</h2><span class="muted small">Zaległe, dziś i następne 7 dni</span></div><div id="calendar-alert-results">${calendarAlertMarkup()}</div></section><section class="surface manu-calendar-surface" id="calendar-panel">${calendarMonthMarkup()}</section><p class="muted tiny calendar-privacy">Przypomnienia są lokalne. MANU pokazuje je po otwarciu aplikacji — ta wersja nie wysyła automatycznych powiadomień, gdy jest całkowicie zamknięta.</p>`;
+ const backToStart=calendarReturnToHomeY!==null?'<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="calendar-return-home" aria-label="Wróć do poprzedniego miejsca na ekranie Start" title="Wróć do Startu"><span aria-hidden="true">×</span> Wróć</button></div>':'';
+ return `${backToStart}${pageHeading('Kalendarz i przypomnienia','Terminy realizacji, warsztatów, zadań i płatności w jednym miejscu.',`<button class="btn" data-action="reminder-add">${icon('plus')} Przypomnienie</button>`)}<section class="surface calendar-alert-surface"><div class="section-head"><h2>Najbliższe terminy</h2><span class="muted small">Zaległe, dziś i następne 7 dni</span></div><div id="calendar-alert-results">${calendarAlertMarkup()}</div></section><section class="surface manu-calendar-surface" id="calendar-panel">${calendarMonthMarkup()}</section><p class="muted tiny calendar-privacy">Przypomnienia są lokalne. MANU pokazuje je po otwarciu aplikacji — ta wersja nie wysyła automatycznych powiadomień, gdy jest całkowicie zamknięta.</p>`;
 }
 function calendarShift(direction){
  const [y,m]=calendarMonth.split('-').map(Number),date=new Date(Date.UTC(y,m-1+direction,1));
@@ -1619,6 +1622,10 @@ function afterDataChange(msg,detailId){
 function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'template-back':case 'template-new':case 'template-edit':case 'template-save-from-project':case 'template-cancel':case 'template-add-cost':case 'template-remove-cost':case 'template-use':case 'template-delete':{window.MANUTemplates?.handleAction?.(b);break;}case 'gallery-add':case 'gallery-edit':case 'gallery-preview':case 'gallery-delete':case 'gallery-return':case 'gallery-open-project':case 'gallery-close':{window.MANUGallery?.handleAction?.(b);break;}case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':case 'cloud-forgot':case 'cloud-send-reset':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
  if(b.dataset.view==='add'){projectForm();return;}
  const previous=view,next=b.dataset.view;
+ // Kontekstowy powrót tylko dla przejść z Centrum dowodzenia do Kalendarza.
+ if(previous==='home'&&next==='calendar'&&b.closest('.command-center'))calendarReturnToHomeY=window.scrollY;
+ else if(previous==='calendar'&&next!=='calendar')calendarReturnToHomeY=null;
+ else if(next==='calendar'&&previous!=='calendar')calendarReturnToHomeY=null;
  const notebookOrder={home:0,projects:1,clients:2,gallery:3,templates:4,quotes:5,finance:6,tasks:7,calendar:8};
  notebookTurn=Object.hasOwn(notebookOrder,previous)&&Object.hasOwn(notebookOrder,next)&&previous!==next
    ?notebookOrder[next]>notebookOrder[previous]?'next':'prev':'';
@@ -1626,6 +1633,14 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  window.scrollTo(0,0);
  render();
  break;
+}case 'calendar-return-home':{
+  if(calendarReturnToHomeY===null)break;
+  const top=calendarReturnToHomeY;
+  calendarReturnToHomeY=null;
+  notebookTurn='';view='home';
+  render();
+  window.scrollTo({left:0,top,behavior:'instant'});
+  break;
 }case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
 case 'quote-preview':quotePreview(id);break;
 case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q)quoteForm(q.projectId,q.id);break;}
