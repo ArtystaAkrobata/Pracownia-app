@@ -794,10 +794,37 @@ function comparisonResults(scope=profitabilityScope){
  '</div>'+
  '<p class="muted tiny comparison-disclaimer">* Plan kosztów obejmuje szacowane materiały i dojazd, jeżeli je wpisano. Jest pokazywany osobno, nie dolicza się go ponownie do kosztów ujętych w wyniku. Wpisane wydatki zawierają faktyczny dojazd. Szacowany dojazd jest doliczany tylko wtedy, gdy nie ma wpisanego wydatku na dojazd. „—” oznacza brak danych do porównania. Kwoty przed podatkami i kosztami stałymi.</p>';
 }
+function comparisonCriticalStyle(){
+ // Zabezpieczenie wyglądu przy przejściowo nieodświeżonym CSS aplikacji PWA.
+ return '<style id="manu-comparison-critical-css">'+
+ '.open-notebook details.profitability-compare{display:block;border:1px solid #cda989;border-radius:12px;background:#f7eddf;margin:17px 0;overflow:hidden;color:#4e3a2d}'+
+ '.open-notebook .profitability-compare>summary.profitability-compare-summary{display:grid!important;grid-template-columns:minmax(0,1fr) 18px;align-items:center;gap:9px;list-style:none!important;padding:14px 11px;cursor:pointer}'+
+ '.open-notebook .profitability-compare>summary::-webkit-details-marker{display:none!important}'+
+ '.open-notebook .profitability-compare>summary::marker{content:""!important;font-size:0}'+
+ '.open-notebook .comparison-summary-copy{display:flex!important;flex-direction:column;gap:4px;min-width:0}'+
+ '.open-notebook .comparison-summary-copy strong{display:flex;align-items:center;gap:7px;font:600 18px/1.3 Georgia,serif;color:#65442f}'+
+ '.open-notebook .comparison-summary-copy small{font:400 11px/1.4 Arial,sans-serif;color:#816b59}'+
+ '.open-notebook .profitability-compare-body{padding:12px 10px;border-top:1px solid #d9bda2}'+
+ '.open-notebook .comparison-selectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}'+
+ '.open-notebook .comparison-selectors label{min-width:0;display:flex;flex-direction:column;gap:5px;color:#604631;font-size:11px}'+
+ '.open-notebook .comparison-selectors select{width:100%;min-width:0;padding:10px 7px;border:1px solid #c7a485;border-radius:8px;background:#fbf4e8;color:#4a3229}'+
+ '.open-notebook .comparison-project-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:9px}'+
+ '.open-notebook .comparison-project-links button{min-width:0;border:1px solid #d2b293;border-radius:8px;background:#efdfca;color:#69462f;padding:9px;text-align:left;overflow-wrap:anywhere}'+
+ '.open-notebook .comparison-table{overflow:hidden;border:1px solid #d1b092;border-radius:9px;background:#f9efe3}'+
+ '.open-notebook .comparison-metric-row{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:7px;align-items:center;padding:10px 8px;border-bottom:1px solid #e0cbb4}'+
+ '.open-notebook .comparison-metric-row:nth-child(even){background:#f0e1cf}'+
+ '.open-notebook .comparison-metric-label{color:#725640;font-size:11px;overflow-wrap:anywhere}'+
+ '.open-notebook .comparison-metric-value{text-align:right;color:#573d2d;font-size:12px;font-weight:650;overflow-wrap:anywhere}'+
+ '.open-notebook .comparison-is-negative{color:#b45549!important}'+
+ '.open-notebook .comparison-empty{padding:12px;background:#f0e1d0;border:1px dashed #c6a48b;color:#70533d}'+
+ '@media(max-width:520px){.open-notebook .comparison-metric-row{gap:5px;padding:9px 6px}.open-notebook .comparison-metric-label{font-size:10px}.open-notebook .comparison-metric-value{font-size:11px}.open-notebook .comparison-selectors{gap:7px}}'+
+ '@media(max-width:380px){.open-notebook .comparison-selectors{grid-template-columns:1fr}}'+
+ '</style>';
+}
 function comparisonMarkup(scope=profitabilityScope){
  const selection=comparisonSelection(scope),{choices,left,right}=selection;
  const optionRows=selected=>choices.map(p=>'<option value="'+htmlEscape(p.id)+'"'+(selected?.id===p.id?' selected':'')+'>'+htmlEscape(p.title)+' · '+htmlEscape(p.type)+'</option>').join('');
- return '<details class="profitability-compare" '+(compareExpanded?'open':'')+'>'+
+ return comparisonCriticalStyle()+'<details class="profitability-compare" '+(compareExpanded?'open':'')+'>'+
  '<summary class="profitability-compare-summary"><span class="comparison-summary-copy"><strong>'+icon('scale')+' Porównaj dwie realizacje</strong>'+
  '<small>Wartość, koszty, plan i przepracowane godziny</small></span>'+
  '<span class="profitability-panel-chevron" aria-hidden="true">⌄</span></summary>'+
