@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.10.0';
+const APP_VERSION='3.11.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -24,7 +24,7 @@ let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
-let profitabilityExpanded=false,profitabilityScope='all';
+let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='';
 // Rozwinięte sekcje pamiętamy w UI, bez zmian zapisanych danych.
 const detailSectionStates=new Map();
 let financeMonth=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0')].join('-');
@@ -726,7 +726,85 @@ function profitabilityResults(scope=profitabilityScope){
    (d.result.length>10?'<p class="muted tiny">Pokazano 10 pierwszych z '+d.result.length+' realizacji z wpisanym czasem.</p>':''):
   '<p class="profitability-empty">'+(d.list.length?'Brak porównywalnych projektów. Uzupełnij przepracowane godziny w kartach realizacji.':'Nie masz jeszcze realizacji w wybranej kategorii.')+'</p>')+
  (missing?'<p class="profitability-hint"><strong>'+missing+' realizacji bez zapisanego czasu pracy.</strong> Nie uwzględniamy ich w rankingu ani w średniej za godzinę. <button type="button" data-action="nav" data-view="projects">Przejdź do projektów</button></p>':'')+
+ comparisonMarkup(scope)+
  '<p class="muted tiny profitability-disclaimer">Wynik na godzinę = (wartość realizacji − ujęte koszty) ÷ zapisane godziny. Średnia jest ważona czasem pracy i obejmuje wyłącznie realizacje z wpisanymi godzinami. Nie jest to stawka brutto/netto z umowy ani wynik księgowy. Wartość nie oznacza, że klient już zapłacił. Pominięto anulowane projekty; nie ujęto podatków, kosztów stałych ani brakujących wydatków.</p>';
+}
+
+/* Etap 10.2: porównanie realizacji na żywo, bez zapisywania dodatkowych danych. */
+function comparisonProjects(scope=profitabilityScope){
+ return active().filter(p=>scope==='Zlecenie'||scope==='Warsztat'?p.type===scope:true)
+  .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||a.title.localeCompare(b.title,'pl'));
+}
+function comparisonSelection(scope=profitabilityScope){
+ const choices=comparisonProjects(scope);
+ if(!choices.length)return {choices,left:null,right:null};
+ const left=choices.find(p=>p.id===compareLeftId)||choices[0];
+ const right=choices.find(p=>p.id===compareRightId&&(p.id!==left.id))||choices.find(p=>p.id!==left.id)||null;
+ return {choices,left,right};
+}
+function comparisonMetrics(p){
+ const recordedCosts=projectActualCost(p),plannedTravel=estimatedTravelApplied(p);
+ const plannedHours=val(p.estimatedHours),realHours=val(p.hours);
+ const costs=expenses(p),value=projectIncome(p);
+ const plannedMaterial=money(p.estimatedMaterials),declaredTravel=travelCost(p);
+ const planPresent=plannedMaterial>0||declaredTravel>0;
+ return {
+  value,paid:projectPaid(p),recordedCosts,plannedTravel,costs,result:profit(p),
+  plan:planPresent?projectPlannedCost(p):null,
+  plannedHours:plannedHours>0?plannedHours:null,
+  hours:realHours>0?realHours:null,
+  hourDelta:plannedHours>0&&realHours>0?realHours-plannedHours:null,
+  hourly:realHours>0?profit(p)/realHours:null,
+  costsPerHour:realHours>0?costs/realHours:null
+ };
+}
+function comparisonFormat(value,kind,delta=false){
+ if(value==null)return '—';
+ if(kind==='hours')return (delta&&value>0?'+':'')+fHours(value)+' godz.';
+ return fMoney(value);
+}
+function comparisonRow(label,a,b,kind='money',delta=false){
+ const valueA=comparisonFormat(a,kind,delta),valueB=comparisonFormat(b,kind,delta);
+ const isBad=v=>delta&&v!=null&&v>0||(label==='Wynik po kosztach'||label==='Wynik na godzinę')&&v!=null&&v<0;
+ return '<div class="comparison-metric-row">'+
+  '<span class="comparison-metric-label">'+htmlEscape(label)+'</span>'+
+  '<span class="comparison-metric-value'+(isBad(a)?' comparison-is-negative':'')+'">'+htmlEscape(valueA)+'</span>'+
+  '<span class="comparison-metric-value'+(isBad(b)?' comparison-is-negative':'')+'">'+htmlEscape(valueB)+'</span></div>';
+}
+function comparisonResults(scope=profitabilityScope){
+ const {left,right}=comparisonSelection(scope);
+ if(!left||!right)return '<p class="comparison-empty">Dodaj co najmniej dwie nieanulowane realizacje w tej kategorii, aby je porównać.</p>';
+ if(left.id===right.id)return '<p class="comparison-empty">Wybierz dwa różne projekty.</p>';
+ const a=comparisonMetrics(left),b=comparisonMetrics(right);
+ return '<div class="comparison-project-links">'+
+  '<button type="button" data-action="open-project" data-id="'+htmlEscape(left.id)+'">'+htmlEscape(left.title)+' '+icon('arrow')+'</button>'+
+  '<button type="button" data-action="open-project" data-id="'+htmlEscape(right.id)+'">'+htmlEscape(right.title)+' '+icon('arrow')+'</button></div>'+
+ '<div class="comparison-table" aria-label="Porównanie dwóch realizacji">'+
+  comparisonRow('Wartość projektu',a.value,b.value)+
+  comparisonRow('Otrzymane wpłaty',a.paid,b.paid)+
+  comparisonRow('Planowane koszty*',a.plan,b.plan)+
+  comparisonRow('Wpisane wydatki',a.recordedCosts,b.recordedCosts)+
+  comparisonRow('Szacowany dojazd w kosztach',a.plannedTravel,b.plannedTravel)+
+  comparisonRow('Koszty ujęte w wyniku',a.costs,b.costs)+
+  comparisonRow('Wynik po kosztach',a.result,b.result)+
+  comparisonRow('Planowany czas',a.plannedHours,b.plannedHours,'hours')+
+  comparisonRow('Zapisany czas',a.hours,b.hours,'hours')+
+  comparisonRow('Różnica czasu względem planu',a.hourDelta,b.hourDelta,'hours',true)+
+  comparisonRow('Wynik na godzinę',a.hourly,b.hourly)+
+ '</div>'+
+ '<p class="muted tiny comparison-disclaimer">* Plan kosztów obejmuje szacowane materiały i dojazd, jeżeli je wpisano. Jest pokazywany osobno, nie dolicza się go ponownie do kosztów ujętych w wyniku. Wpisane wydatki zawierają faktyczny dojazd. Szacowany dojazd jest doliczany tylko wtedy, gdy nie ma wpisanego wydatku na dojazd. „—” oznacza brak danych do porównania. Kwoty przed podatkami i kosztami stałymi.</p>';
+}
+function comparisonMarkup(scope=profitabilityScope){
+ const selection=comparisonSelection(scope),{choices,left,right}=selection;
+ const optionRows=selected=>choices.map(p=>'<option value="'+htmlEscape(p.id)+'"'+(selected?.id===p.id?' selected':'')+'>'+htmlEscape(p.title)+' · '+htmlEscape(p.type)+'</option>').join('');
+ return '<details class="profitability-compare" '+(compareExpanded?'open':'')+'>'+
+ '<summary class="profitability-compare-summary"><span class="comparison-summary-copy"><strong>'+icon('scale')+' Porównaj dwie realizacje</strong>'+
+ '<small>Wartość, koszty, plan i przepracowane godziny</small></span>'+
+ '<span class="profitability-panel-chevron" aria-hidden="true">⌄</span></summary>'+
+ '<div class="profitability-compare-body">'+
+ '<div class="comparison-selectors"><label>Pierwsza realizacja<select id="compare-project-left" '+(!left?'disabled':'')+'>'+optionRows(left)+'</select></label>'+
+ '<label>Druga realizacja<select id="compare-project-right" '+(!right?'disabled':'')+'>'+optionRows(right)+'</select></label></div>'+
+ '<div id="comparison-results">'+comparisonResults(scope)+'</div></div></details>';
 }
 function profitabilityPanel(){
  const d=profitabilityData();
@@ -1560,6 +1638,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
 function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
+ if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
@@ -1569,6 +1648,17 @@ function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el
  if(e.target.id==='smart-alert-lead'){
   const days=Number(e.target.value);
   if([1,3,7].includes(days)){state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,leadDays:days});afterDataChange('Zapisano wyprzedzenie przypomnień')}
+  return;
+ }
+ if(e.target.id==='compare-project-left'||e.target.id==='compare-project-right'){
+  const selected=String(e.target.value||''),valid=comparisonProjects();
+  if(valid.some(p=>p.id===selected)){
+   if(e.target.id==='compare-project-left')compareLeftId=selected;
+   else compareRightId=selected;
+   // Aktualizujemy wyłącznie porównanie; nie przewijamy strony ani nie zamykamy sekcji.
+   const area=$('#comparison-results');
+   if(area)area.innerHTML=comparisonResults();
+  }
   return;
  }
  if(e.target.id==='profitability-type'){
