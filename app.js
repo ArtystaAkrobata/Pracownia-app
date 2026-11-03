@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.11.0';
+const APP_VERSION='3.12.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -24,7 +24,7 @@ let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
-let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='';
+let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='',costBreakdownExpanded=false;
 // Rozwinięte sekcje pamiętamy w UI, bez zmian zapisanych danych.
 const detailSectionStates=new Map();
 let financeMonth=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0')].join('-');
@@ -726,7 +726,7 @@ function profitabilityResults(scope=profitabilityScope){
    (d.result.length>10?'<p class="muted tiny">Pokazano 10 pierwszych z '+d.result.length+' realizacji z wpisanym czasem.</p>':''):
   '<p class="profitability-empty">'+(d.list.length?'Brak porównywalnych projektów. Uzupełnij przepracowane godziny w kartach realizacji.':'Nie masz jeszcze realizacji w wybranej kategorii.')+'</p>')+
  (missing?'<p class="profitability-hint"><strong>'+missing+' realizacji bez zapisanego czasu pracy.</strong> Nie uwzględniamy ich w rankingu ani w średniej za godzinę. <button type="button" data-action="nav" data-view="projects">Przejdź do projektów</button></p>':'')+
- comparisonMarkup(scope)+
+ comparisonMarkup(scope)+costCategoryPanel(scope)+
  '<p class="muted tiny profitability-disclaimer">Wynik na godzinę = (wartość realizacji − ujęte koszty) ÷ zapisane godziny. Średnia jest ważona czasem pracy i obejmuje wyłącznie realizacje z wpisanymi godzinami. Nie jest to stawka brutto/netto z umowy ani wynik księgowy. Wartość nie oznacza, że klient już zapłacił. Pominięto anulowane projekty; nie ujęto podatków, kosztów stałych ani brakujących wydatków.</p>';
 }
 
@@ -1666,6 +1666,7 @@ function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
+ if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
