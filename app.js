@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.8.3';
+const APP_VERSION='3.8.4';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1102,6 +1102,36 @@ function projectMaterialChecklist(p){
  const rows=list.length?list.map(m=>`<div class="workshop-material-row"><button type="button" class="workflow-check ${m.done?'is-done':''}" data-action="workshop-material-toggle" data-id="${htmlEscape(p.id)}" data-material="${htmlEscape(m.id)}" aria-label="${m.done?'Cofnij przygotowanie':'Oznacz jako przygotowane'}: ${htmlEscape(m.title)}" aria-pressed="${m.done}">${m.done?icon('check'):'○'}</button><span class="${m.done?'stage-completed':''}">${htmlEscape(m.title)} <small>× ${m.quantity}</small></span><button type="button" class="btn ghost sm" data-action="workshop-material-remove" data-id="${htmlEscape(p.id)}" data-material="${htmlEscape(m.id)}" aria-label="Usuń materiał">${icon('trash')}</button></div>`).join(''):'<p class="muted small">Dodaj materiały i narzędzia potrzebne do realizacji.</p>';
  return `<section class="detail-section workshop-preparation project-checklist"><div class="section-head"><h3>Materiały i przygotowania</h3><button class="btn secondary sm" data-action="workshop-material-add" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj pozycję</button></div><p class="muted small">Przygotowano ${prepared} z ${list.length} pozycji.</p><div class="workshop-material-list">${rows}</div><p class="muted tiny">To lista kontrolna, nie kosztorys — nie zwiększa kwot projektu.</p></section>`;
 }
+function detailFoldCriticalStyle(){
+ // Krytyczne style dołączone do karty. Działają nawet przy starym arkuszu CSS w PWA.
+ return '<style id="manu-detail-fold-critical-css">'+
+ '.notebook-detail-page .manu-detail-guide{display:block;margin:16px 0 13px;color:#806a5c;font-size:11px;line-height:1.55}'+
+ '.notebook-detail-page details.manu-detail-fold{display:block;margin:10px 0;border:1px solid #d0b295;border-radius:12px;background:#f6ebdb;overflow:hidden;color:#47352b;box-shadow:0 2px 5px #6a493016}'+
+ '.notebook-detail-page details.manu-detail-fold[open]{border-color:#b98665;background:#f7eddf}'+
+ '.notebook-detail-page details.manu-detail-fold>summary.manu-detail-summary{display:grid!important;grid-template-columns:36px minmax(0,1fr) 18px;align-items:center;gap:10px;list-style:none!important;list-style-type:none!important;cursor:pointer;padding:14px 12px;margin:0;min-height:66px;user-select:none}'+
+ '.notebook-detail-page details.manu-detail-fold>summary.manu-detail-summary::-webkit-details-marker{display:none!important}'+
+ '.notebook-detail-page details.manu-detail-fold>summary.manu-detail-summary::marker{content:""!important;font-size:0}'+
+ '.notebook-detail-page .manu-detail-summary:focus-visible{outline:2px solid #ac7451;outline-offset:-3px}'+
+ '.notebook-detail-page .manu-detail-icon{width:36px;height:36px;display:grid!important;place-items:center;min-width:0;background:#e9d3ba;border:1px solid #d5b393;border-radius:9px;color:#935a3a}'+
+ '.notebook-detail-page .manu-detail-icon .ico{width:18px;height:18px}'+
+ '.notebook-detail-page .manu-detail-label{display:flex!important;flex-direction:column!important;gap:4px;align-items:flex-start;min-width:0;overflow-wrap:anywhere}'+
+ '.notebook-detail-page .manu-detail-label strong{display:block;font:600 16px/1.26 Georgia,serif;color:#4b342a;overflow-wrap:anywhere}'+
+ '.notebook-detail-page .manu-detail-label small{display:block;color:#78685a;font:400 11px/1.4 Inter,Arial,sans-serif;overflow-wrap:anywhere}'+
+ '.notebook-detail-page .manu-detail-arrow{display:block;justify-self:center;color:#995f3d;font:400 23px/1 Arial,sans-serif;transition:transform .15s}'+
+ '.notebook-detail-page details.manu-detail-fold[open] .manu-detail-arrow{transform:rotate(180deg)}'+
+ '.notebook-detail-page .manu-detail-content{display:block;min-width:0;border-top:1px solid #ddc0a6;padding:9px 13px 16px;overflow-wrap:anywhere}'+
+ '.notebook-detail-page .manu-detail-content>.detail-section{margin:12px 0}'+
+ '.notebook-detail-page .manu-detail-content .section-head{flex-wrap:wrap;gap:8px}'+
+ '.notebook-detail-page .manu-detail-content .btn{white-space:normal;max-width:100%}'+
+ '@media(max-width:520px){'+
+ '.notebook-detail-page details.manu-detail-fold>summary.manu-detail-summary{grid-template-columns:32px minmax(0,1fr) 16px;padding:12px 9px;gap:8px;min-height:61px}'+
+ '.notebook-detail-page .manu-detail-icon{width:32px;height:32px}'+
+ '.notebook-detail-page .manu-detail-label strong{font-size:15px}'+
+ '.notebook-detail-page .manu-detail-label small{font-size:10px}'+
+ '.notebook-detail-page .manu-detail-content{padding:7px 9px 13px}'+
+ '}'+
+ '</style>';
+}
 function detailFold(p,key,title,desc,content,iconName){
  const opened=detailSectionStates.get(p.id)?.has(key);
  return '<details class="manu-detail-fold" data-project="'+htmlEscape(p.id)+
@@ -1113,7 +1143,7 @@ function detailFold(p,key,title,desc,content,iconName){
 }
 function projectCostDetails(p){return `<div class="detail-section"><div class="section-head"><h3>Koszty projektu</h3><button class="btn sm secondary" data-action="add-expense" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj koszt</button></div>${p.expenses.length?p.expenses.map(e=>`<div class="detail-entry"><span>${htmlEscape(e.title)} <small>· ${expenseCategoryName(e.category)} ${e.date?'· '+htmlEscape(e.date):'· bez daty'}</small></span><div><b>${fMoney(e.amount)}</b> <button class="btn ghost sm" data-action="delete-expense" data-id="${htmlEscape(p.id)}" data-expense="${htmlEscape(e.id)}" aria-label="Usuń koszt">${icon('trash')}</button></div></div>`).join(''):travelCost(p)>0?'':'<p class="muted small">Brak dodanych kosztów.</p>'}${estimatedTravelApplied(p)>0?`<div class="detail-entry travel-cost-entry"><span>Planowany dojazd <small>(wyliczony automatycznie)</small></span><b>${fMoney(travelCost(p))}</b></div><p class="muted tiny">Szacowany koszt dojazdu jest już uwzględniony w wyniku projektu. Nie dodawaj tej samej kwoty ponownie jako wydatek ręczny.</p>`:''}</div>`;}
 function projectToolsMarkup(p){return `<div class="detail-section"><button class="btn secondary" data-action="quote-new" data-project="${htmlEscape(p.id)}">${icon('brief')} Przygotuj wycenę</button> <button class="btn secondary" data-action="template-save-from-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Zapisz jako szablon</button> <button class="btn secondary" data-action="duplicate-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Powiel projekt / warsztat</button></div><div class="danger-zone"><button class="btn danger sm" data-action="delete-project" data-id="${htmlEscape(p.id)}">${icon('trash')} Usuń projekt</button></div>`;}
-function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;const projectTasks=state.tasks.filter(t=>t.projectId===p.id);const materialTotal=(p.workshopMaterials||[]).length;const prepared=(p.workshopMaterials||[]).filter(m=>m.done).length;modal(p.title,`<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div>${p.clientId&&state.clients.some(c=>c.id===p.clientId)?`<button class="btn ghost sm" data-action="open-client" data-id="${htmlEscape(p.clientId)}">${icon('users')} Karta klienta</button>`:''}<button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${p.type==='Warsztat'?`Klient: ${htmlEscape(p.client||'Nie podano')} · Organizator: ${htmlEscape(p.organizer||'Nie podano')}`:`${htmlEscape(p.client||'Bez wskazanego klienta')}`} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}<p class="muted small manu-detail-guide">Wybierz sekcję, aby zobaczyć szczegóły. Możesz otworzyć kilka jednocześnie.</p>
+function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;const projectTasks=state.tasks.filter(t=>t.projectId===p.id);const materialTotal=(p.workshopMaterials||[]).length;const prepared=(p.workshopMaterials||[]).filter(m=>m.done).length;modal(p.title,`${detailFoldCriticalStyle()}<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div>${p.clientId&&state.clients.some(c=>c.id===p.clientId)?`<button class="btn ghost sm" data-action="open-client" data-id="${htmlEscape(p.clientId)}">${icon('users')} Karta klienta</button>`:''}<button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${p.type==='Warsztat'?`Klient: ${htmlEscape(p.client||'Nie podano')} · Organizator: ${htmlEscape(p.organizer||'Nie podano')}`:`${htmlEscape(p.client||'Bez wskazanego klienta')}`} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}<p class="muted small manu-detail-guide">Wybierz sekcję, aby zobaczyć szczegóły. Możesz otworzyć kilka jednocześnie.</p>
 ${detailFold(p,'progress','Etapy i czas pracy',progressPercent(p)+'% etapów · '+fHours(p.hours)+' godz. pracy',workSection(p),'clock')}
 ${detailFold(p,'tasks','Zadania projektu',projectTasks.filter(t=>t.done).length+' z '+projectTasks.length+' wykonanych',projectTaskChecklist(p),'checks')}
 ${p.type==='Warsztat'?detailFold(p,'participants','Uczestnicy i wpłaty',confirmedParticipants(p).length+' zapisanych · '+waitlistedParticipants(p).length+' rezerwowych',showParticipants(p),'users'):''}
