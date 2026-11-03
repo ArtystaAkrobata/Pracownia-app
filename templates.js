@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const TYPES=['Zlecenie','Warsztat'];
-const MAX_TEMPLATES=300,MAX_COSTS=40,MAX_STAGES=40;
+const MAX_TEMPLATES=300,MAX_COSTS=40,MAX_STAGES=40,MAX_TASKS=50,MAX_MATERIALS=100;
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const numeric=x=>Math.max(0,Number(x)||0);
 const money=x=>Math.round((numeric(x)+Number.EPSILON)*100)/100;
@@ -12,12 +12,18 @@ const MAX_ID=120;
 const label=c=>({materialy:'Materiały',dojazd:'Dojazd',uslugi:'Usługi',inne:'Inne'})[c]||'Inne';
 const builtins=[
  {id:'starter-zlecenie',name:'Nowe zlecenie',title:'Nowa realizacja',type:'Zlecenie',quantity:1,
-  stages:['Ustalenie szczegółów','Przygotowanie materiałów','Realizacja','Odbiór i rozliczenie']},
+  stages:['Ustalenie szczegółów','Przygotowanie materiałów','Realizacja','Odbiór i rozliczenie'],
+  tasks:['Potwierdzić zakres prac','Sprawdzić materiały i narzędzia','Wykonać realizację','Ustalić odbiór'],
+  materials:[{title:'Sprawdzić komplet narzędzi i materiałów',quantity:1}]},
  {id:'starter-warsztat',name:'Warsztaty kreatywne',title:'Nowe warsztaty',type:'Warsztat',quantity:1,
-  stages:['Przygotowanie programu','Lista uczestników','Materiały i miejsce','Przeprowadzenie zajęć','Rozliczenie']},
+  stages:['Przygotowanie programu','Lista uczestników','Materiały i miejsce','Przeprowadzenie zajęć','Rozliczenie'],
+  tasks:['Ustalić program warsztatów','Potwierdzić listę uczestników','Przygotować salę i stanowiska','Sprawdzić komplet materiałów','Przeprowadzić warsztaty','Rozliczyć wydarzenie'],
+  materials:[{title:'Materiały dla uczestników',quantity:1},{title:'Materiały i narzędzia prowadzącego',quantity:1}]},
  {id:'starter-mobilny',name:'Realizacja z dojazdem',title:'Realizacja u klienta',type:'Zlecenie',
   quantity:1,transportType:'car',travelMode:'fuel',
-  stages:['Ustalenie zakresu','Materiały i transport','Prace na miejscu','Odbiór i rozliczenie']}
+  stages:['Ustalenie zakresu','Materiały i transport','Prace na miejscu','Odbiór i rozliczenie'],
+  tasks:['Uzgodnić zakres i adres realizacji','Przygotować narzędzia i transport','Potwierdzić termin z klientem','Wykonać prace na miejscu','Potwierdzić odbiór'],
+  materials:[{title:'Zestaw narzędzi do pracy na miejscu',quantity:1}]}
 ];
 let api=null,busy=false,search='';
 const createId=()=>crypto.randomUUID?.()||'id_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -32,6 +38,12 @@ function sanitize(data){
   .map(x=>({title:String(x.title||'').trim().slice(0,110),amount:money(x.amount),category:category(x.category)}));
  const stages=(Array.isArray(data.stages)?data.stages:[]).slice(0,MAX_STAGES)
   .map(x=>String(typeof x==='string'?x:x?.title||'').trim().slice(0,120)).filter(Boolean);
+ const tasks=(Array.isArray(data.tasks)?data.tasks:[]).slice(0,MAX_TASKS)
+  .map(x=>String(typeof x==='string'?x:x?.title||'').trim().slice(0,180)).filter(Boolean);
+ const materials=(Array.isArray(data.materials)?data.materials:[]).slice(0,MAX_MATERIALS)
+  .filter(x=>x&&typeof x==='object'&&!Array.isArray(x)&&String(x.title||'').trim())
+  .map(x=>({title:String(x.title||'').trim().slice(0,130),
+   quantity:Math.min(9999,Math.max(1,Math.floor(Number(x.quantity)||1)))}));
  const transport=['none','car','paid'].includes(data.transportType)?data.transportType:'none';
  return {
   id:String(data.id||createId()).slice(0,MAX_ID),name,title:String(data.title||name).trim().slice(0,120),
@@ -48,7 +60,7 @@ function sanitize(data){
   travelExtra:money(data.travelExtra),paidTransportCost:money(data.paidTransportCost),
   paidTransportLabel:String(data.paidTransportLabel||'').trim().slice(0,100),
   notes:String(data.notes||'').trim().slice(0,1200),
-  expenses,stages,
+  expenses,stages,tasks,materials,
   createdAt:String(data.createdAt||fresh())
  };
 }
@@ -69,6 +81,8 @@ function fromProject(p){
   paidTransportLabel:p.paidTransportLabel,
   stages:(p.stages||[]).map(x=>x.title),
   expenses:(p.expenses||[]).map(x=>({title:x.title,amount:x.amount,category:x.category})),
+  tasks:(api?.getState()?.tasks||[]).filter(x=>x.projectId===p.id).map(x=>x.title),
+  materials:(p.workshopMaterials||[]).map(x=>({title:x.title,quantity:x.quantity})),
   notes:'',createdAt:fresh()
  };
  return sanitize(data);
@@ -98,6 +112,14 @@ function seededCosts(t){
 function seededStages(t){
  return (t?.stages||[]).map(x=>({id:createId(),title:String(x).slice(0,120),done:false}));
 }
+function seededTasks(t,projectId){
+ return (t?.tasks||[]).map(x=>({id:createId(),title:String(x).slice(0,180),
+  due:'',done:false,projectId,createdAt:fresh()}));
+}
+function seededMaterials(t){
+ return (t?.materials||[]).map(x=>({id:createId(),title:String(x.title).slice(0,130),
+  quantity:Math.min(9999,Math.max(1,Math.floor(Number(x.quantity)||1))),done:false}));
+}
 function page(){
  const custom=api?.getState()?.templates||[],filtered=custom
   .filter(t=>[t.name,t.title,t.type].some(v=>String(v||'').toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl'))));
@@ -121,7 +143,7 @@ function card(t,preset){
  return '<article class="template-card"><div class="template-card-kind">'+escape(t.type==='Warsztat'?'WARSZTAT':'ZLECENIE')+
  (preset?' · GOTOWY WZÓR':' · WŁASNY SZABLON')+'</div>'+
   '<h3>'+escape(t.name)+'</h3><p>'+escape(t.title)+'</p>'+
-  '<div class="template-card-meta"><span>'+t.stages.length+' etapów</span><span>'+
+  '<div class="template-card-meta"><span>'+t.stages.length+' etapów</span><span>'+t.tasks.length+' zadań</span><span>'+t.materials.length+' materiałów</span><span>'+
    t.expenses.length+' pozycji kosztowych</span></div>'+
   '<div class="template-card-actions"><button class="btn" type="button" data-action="template-use" data-id="'+escape(t.id)+'">Utwórz projekt</button>'+
   (preset?'':'<button type="button" class="btn secondary sm" data-action="template-edit" data-id="'+escape(t.id)+'">Edytuj</button>'+
@@ -174,6 +196,13 @@ function editor(t=null,sourceProject=''){
  field('travelExtra','Dodatkowe opłaty (zł)','number','0.01')+
  field('paidTransportCost','Cena transportu płatnego (zł)','number','0.01')+
  '</div>'+field('paidTransportLabel','Opis transportu','text','','100')+'</details>'+
+ '<div class="field"><label>Automatyczne zadania (po jednym w wierszu)</label>'+
+ '<textarea name="tasks" rows="5" maxlength="9000" placeholder="Zamówić materiały&#10;Potwierdzić termin&#10;Przygotować miejsce">'+escape((item.tasks||[]).join('\n'))+'</textarea>'+
+ '<p class="muted tiny">Po utworzeniu projektu zadania pojawią się na liście Zadania, bez dat i z oznaczeniem „Do zrobienia”.</p></div>'+
+ '<div class="field"><label>Lista materiałów / przygotowań (po jednej pozycji w wierszu)</label>'+
+ '<textarea name="materials" rows="5" maxlength="9000" placeholder="Papier | 12&#10;Atrament | 2&#10;Narzędzia | 1">'+
+ escape((item.materials||[]).map(x=>x.title+' | '+x.quantity).join('\n'))+'</textarea>'+
+ '<p class="muted tiny">Format: Nazwa | Ilość. Bez liczby MANU przyjmie 1. Ta lista nie tworzy wydatków i nie zwiększa kosztów.</p></div>'+
  '<div class="field"><label>Etapy realizacji (po jednym w wierszu)</label>'+
  '<textarea name="stages" rows="5" maxlength="5000" placeholder="Przygotowanie&#10;Realizacja&#10;Odbiór">'+escape((item.stages||[]).join('\n'))+'</textarea></div>'+
  '<div class="template-costs-head"><h3>Powtarzalne pozycje kosztów</h3><button type="button" class="btn secondary sm" data-action="template-add-cost">+ Dodaj koszt</button></div>'+
@@ -237,8 +266,21 @@ function submit(form){
   expenses.push({title:name,amount:money(amount),category:category(row.querySelector('[name="cost_category"]')?.value)});
  }
  const stages=String(data.get('stages')||'').split(/\r?\n/).map(x=>x.trim().slice(0,120)).filter(Boolean).slice(0,MAX_STAGES);
+ const tasks=String(data.get('tasks')||'').split(/\r?\n/).map(x=>x.trim().slice(0,180)).filter(Boolean).slice(0,MAX_TASKS);
+ const materials=[];
+ for(const row of String(data.get('materials')||'').split(/\r?\n/)){
+  const raw=row.trim();if(!raw)continue;
+  const parts=raw.split('|');
+  const quantityText=parts.length>1?parts.pop().trim():'';
+  const title=parts.join('|').trim().slice(0,130);
+  if(!title)continue;
+  const count=quantityText?Number(quantityText):1;
+  if(!Number.isInteger(count)||count<1||count>9999){alert('Sprawdź liczbę sztuk materiału: '+title);return;}
+  materials.push({title,quantity:count});
+  if(materials.length>=MAX_MATERIALS)break;
+ }
  const obj={id:exists?.id||id||createId(),createdAt:exists?.createdAt||fresh(),
-  name,title,type:data.get('type'),stages,expenses};
+  name,title,type:data.get('type'),stages,expenses,tasks,materials};
  for(const field of ['price','quantity','capacity','participantFee','estimatedHours','estimatedMaterials',
   'durationHours','travelKm','fuelConsumption','fuelPrice','travelRate','travelExtra','paidTransportCost']){
   const value=Number(data.get(field)||0);
@@ -266,5 +308,5 @@ function searchChanged(value){
  }
 }
 window.MANUTemplates={init:bridge=>{api=bridge},searchChanged,normalizeTemplates,
- page,renderCustomList,allTemplates,findTemplate,newProjectDraft,seededCosts,seededStages,fromProject,handleAction,submit};
+ page,renderCustomList,allTemplates,findTemplate,newProjectDraft,seededCosts,seededStages,seededTasks,seededMaterials,fromProject,handleAction,submit};
 })();
