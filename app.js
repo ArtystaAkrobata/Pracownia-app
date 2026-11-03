@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.2.1';
+const APP_VERSION='3.3.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -930,7 +930,7 @@ function afterDataChange(msg,detailId){
  }
  if(msg)toast(msg);
 }
-function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
+function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':case 'cloud-forgot':case 'cloud-send-reset':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
  if(b.dataset.view==='add'){projectForm();return;}
  const previous=view,next=b.dataset.view;
  const notebookOrder={home:0,projects:1,quotes:2,finance:3,tasks:4,calendar:5};
@@ -1068,6 +1068,7 @@ async function init(){
   isStorageBlocked:()=>storageBlocked,
   canReplace:()=>!storageBlocked&&!document.querySelector('.modal'),
   refresh:()=>{if(view==='settings')render();},
+  openSettings:()=>{view='settings';render();window.scrollTo(0,0);},
   notify:message=>toast(message),
   applyCloud:async data=>{
    if(storageBlocked||document.querySelector('.modal'))return false;
