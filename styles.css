@@ -2927,3 +2927,30 @@ body.gallery-lightbox-open{overflow:hidden}
  .manu-list-more{padding:12px 6px 6px}
  .manu-list-more .btn{width:100%;font-size:12px}
 }
+
+/* MANU 3.13.1: wycentrowany przycisk Dodaj nad nawigacją mobilną */
+@media (max-width:690px){
+  /* Pięć zwykłych zakładek zajmuje równe kolumny. „Dodaj” jest poza siatką. */
+  .mobile-nav{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    overflow:visible;
+  }
+  .mobile-nav>.mobile-tab:nth-child(3){
+    position:absolute;
+    z-index:2;
+    left:50%;
+    top:-60px;
+    transform:translateX(-50%);
+    width:60px;
+    height:54px;
+    margin-top:0;
+    padding:0;
+    border-radius:15px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .mobile-nav>.mobile-tab:nth-child(3) .ico{width:25px;height:25px}
+  /* Zapewnia odstęp dla przycisku unoszącego się ponad paskiem. */
+  .main-area{padding-bottom:calc(142px + env(safe-area-inset-bottom))}
+}
