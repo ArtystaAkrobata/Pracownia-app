@@ -253,7 +253,7 @@ async function authSubmit(event){
   else{user=result.data?.user||result.data?.session?.user||user;emit('Zalogowano. Sprawdź wersje danych przed synchronizacją.');shouldInspect=true;}
   errorText='';
  }catch(e){errorText=textError(e);window.alert(errorText)}
- finally{busy=false;renderIfSettings();if(shouldInspect)void inspect();}
+ finally{busy=false;renderIfSettings(true);if(shouldInspect)void inspect();}
 }
 
 function checkNewPassword(form){
@@ -349,6 +349,7 @@ async function init(callbacks){
   });
   client.auth.onAuthStateChange((event,session)=>{
    const next=session?.user||null;
+   const accountChanged=!!next&&next.id!==activeUserId;
    if(event==='SIGNED_OUT'){
     user=null;activeUserId=null;ready=false;conflict=false;remote=null;recoveryMode=false;
    }else if(next){
@@ -364,7 +365,7 @@ async function init(callbacks){
     }
    }
    if(['SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY','USER_UPDATED','INITIAL_SESSION'].includes(event)){
-    renderIfSettings(event==='SIGNED_OUT'||event==='PASSWORD_RECOVERY');
+    renderIfSettings(event==='SIGNED_OUT'||event==='PASSWORD_RECOVERY'||accountChanged);
     bridge?.refreshHome?.();
    }
   });
