@@ -1656,6 +1656,10 @@ function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el
    if(e.target.id==='compare-project-left')compareLeftId=selected;
    else compareRightId=selected;
    // Aktualizujemy wyłącznie porównanie; nie przewijamy strony ani nie zamykamy sekcji.
+   const current=comparisonSelection();
+   const leftSelect=$('#compare-project-left'),rightSelect=$('#compare-project-right');
+   if(leftSelect&&current.left)leftSelect.value=current.left.id;
+   if(rightSelect&&current.right)rightSelect.value=current.right.id;
    const area=$('#comparison-results');
    if(area)area.innerHTML=comparisonResults();
   }
