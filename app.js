@@ -500,8 +500,8 @@ function galleryPage(){
   '<button type="button" class="btn secondary" data-action="nav" data-view="projects">Wróć do projektów</button>')+
   (window.MANUGallery?.overview?.(state.projects)||'');
 }
-function renderProjectGrid(){let list=[...state.projects].filter(p=>(filter==='all'||p.type===filter)&&[p.title,p.client,p.notes].some(x=>String(x||'').toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));return list.length?list.map(projectCard).join(''):`<div style="grid-column:1/-1">${empty('Brak projektów','Dodaj pierwszą realizację albo zmień filtr.',`<button class="btn sm" data-action="new-project">Dodaj projekt</button>`)}</div>`;}
-function projectCard(p){let expense=expenses(p);return `<article class="project-card" data-action="open-project" data-id="${htmlEscape(p.id)}" role="button" tabindex="0"><div class="pcard-head">${projectTypeIcon(p)}${pillStatus(p)}</div><h3>${htmlEscape(p.title)}</h3><div class="project-progress"><span>Postęp</span><strong>${progressPercent(p)}%</strong><div class="workflow-bar"><span style="width:${progressPercent(p)}%"></span></div></div><p>${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</p><div class="pcard-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(expense)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="pcard-footer"><span>${icon('clock')} ${fNum(p.hours)} godz. pracy</span><span>${p.type==='Warsztat'?`${confirmedParticipants(p).length}/${p.capacity||'∞'} miejsc${waitlistedParticipants(p).length?' · '+waitlistedParticipants(p).length+' rezerwowych':''}`:`Wpłacono ${fMoney(projectPaid(p))}`}</span></div></article>`;}
+function renderProjectGrid(){let list=[...state.projects].filter(p=>(filter==='all'||p.type===filter)&&[p.title,p.client,p.organizer,p.notes].some(x=>String(x||'').toLowerCase().includes(search.toLowerCase()))).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));return list.length?list.map(projectCard).join(''):`<div style="grid-column:1/-1">${empty('Brak projektów','Dodaj pierwszą realizację albo zmień filtr.',`<button class="btn sm" data-action="new-project">Dodaj projekt</button>`)}</div>`;}
+function projectCard(p){let expense=expenses(p);return `<article class="project-card" data-action="open-project" data-id="${htmlEscape(p.id)}" role="button" tabindex="0"><div class="pcard-head">${projectTypeIcon(p)}${pillStatus(p)}</div><h3>${htmlEscape(p.title)}</h3><div class="project-progress"><span>Postęp</span><strong>${progressPercent(p)}%</strong><div class="workflow-bar"><span style="width:${progressPercent(p)}%"></span></div></div><p>${htmlEscape(p.type==='Warsztat'?[p.client?'Klient: '+p.client:'',p.organizer?'Organizator: '+p.organizer:''].filter(Boolean).join(' · ')||'Bez klienta / organizatora':p.client||'Bez klienta')} · ${fDate(p.date)}</p><div class="pcard-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(expense)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="pcard-footer"><span>${icon('clock')} ${fNum(p.hours)} godz. pracy</span><span>${p.type==='Warsztat'?`${confirmedParticipants(p).length}/${p.capacity||'∞'} miejsc${waitlistedParticipants(p).length?' · '+waitlistedParticipants(p).length+' rezerwowych':''}`:`Wpłacono ${fMoney(projectPaid(p))}`}</span></div></article>`;}
 function monthCashflow(period){
  const incoming=[],outgoing=[];
  for(const p of state.projects){
@@ -761,7 +761,14 @@ function syncProjectClientField(){
  const input=form.querySelector('input[name="client"]');
  if(!selector||!input)return;
  const c=state.clients.find(item=>item.id===selector.value);
- if(c){input.value=c.name;input.readOnly=true;}else input.readOnly=false;
+ if(c){
+  if(!input.readOnly)input.dataset.manualClient=input.value;
+  input.value=c.name;
+  input.readOnly=true;
+ }else{
+  if(input.readOnly)input.value=input.dataset.manualClient||'';
+  input.readOnly=false;
+ }
 }
 function syncTravelFields(){
   const form=document.getElementById('project-form');
@@ -790,7 +797,7 @@ function syncProjectFields(){
   moneySection.hidden=workshop&&!isOldManualWorkshop;
   const autoWorkshop=workshop&&form.dataset.originalAuto==='yes';
   for(const key of ['price','paid'])form.elements.namedItem(key).disabled=autoWorkshop;
-  form.querySelector('[data-label="client"]').textContent=workshop?'Klient / zamawiający':'Klient / zamawiający';
+  form.querySelector('[data-label="client"]').textContent='Klient / zamawiający';
   form.querySelector('[data-label="date"]').textContent=workshop?'Data warsztatu':'Termin wykonania';
   form.elements.namedItem('title').placeholder=workshop?'Np. Warsztaty kaligrafii – Gotyk':'Np. Lustro z grawerem, stół dębowy';
   form.querySelector('[data-label="price"]').textContent=workshop?'Wartość warsztatu (zł)':'Cena realizacji (zł)';
