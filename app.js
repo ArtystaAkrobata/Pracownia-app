@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.13.2';
+const APP_VERSION='3.13.3';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1835,10 +1835,12 @@ function startIntro(){
  window.setTimeout(()=>{if(intro.isConnected)intro.classList.add('is-opening')},280);
  window.setTimeout(dismissIntro,1760);
 }
-async function applyCloudSnapshot(data){
+async function applyCloudSnapshot(data,expectedLastSaved=null){
  const incoming=validateBackup(data);
  await writeQueue;
- if(storageBlocked||document.querySelector('.modal'))return false;
+ // Nie wolno zastąpić danych, gdy lokalny zapis wciąż trwa lub zmienił się podczas pobierania.
+ if(storageBlocked||pendingWrites>0||document.querySelector('.modal'))return false;
+ if(expectedLastSaved!==null&&state.lastSaved!==expectedLastSaved)return false;
  const previous=state;
  state=incoming;
  let saved;
