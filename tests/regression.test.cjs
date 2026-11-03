@@ -68,6 +68,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' waitForWrites: () => writeQueue,',
     ' storageState: () => ({storageBlocked, pendingWrites, saveStatus}),',
     ' useLocalStorage: () => {dbAvailable=false;},',
+    ' failRender: () => {render=()=>{throw Error("Testowy błąd interfejsu")};},',
     ' setPendingBackup: raw => {pendingBackup={snapshot:normalize(raw),mode:"restore",filename:"test.json"};},',
     ' setState: raw => { state = normalize(raw); },',
     ' getState: () => state,',
@@ -319,4 +320,25 @@ test('Przywrócenie JSON: ostatni zapis w stanie zgadza się z danymi na urządz
   assert.equal(api.getState().projects[0].id, 'przywrocona');
   assert.equal(saved.projects[0].id, 'przywrocona');
   assert.equal(api.getState().lastSaved, saved.lastSaved);
+});
+
+
+test('Zapis: błąd powiadomienia chmury nie unieważnia poprawnego zapisu lokalnego', async () => {
+  const {api,context,persisted} = boot({version:18,projects:[job('lokalna')],tasks:[]});
+  api.useLocalStorage();
+  context.window.MANUCloud.localSaved = () => {throw Error('Chmura tymczasowo niedostępna');};
+  assert.equal(await api.save(), true);
+  assert.equal(api.storageState().storageBlocked, false);
+  assert.equal(JSON.parse(persisted.get('snapshot')).projects[0].id, 'lokalna');
+});
+
+test('Chmura: błąd odświeżenia ekranu nie cofa poprawnie zapisanych danych', async () => {
+  const {api,persisted} = boot({version:18,projects:[job('przed')],tasks:[]});
+  api.useLocalStorage();
+  await api.save();
+  api.failRender();
+  assert.equal(await api.applyCloudSnapshot({version:18,projects:[job('po')],tasks:[]}), true);
+  assert.equal(api.getState().projects[0].id, 'po');
+  assert.equal(JSON.parse(persisted.get('snapshot')).projects[0].id, 'po');
+  assert.equal(api.storageState().storageBlocked, false);
 });
