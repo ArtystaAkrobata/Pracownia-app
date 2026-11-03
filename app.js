@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.3.2';
+const APP_VERSION='3.3.3';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1066,7 +1066,7 @@ async function init(){
   getState:()=>state,
   waitForWrites:()=>writeQueue,
   isStorageBlocked:()=>storageBlocked,
-  canReplace:()=>!storageBlocked&&!document.querySelector('.modal'),
+  canReplace:()=>!storageBlocked&&!document.querySelector('.modal, .cloud-password-details[open], #cloud-reset-password-form'),
   refresh:()=>{if(view==='settings')render();},
   refreshHome:()=>{if(view==='home')render();},
   openSettings:()=>{view='settings';render();window.scrollTo(0,0);},
