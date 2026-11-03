@@ -862,7 +862,7 @@ function projectForm(p,prefillClientId='',templateId=''){
   <div class="field"><label>Notatki i ustalenia</label><textarea name="notes" maxlength="5000" placeholder="Materiały, ustalenia, pomysły, informacje…">${htmlEscape(x.notes)}</textarea></div>
     </div>
   </details>
-  <div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${icon('check')} ${edit?'Zapisz zmiany':'Utwórz projekt'}</button></div>
+  <div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${icon('check')} <span data-project-submit-label>${edit?'Zapisz zmiany':'Utwórz projekt'}</span></button></div>
   </form>`);
   syncProjectFields();
   syncProjectClientField();
@@ -914,6 +914,8 @@ function syncProjectFields(){
   for(const key of ['price','paid'])form.elements.namedItem(key).disabled=autoWorkshop;
   form.querySelector('[data-label="client"]').textContent='Klient / zamawiający';
   form.querySelector('[data-label="date"]').textContent=workshop?'Data warsztatu':'Termin wykonania';
+  const submitLabel=form.querySelector('[data-project-submit-label]');
+  if(submitLabel)submitLabel.textContent=form.dataset.isEdit==='yes'?'Zapisz zmiany':workshop?'Utwórz warsztat':'Utwórz projekt';
   form.elements.namedItem('title').placeholder=workshop?'Np. Warsztaty kaligrafii – Gotyk':'Np. Lustro z grawerem, stół dębowy';
   form.querySelector('[data-label="price"]').textContent=workshop?'Wartość warsztatu (zł)':'Cena realizacji (zł)';
   form.querySelector('[data-label="paid"]').textContent='Wcześniejsze wpłaty (bez historii) (zł)';
