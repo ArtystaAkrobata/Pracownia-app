@@ -469,7 +469,7 @@ test('Mobile: zmiana filtra typu projektów nie przebudowuje całego notesu', ()
   nodes['#project-list']={set innerHTML(value){html=value;}};
   context.window.scrollTo=()=>{throw Error('Nie wolno przewijać strony');};
   api.events();
-  callbacks.change[0].fn({target:{id:'project-filter',value:'Warsztat'}});
+  callbacks.change[0].fn({target:{id:'project-filter',value:'Warsztat',matches:()=>false}});
   assert.match(html,/Hobbit tylko warsztat/);
   assert.doesNotMatch(html,/Lustro tylko zlecenie/);
   assert.equal(api.getListVisible().projects,40);
