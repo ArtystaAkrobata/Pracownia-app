@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.12.1';
+const APP_VERSION='3.12.2';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -79,7 +79,9 @@ function save(candidate=state,force=false){
   if(dbAvailable)await idbSet(snapshot,keepPrevious);
   else writeLocalSnapshot(snapshot,keepPrevious);
  }).then(()=>{
-  if(candidate===state){state.lastSaved=snapshot.lastSaved;window.MANUCloud?.localSaved?.(snapshot);}
+  // Czas zapisu w obiekcie i na dysku musi być identyczny także po przywróceniu.
+  candidate.lastSaved=snapshot.lastSaved;
+  if(candidate===state)window.MANUCloud?.localSaved?.(snapshot);
   if(force)storageBlocked=false;
   lastSaveError='';
   return true;
@@ -1516,7 +1518,8 @@ async function applyBackup(){
  try{
   const restored=structuredClone(data.snapshot),ok=await save(restored,true);
   if(!ok){alert('Nie udało się zapisać przywracanych danych. Obecny stan pozostawiono bez zmian.');return}
-  state=restored;state.lastSaved=now();
+  state=restored;
+  pendingBackup=null;
   closeModal();render();toast('Przywrócono dane i zapisano je na urządzeniu.');
  }finally{backupApplying=false}
 }
@@ -1753,6 +1756,21 @@ function startIntro(){
  window.setTimeout(()=>{if(intro.isConnected)intro.classList.add('is-opening')},280);
  window.setTimeout(dismissIntro,1760);
 }
+async function applyCloudSnapshot(data){
+ const incoming=validateBackup(data);
+ await writeQueue;
+ if(storageBlocked||document.querySelector('.modal'))return false;
+ const previous=state;
+ state=incoming;
+ try{
+  const saved=await save();
+  if(!saved){state=previous;render();return false;}
+  render();
+  return true;
+ }catch(e){
+  state=previous;render();throw e;
+ }
+}
 async function init(){
  window.MANUTemplates?.init?.({
   getState:()=>state,
@@ -1783,15 +1801,7 @@ async function init(){
   refreshHome:()=>{if(view==='home')render();},
   openSettings:()=>{view='settings';render();window.scrollTo(0,0);},
   notify:message=>toast(message),
-  applyCloud:async data=>{
-   if(storageBlocked||document.querySelector('.modal'))return false;
-   const incoming=normalize(data),previous=state;
-   state=incoming;
-   const saved=await save();
-   if(!saved){state=previous;render();return false;}
-   render();
-   return true;
-  }
+  applyCloud:applyCloudSnapshot
  });
  window.setInterval?.(liveTimerRefresh,1000);
  if(storageBlocked)alert('MANU nie mogło bezpiecznie odczytać danych. Zapis został wstrzymany, aby nie nadpisać istniejącej bazy. Nie czyść pamięci telefonu. W Ustawieniach sprawdź poprzedni zapis albo przywróć sprawdzoną kopię JSON.');
