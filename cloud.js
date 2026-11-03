@@ -27,7 +27,17 @@ function storeBinding(revision,lastSaved){
   notice='Nie można zapisać informacji o synchronizacji na telefonie.';
  }
 }
-function renderIfSettings(){if(bridge)bridge.refresh()}
+// Nie niszcz rozpoczętego formularza hasła podczas odświeżania sesji lub kontroli chmury.
+function isAccountFormEditing(){
+ const changingPassword=!!document.querySelector('.cloud-password-details[open]');
+ const recoveringPassword=!!document.querySelector('#cloud-reset-password-form');
+ const activeForm=document.activeElement?.closest?.('#cloud-auth-form, #cloud-profile-form');
+ return changingPassword||recoveringPassword||!!activeForm;
+}
+function renderIfSettings(force=false){
+ if(!force&&isAccountFormEditing())return;
+ if(bridge)bridge.refresh();
+}
 function emit(message){notice=message;if(bridge)bridge.notify(message);renderIfSettings()}
 function textError(err){
  const text=String(err?.message||err||'Nieznany błąd');
@@ -283,7 +293,7 @@ async function saveProfile(event){
   emit('Zapisano nazwę profilu.');
   bridge?.refreshHome?.();
  }catch(e){errorText=textError(e);window.alert('Nie udało się zapisać profilu: '+errorText);}
- finally{busy=false;renderIfSettings();}
+ finally{busy=false;renderIfSettings(true);}
 }
 async function changePassword(event){
  event.preventDefault();
@@ -301,7 +311,7 @@ async function changePassword(event){
   form.reset();errorText='';
   emit('Hasło zostało zmienione. Używaj nowego hasła przy kolejnym logowaniu.');
  }catch(e){errorText=textError(e);window.alert('Nie udało się zmienić hasła: '+errorText);}
- finally{busy=false;renderIfSettings();}
+ finally{busy=false;renderIfSettings(true);}
 }
 async function finishRecovery(event){
  event.preventDefault();
@@ -317,7 +327,7 @@ async function finishRecovery(event){
   form.reset();recoveryMode=false;errorText='';completed=true;
   emit('Nowe hasło zapisano. Konto jest ponownie dostępne.');
  }catch(e){errorText=textError(e);window.alert('Nie udało się zapisać hasła: '+errorText);}
- finally{busy=false;renderIfSettings();if(completed)void inspect();}
+ finally{busy=false;renderIfSettings(true);if(completed)void inspect();}
 }
 function loadLibrary(){
  return new Promise((resolve,reject)=>{
@@ -354,7 +364,7 @@ async function init(callbacks){
     }
    }
    if(['SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY','USER_UPDATED','INITIAL_SESSION'].includes(event)){
-    renderIfSettings();
+    renderIfSettings(event==='SIGNED_OUT'||event==='PASSWORD_RECOVERY');
     bridge?.refreshHome?.();
    }
   });
@@ -372,6 +382,12 @@ async function init(callbacks){
   setInterval(()=>{if(user&&document.visibilityState==='visible')void inspect()},90000);
  }catch(e){errorText=textError(e);renderIfSettings();}
 }
+document.addEventListener('toggle',event=>{
+ const el=event.target;
+ if(el?.matches?.('.cloud-password-details')&&!el.open&&el.isConnected){
+  renderIfSettings();
+ }
+},true);
 document.addEventListener('submit',event=>{
  const id=event.target?.id;
  if(id==='cloud-auth-form')void authSubmit(event);
