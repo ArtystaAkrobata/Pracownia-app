@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.13.1';
+const APP_VERSION='3.13.2';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -50,11 +50,12 @@ function idbSet(snapshot,keepPrevious=true){
   tx.onabort=()=>reject(tx.error||new Error('Zapis został przerwany'));
  });
 }
-let writeQueue=Promise.resolve(),pendingWrites=0,storageBlocked=false,saveStatus='ready',lastSaveError='',pendingBackup=null;
+let writeQueue=Promise.resolve(),pendingWrites=0,storageBlocked=false,saveStatus='ready',lastSaveError='',pendingBackup=null,hasStoredSnapshot=false;
 function saveMessage(){
  if(storageBlocked)return 'Wstrzymany zapis — sprawdź odzyskiwanie danych';
  if(saveStatus==='error')return 'BŁĄD zapisu — wyeksportuj kopię i sprawdź pamięć telefonu';
  if(pendingWrites||saveStatus==='saving')return 'Zapisywanie na urządzeniu…';
+ if(!hasStoredSnapshot)return 'Pierwszy zapis nastąpi po dodaniu danych';
  return state.lastSaved&&Number.isFinite(Date.parse(state.lastSaved))?'Zapis lokalny · '+new Intl.DateTimeFormat('pl-PL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(state.lastSaved)):'Dane tylko na tym urządzeniu';
 }
 function updateSaveIndicator(){const el=$('#manu-save-status');if(el){el.textContent=saveMessage();el.classList?.toggle('is-error',storageBlocked||saveStatus==='error')}}
@@ -63,7 +64,7 @@ async function load(){
  try{
   let raw=dbAvailable?await idbGet():null;
   if(raw==null){const legacy=localStorage.getItem(DATA_KEY);if(legacy)raw=JSON.parse(legacy)}
-  if(raw!=null)state=normalize(raw);
+  if(raw!=null){state=normalize(raw);hasStoredSnapshot=true;}
   saveStatus='saved';
  }catch(e){
   storageBlocked=true;saveStatus='error';lastSaveError=String(e?.message||e);
@@ -86,6 +87,8 @@ function save(candidate=state,force=false){
   if(dbAvailable)await idbSet(snapshot,keepPrevious);
   else writeLocalSnapshot(snapshot,keepPrevious);
  }).then(()=>{
+  // Potwierdzamy zapis dopiero po zakończeniu transakcji bazy.
+  hasStoredSnapshot=true;
   // Czas zapisu w obiekcie i na dysku musi być identyczny także po przywróceniu.
   candidate.lastSaved=snapshot.lastSaved;
   if(candidate===state){
@@ -1773,7 +1776,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(view==='calendar'){calendarSelected=date;calendarMonth=date.slice(0,7)}
  closeModal();afterDataChange(original?'Przypomnienie zapisane':'Dodano przypomnienie');break;
 }}}
-function events(){document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
+function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
