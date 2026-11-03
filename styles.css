@@ -2954,3 +2954,23 @@ body.gallery-lightbox-open{overflow:hidden}
   /* Zapewnia odstęp dla przycisku unoszącego się ponad paskiem. */
   .main-area{padding-bottom:calc(142px + env(safe-area-inset-bottom))}
 }
+
+/* MANU 3.13.4 — powrót do miejsca na Starcie */
+.calendar-return-toolbar{
+ display:flex;justify-content:flex-end;
+ margin:-6px 0 11px;
+}
+.calendar-return-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-height:40px;padding:7px 13px;
+ background:#f1e2cf;border:1px solid #c7a688;border-radius:12px;
+ color:#71503d;font-size:12px;font-weight:700;cursor:pointer;
+ box-shadow:0 2px 7px #694a3420;
+}
+.calendar-return-button span{font-size:24px;line-height:1;font-weight:400}
+.calendar-return-button:hover{background:#e8d5bf}
+.calendar-return-button:focus-visible{outline:2px solid #aa7250;outline-offset:3px}
+@media(max-width:690px){
+ .calendar-return-toolbar{margin:-3px 0 11px}
+ .calendar-return-button{min-height:44px;padding:7px 12px}
+}
