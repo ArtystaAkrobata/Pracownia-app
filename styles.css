@@ -2561,3 +2561,161 @@ body.gallery-lightbox-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
  .command-center .smart-alerts-chevron{transition:none}
 }
+
+/* MANU 3.10.0 · Opłacalność godzinowa — rozwijany raport na papierze */
+.open-notebook .finance-overview-grid{grid-template-columns:minmax(0,1fr)}
+.open-notebook .profitability-panel{
+ margin:22px 0 0;border:1px solid #cda98b;border-radius:14px;
+ background:linear-gradient(140deg,#f7eee0,#edddc9);
+ color:#48342b;overflow:hidden;box-shadow:0 6px 17px #73553f20
+}
+.open-notebook .profitability-panel[open]{border-color:#b98662}
+.open-notebook .profitability-panel>summary.profitability-panel-summary{
+ display:grid;align-items:center;
+ grid-template-columns:39px minmax(0,1fr) 18px;gap:12px;
+ min-height:77px;padding:14px;
+ list-style:none;cursor:pointer;user-select:none
+}
+.open-notebook .profitability-panel>summary::-webkit-details-marker{display:none}
+.open-notebook .profitability-panel>summary::marker{content:""}
+.open-notebook .profitability-panel>summary:focus-visible{outline:2px solid #b97f5e;outline-offset:-3px}
+.open-notebook .profitability-panel>summary:hover{background:#eedcc8}
+.open-notebook .profitability-panel-icon{
+ width:39px;height:39px;border-radius:11px;display:grid;place-items:center;
+ border:1px solid #d1b193;background:#e5cdb3;color:#986342
+}
+.open-notebook .profitability-panel-icon .ico{width:19px;height:19px}
+.open-notebook .profitability-panel-name{display:flex;flex-direction:column;gap:4px;min-width:0}
+.open-notebook .profitability-panel-name strong{
+ font:600 21px/1.25 Georgia,serif;color:#583a2b;overflow-wrap:anywhere
+}
+.open-notebook .profitability-panel-name small{
+ font-size:11px;line-height:1.5;color:#88705e;overflow-wrap:anywhere
+}
+.open-notebook .profitability-panel-chevron{
+ font:24px/1 Arial,sans-serif;color:#a56b4a;transition:transform .16s
+}
+.open-notebook .profitability-panel[open] .profitability-panel-chevron{transform:rotate(180deg)}
+.open-notebook .profitability-panel-body{
+ border-top:1px solid #d5b497;padding:16px 14px 20px
+}
+.open-notebook .profitability-intro{margin:0 0 12px;color:#695343;font-size:12px;line-height:1.6}
+.open-notebook .profitability-filter{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ margin-bottom:15px;font-size:12px;font-weight:700;color:#624532
+}
+.open-notebook .profitability-filter select{
+ min-width:142px;max-width:100%;border:1px solid #c5a17d;
+ background:#fbf3e7;border-radius:10px;color:#533b2e;
+ padding:9px;font-size:12px
+}
+.open-notebook .profitability-stats{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;margin-bottom:13px
+}
+.open-notebook .profitability-stats>div{
+ min-width:0;display:flex;flex-direction:column;gap:7px;
+ padding:13px 10px;background:#eee0cd;border:1px solid #d7bba0;border-radius:11px
+}
+.open-notebook .profitability-stats small{color:#826a58;font-size:10px;line-height:1.4}
+.open-notebook .profitability-stats strong{
+ font:600 19px Georgia,serif;color:#67432d;overflow-wrap:anywhere
+}
+.open-notebook .profitability-types{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;margin:10px 0 18px
+}
+.open-notebook .profitability-type-card{
+ display:flex;flex-direction:column;gap:5px;min-width:0;
+ background:#f5eadb;border:1px solid #d7c0a8;border-radius:11px;padding:13px
+}
+.open-notebook .profitability-type-card>span{
+ font:600 16px/1.3 Georgia,serif;color:#553a2c
+}
+.open-notebook .profitability-type-card>strong{
+ color:#87604b;font:600 16px/1.3 Georgia,serif
+}
+.open-notebook .profitability-type-card small{font:400 10px/1.4 Arial,sans-serif;color:#8b7564}
+.open-notebook .profitability-type-rate{font:600 21px/1.3 Georgia,serif;color:#996044}
+.open-notebook #profitability-results>h3{
+ font:600 19px/1.3 Georgia,serif;color:#553929;margin:14px 0 11px
+}
+.open-notebook .profitability-rank{
+ display:flex;flex-direction:column;gap:8px;margin-bottom:12px
+}
+.open-notebook .profitability-rank-item{
+ display:flex;align-items:center;gap:10px;text-align:left;min-width:0;
+ border:1px solid #d9bea4;background:#f8eee2;border-radius:11px;
+ padding:12px 10px;cursor:pointer;color:#40312b
+}
+.open-notebook .profitability-rank-item:hover{
+ background:#f0e0cc;border-color:#ad8569
+}
+.open-notebook .profitability-rank-item:focus-visible{
+ outline:2px solid #b47651;outline-offset:2px
+}
+.open-notebook .profitability-rank-number{
+ flex:none;display:grid;place-items:center;
+ width:27px;height:27px;background:#e4cdb4;border-radius:8px;
+ color:#8b5538;font:650 16px Georgia,serif
+}
+.open-notebook .profitability-rank-copy{
+ flex:1;display:flex;flex-direction:column;gap:4px;min-width:0
+}
+.open-notebook .profitability-rank-copy strong{
+ color:#4c382a;font-size:13px;overflow-wrap:anywhere
+}
+.open-notebook .profitability-rank-copy small{
+ font-size:10px;line-height:1.45;color:#806d5e;overflow-wrap:anywhere
+}
+.open-notebook .profitability-rank-rate{
+ text-align:right;flex:none;display:flex;flex-direction:column;gap:2px;
+ max-width:125px;color:#8e5a3c
+}
+.open-notebook .profitability-rank-rate b{
+ font:700 16px Georgia,serif;overflow-wrap:anywhere
+}
+.open-notebook .profitability-rank-rate small{font-size:10px;color:#8b6d5c}
+.open-notebook .profitability-rank-rate.is-negative b{color:#b0554a}
+.open-notebook .profitability-empty{
+ background:#ead8c3;border-radius:11px;padding:14px;
+ color:#765843;font-size:12px;line-height:1.65
+}
+.open-notebook .profitability-hint{
+ border:1px dashed #bd9273;border-radius:10px;background:#efe1d0;
+ padding:11px;color:#654b3d;font-size:11px;line-height:1.6
+}
+.open-notebook .profitability-hint button{
+ color:#8d5335;background:none;border:none;text-decoration:underline;
+ font-size:inherit;font-weight:700;cursor:pointer;padding:0 2px
+}
+.open-notebook .profitability-disclaimer{
+ margin:15px 0 0;line-height:1.6;color:#8a7664
+}
+@media(max-width:520px){
+ .open-notebook .profitability-panel>summary.profitability-panel-summary{
+  grid-template-columns:34px minmax(0,1fr) 14px;padding:12px 10px;gap:9px;min-height:69px
+ }
+ .open-notebook .profitability-panel-icon{width:34px;height:34px}
+ .open-notebook .profitability-panel-name strong{font-size:18px}
+ .open-notebook .profitability-panel-name small{font-size:10px}
+ .open-notebook .profitability-panel-body{padding:13px 9px 15px}
+ .open-notebook .profitability-stats{gap:6px}
+ .open-notebook .profitability-stats>div{padding:10px 7px}
+ .open-notebook .profitability-stats strong{font-size:15px}
+ .open-notebook .profitability-types{gap:7px}
+ .open-notebook .profitability-type-rate{font-size:17px}
+ .open-notebook .profitability-rank-item{gap:7px;padding:11px 7px}
+ .open-notebook .profitability-rank-number{width:24px;height:24px;font-size:13px}
+ .open-notebook .profitability-rank-rate{max-width:92px}
+ .open-notebook .profitability-rank-rate b{font-size:13px}
+}
+@media(max-width:360px){
+ .open-notebook .profitability-filter{flex-direction:column;align-items:stretch}
+ .open-notebook .profitability-filter select{width:100%}
+ .open-notebook .profitability-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .open-notebook .profitability-stats>div:last-child{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){
+ .open-notebook .profitability-panel-chevron{transition:none}
+}
