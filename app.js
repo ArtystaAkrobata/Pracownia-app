@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.13.0';
+const APP_VERSION='3.13.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -301,7 +301,7 @@ const projectTypeIcon=p=>`<div class="proj-icon ${p.type==='Warsztat'?'workshop'
 function bar(part,total){let percentage=total>0?Math.min(100,Math.max(0,(part/total)*100)):0;return `<div class="bar-track"><div class="bar-fill" style="width:${percentage}%"></div></div>`;}
 function empty(title,desc,button=''){return `<div class="empty">${icon('spark')}<h3>${title}</h3><p>${desc}</p>${button}</div>`;}
 function navBtn(tab,ic,label){return `<button class="nav-link ${tab===view?'active':''}" data-action="nav" data-view="${tab}">${icon(ic)}${label}</button>`;}
-function mobileBtn(tab,ic,label){return `<button class="mobile-tab ${tab===view||tab==='projects'&&(view==='quotes'||view==='clients'||view==='gallery'||view==='templates')?'active':''}" data-action="nav" data-view="${tab}">${icon(ic)}<span>${label}</span></button>`;}
+function mobileBtn(tab,ic,label){return `<button type="button" class="mobile-tab ${tab===view||tab==='projects'&&(view==='quotes'||view==='clients'||view==='gallery'||view==='templates')?'active':''}" data-action="nav" data-view="${tab}" aria-label="${tab==='add'?'Dodaj projekt':label}" ${tab==='add'?'title="Dodaj projekt"':''}>${icon(ic)}<span>${label}</span></button>`;}
 function openNotebook(content,page,turn=''){
  const pageLabels={projects:'REJESTR PROJEKTÓW',clients:'KSIĘGA KLIENTÓW',gallery:'GALERIA REALIZACJI',templates:'KSIĘGA SZABLONÓW',quotes:'REJESTR WYCEN',finance:'KSIĘGA FINANSÓW',tasks:'LISTA ZADAŃ',calendar:'KALENDARZ I TERMINY'};
  const edge=['finance','calendar','quotes','clients','gallery','templates'].includes(page)?'right':'left';
