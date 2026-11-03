@@ -573,7 +573,7 @@ function filteredClients(){
  return state.clients.filter(c=>!query||[c.name,c.company,c.email,c.phone].some(x=>String(x||'').toLocaleLowerCase('pl').includes(query)))
   .sort((a,b)=>a.name.localeCompare(b.name,'pl'));
 }
-function renderClientList(){
+function renderClientList(offset=0){
  const records=filteredClients();
  if(!records.length){
   const searched=clientSearch.trim();
@@ -590,7 +590,7 @@ function renderClientList(){
   row.count++;
   if(p.status!=='Anulowane')row.value+=projectIncome(p);
  }
- const cards=records.slice(0,listVisible.clients).map(c=>{
+ const cards=records.slice(offset,listVisible.clients).map(c=>{
   const stats=summaries.get(c.id)||{count:0,value:0};
   return '<article class="crm-client-card">'+
    '<div class="crm-card-main"><span class="crm-avatar" aria-hidden="true">'+htmlEscape(c.name.slice(0,1).toUpperCase())+'</span>'+
@@ -695,10 +695,10 @@ function filteredProjects(){
   (!query||[p.title,p.client,p.organizer,p.notes].some(x=>String(x||'').toLocaleLowerCase('pl').includes(query))))
   .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
 }
-function renderProjectGrid(){
+function renderProjectGrid(offset=0){
  const list=filteredProjects();
  if(!list.length)return `<div style="grid-column:1/-1">${empty('Brak projektów','Dodaj pierwszą realizację albo zmień filtr.',`<button class="btn sm" data-action="new-project">Dodaj projekt</button>`)}</div>`;
- return list.slice(0,listVisible.projects).map(projectCard).join('')+nextListButton('projects',Math.min(listVisible.projects,list.length),list.length);
+ return list.slice(offset,listVisible.projects).map(projectCard).join('')+nextListButton('projects',Math.min(listVisible.projects,list.length),list.length);
 }
 
 function projectCard(p){let expense=expenses(p);return `<article class="project-card" data-action="open-project" data-id="${htmlEscape(p.id)}" role="button" tabindex="0"><div class="pcard-head">${projectTypeIcon(p)}${pillStatus(p)}</div><h3>${htmlEscape(p.title)}</h3><div class="project-progress"><span>Postęp</span><strong>${progressPercent(p)}%</strong><div class="workflow-bar"><span style="width:${progressPercent(p)}%"></span></div></div><p>${htmlEscape(p.type==='Warsztat'?[p.client?'Klient: '+p.client:'',p.organizer?'Organizator: '+p.organizer:''].filter(Boolean).join(' · ')||'Bez klienta / organizatora':p.client||'Bez klienta')} · ${fDate(p.date)}</p><div class="pcard-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(expense)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="pcard-footer"><span>${icon('clock')} ${fNum(p.hours)} godz. pracy</span><span>${p.type==='Warsztat'?`${confirmedParticipants(p).length}/${p.capacity||'∞'} miejsc${waitlistedParticipants(p).length?' · '+waitlistedParticipants(p).length+' rezerwowych':''}`:`Wpłacono ${fMoney(projectPaid(p))}`}</span></div></article>`;}
@@ -1003,11 +1003,11 @@ function filteredTasks(){
  return state.tasks.filter(t=>taskFilter==='all'||(taskFilter==='done'?t.done:!t.done))
   .sort((a,b)=>Number(a.done)-Number(b.done)||(a.due||'9999').localeCompare(b.due||'9999'));
 }
-function renderTaskList(){
+function renderTaskList(offset=0){
  const list=filteredTasks();
  if(!list.length)return empty('Lista jest pusta','Dodaj zadanie albo wybierz inny filtr.',`<button class="btn sm" data-action="new-task">Nowe zadanie</button>`);
  const names=new Map(state.projects.map(p=>[p.id,p]));
- return list.slice(0,listVisible.tasks).map(t=>taskRow(t,names)).join('')+
+ return list.slice(offset,listVisible.tasks).map(t=>taskRow(t,names)).join('')+
   nextListButton('tasks',Math.min(listVisible.tasks,list.length),list.length);
 }
 function tasksPage(){
@@ -1643,9 +1643,15 @@ case 'reminder-add':reminderForm('',b.dataset.date||'');break;case 'reminder-edi
 case 'list-more':{
  const which=b.dataset.list;
  if(!Object.hasOwn(listVisible,which))break;
- listVisible[which]+=LIST_BATCH_SIZE;
  const target=$(which==='projects'?'#project-list':which==='clients'?'#client-list':'#task-list');
- if(target)target.innerHTML=which==='projects'?renderProjectGrid():which==='clients'?renderClientList():renderTaskList();
+ const footer=target?.querySelector('.manu-list-more');
+ if(!footer)break;
+ const previous=listVisible[which];
+ listVisible[which]+=LIST_BATCH_SIZE;
+ // Doklej tylko następną partię. Istniejące kafelki, fokus i pozycja strony pozostają.
+ const extra=which==='projects'?renderProjectGrid(previous):which==='clients'?renderClientList(previous):renderTaskList(previous);
+ footer.insertAdjacentHTML('beforebegin',extra);
+ footer.remove();
  break;
 }case 'payment-add':paymentForm(id,b.dataset.participant||'');break;case 'payment-delete':{const p=state.projects.find(x=>x.id===id),pid=b.dataset.participant;const owner=pid?p?.participants?.find(x=>x.id===pid):p;const item=owner?.payments?.find(x=>x.id===b.dataset.payment);if(item&&confirm('Usunąć wpłatę '+fMoney(item.amount)+'? Kwota zostanie odjęta z rozliczenia.')){owner.payments=owner.payments.filter(x=>x.id!==item.id);recordActivity(p,'Usunięto wpis wpłaty '+fMoney(item.amount));afterDataChange('Usunięto wpłatę',id)}break;}case 'add-expense':expenseForm(id);break;case 'delete-expense':{let p=state.projects.find(p=>p.id===id);if(p&&confirm('Usunąć ten koszt?')){p.expenses=p.expenses.filter(x=>x.id!==b.dataset.expense);afterDataChange('Koszt usunięty',id)}break;}case 'workshop-attendance':setWorkshopAttendance(id,b.dataset.participant,b.dataset.attendance);break;case 'workshop-promote':promoteWorkshopParticipant(id,b.dataset.participant);break;case 'workshop-waitlist':moveWorkshopToWaitlist(id,b.dataset.participant);break;case 'workshop-material-add':workshopMaterialForm(id);break;case 'workshop-material-toggle':toggleWorkshopMaterial(id,b.dataset.material);break;case 'workshop-material-remove':removeWorkshopMaterial(id,b.dataset.material);break;case 'workshop-finish':finishWorkshop(id);break;case 'add-participant':participantForm(id);break;case 'edit-participant':participantForm(id,b.dataset.participant);break;case 'finance-mode':{let p=state.projects.find(p=>p.id===id);if(!p||p.type!=='Warsztat')break;const enable=p.financeMode!=='participants';if(confirm(enable?'Liczyć wartość i wpłaty warsztatu na podstawie uczestników? Dotychczasowe ręczne kwoty zostaną zachowane, ale nie będą dodawane do tych sum.':'Wrócić do ręcznie wpisanych kwot warsztatu? Dane uczestników zostaną zachowane.')){p.financeMode=enable?'participants':'manual';afterDataChange('Zmieniono sposób rozliczania warsztatu',id)}break;}case 'delete-participant':{const p=state.projects.find(x=>x.id===id),person=p?.participants.find(x=>x.id===b.dataset.participant);if(!person)break;const received=participantPaid(person);const warning='Usunąć '+person.name+'? '+(received>0?'Uwaga: zapisane wpłaty '+fMoney(received)+' oraz ich historia zostaną usunięte z rozliczenia. W razie zwrotu pieniędzy najpierw zadbaj o własną dokumentację. ':'')+(person.bookingStatus!=='waitlist'&&waitlistedParticipants(p).length?'Zwolni się miejsce do potwierdzenia dla osoby z kolejki.':'');if(confirm(warning)){p.participants=p.participants.filter(x=>x.id!==person.id);recordActivity(p,'Usunięto zapis uczestnika: '+person.name);afterDataChange('Usunięto uczestnika',id)}break;}case 'duplicate-project':{let p=state.projects.find(p=>p.id===id);if(!p)return;let clone=structuredClone(p);clone.id=uid();clone.title=p.title+' (kopia)';clone.date='';clone.paymentDue='';clone.status='Planowane';clone.paid=0;clone.payments=[];clone.hours=0;clone.stages=(clone.stages||defaultStages(clone.type)).map(st=>({...st,done:false}));clone.workLog=[];clone.activityLog=[];clone.photos=[];clone.timer={startedAt:'',seconds:0};clone.expenses=clone.expenses.map(x=>({...x,id:uid(),date:''}));clone.participants=[];clone.workshopMaterials=(clone.workshopMaterials||[]).map(x=>({...x,id:uid(),done:false}));clone.createdAt=now();state.projects.push(clone);closeModal();afterDataChange('Utworzono kopię projektu');projectDetail(clone.id);break;}case 'delete-project':if((state.projects.find(p=>p.id===id)?.photos||[]).length){alert('Najpierw usuń zdjęcia z galerii projektu, aby nie pozostawić osieroconych plików w chmurze.');break;}if(confirm('Usunąć projekt? Tego nie można cofnąć bez kopii zapasowej.')){state.projects=state.projects.filter(x=>x.id!==id);state.tasks=state.tasks.map(t=>t.projectId===id?{...t,projectId:''}:t);state.reminders=state.reminders.map(r=>r.projectId===id?{...r,projectId:''}:r);closeModal();afterDataChange('Projekt usunięty')}break;case 'demo':if(confirm('Dodać przykładowe dane do obecnych?'))demo();break;case 'export':exportData();break;case 'import':importData();break;case 'backup-check':importData('check');break;case 'backup-recovery':recoverPrevious();break;case 'backup-apply':applyBackup();break;case 'storage-persist':(async()=>{try{if(!navigator.storage?.persist){toast('Ta przeglądarka nie udostępnia tej funkcji.');return}const granted=await navigator.storage.persist();toast(granted?'Przeglądarka zaakceptowała trwalsze przechowywanie danych.':'Przeglądarka nie przyznała trwalszej pamięci. Pamiętaj o kopiach JSON.')}catch(e){toast('Nie udało się sprawdzić ochrony danych.')}})();break;case 'clear':if(state.projects.some(p=>(p.photos||[]).length)){alert('Masz zdjęcia w chmurze. Usuń je najpierw z poszczególnych projektów. Nie wymazano danych.');break;}if(confirm('Usunąć WSZYSTKIE dane? Jeśli synchronizacja jest aktywna, zmiana może trafić również do chmury. Najpierw pobierz kopię JSON!')&&confirm('Ostatnie potwierdzenie: na pewno usunąć wszystkie projekty, szablony, klientów, koszty, uczestników i zadania?')){state=blank();afterDataChange('Dane usunięte')}break;case 'install':if(installEvent){installEvent.prompt();installEvent.userChoice.finally(()=>{installEvent=null;render()})}break;}}
 async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');clientDetail(client.id);break;}case 'quote-form':{
