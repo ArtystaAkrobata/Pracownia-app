@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.1.0';
+const APP_VERSION='3.1.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -324,7 +324,7 @@ function quoteDocument(q){
  <div class="quote-doc-meta"><div><small>Data wystawienia</small><b>${htmlEscape(q.issued)}</b></div><div><small>Ważna do</small><b>${htmlEscape(q.validUntil||'Do uzgodnienia')}</b></div></div>
  <div class="quote-doc-parties"><div><small>PRZYGOTOWAŁ</small><b>${htmlEscape(q.issuer||'Twórca / pracownia')}</b><p>${htmlEscape(q.issuerContact||'')}</p></div><div><small>DLA KLIENTA</small><b>${htmlEscape(q.client||'Klient')}</b></div></div>
  <h2>${htmlEscape(q.title)}</h2><table class="quote-doc-table"><thead><tr><th>Lp.</th><th>Opis pozycji</th><th>Ilość</th><th>Jedn.</th><th>Cena jedn.</th><th>Wartość</th></tr></thead><tbody>${rows}</tbody></table>
- <div class="quote-doc-totals"><div><span>Suma pozycji</span><strong>${fMoney(sub)}</strong></div>${discount>0?`<div><span>Rabat</span><strong>− ${fMoney(discount)}</strong></div>`:''}<div class="quote-doc-grand"><span>DO ZAPŁATY</span><strong>${fMoney(total)}</strong></div></div>
+ <div class="quote-doc-totals"><div><span>Suma pozycji</span><strong>${fMoney(sub)}</strong></div>${discount>0?`<div><span>Rabat</span><strong>− ${fMoney(discount)}</strong></div>`:''}<div class="quote-doc-grand"><span>WARTOŚĆ WYCENY</span><strong>${fMoney(total)}</strong></div></div>
  ${q.notes?`<section class="quote-doc-notes"><h3>Warunki i uwagi</h3><p>${htmlEscape(q.notes)}</p></section>`:''}
  <footer class="quote-doc-footer"><span>Dokument ofertowy · Wycena nie jest fakturą ani potwierdzeniem płatności.</span><span>MANU · Organizer twórcy</span><small>Kwoty w PLN. Aplikacja nie oblicza podatku VAT — sprawdź właściwe zasady rozliczeń.</small></footer></article>`;
 }
