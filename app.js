@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.13.4';
+const APP_VERSION='3.13.5';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -29,6 +29,7 @@ function nextListButton(kind,shown,total){
 let notebookTurn='';
 // Powrót do pozycji Startu po przejściu przez Centrum dowodzenia.
 let calendarReturnToHomeY=null;
+let financeReturnToHomeY=null;
 let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
@@ -922,9 +923,10 @@ function profitabilityPanel(){
  '<div id="profitability-results">'+profitabilityResults()+'</div></div></details>';
 }
 function financePage(m){
+ const backToStart=financeReturnToHomeY!==null?'<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="finance-return-home" aria-label="Wróć do poprzedniego miejsca na ekranie Start" title="Wróć do Startu"><span aria-hidden="true">×</span> Wróć</button></div>':'';
  const perHour=profitabilityData().rate,margin=m.income?Math.round(m.profit/m.income*100):0,pct=m.income?Math.min(100,Math.max(0,Math.round(m.cost/m.income*100))):0;
  const metricsBlock=(!m.income&&!m.cost)?empty('Finanse czekają na pierwszy projekt','Dodaj zlecenie lub warsztat z ceną i kosztami, aby zobaczyć podsumowanie.',`<button class="btn" data-action="new-project">Dodaj projekt</button>`):`<div class="stat-grid">${statsCard('Wartość realizacji',fMoney(m.income),'Wpisane ceny wszystkich nieanulowanych projektów','wallet')}${statsCard('Koszty do wyniku',fMoney(m.cost),'Wydatki + szacowany dojazd, gdy brak kosztu faktycznego','folder')}${statsCard('Po kosztach',fMoney(m.profit),'Przed podatkami i kosztami stałymi','trend',m.profit>=0?'accent':'warning')}${statsCard('Za godzinę',perHour==null?'—':fMoney(perHour),'Wyłącznie projekty z wpisanym czasem pracy','clock')}</div><div class="finance-grid finance-overview-grid"><section class="surface"><div class="section-head"><h2>Rentowność wszystkich realizacji</h2><span class="muted small">Bez anulowanych</span></div><div class="donut" style="--pct:${pct}%"><div class="donut-inner"><b>${fNum(margin)}%</b><small>marży*</small></div></div><div class="summary-line"><span>Wartość projektów</span><b>${fMoney(m.income)}</b></div><div class="summary-line"><span>Koszty</span><b>${fMoney(m.cost)}</b></div><div class="summary-line"><span>Otrzymano łącznie</span><b>${fMoney(m.paid)}</b></div><div class="summary-line"><span>Pozostało do zapłaty</span><b>${fMoney(m.unpaid)}</b></div></section></div><div class="form-note finance-detail">* Marża = (wpisana wartość projektów − ujęte koszty) / wartość. To wynik orientacyjny, nie księgowy zysk netto. Koszt faktycznego dojazdu zastępuje szacunek, jeśli został wpisany.</div>`;
- return `${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}${profitabilityPanel()}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
+ return `${backToStart}${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}${profitabilityPanel()}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
 }
 function taskRow(t,projectById=null){let p=projectById?projectById.get(t.projectId):state.projects.find(p=>p.id===t.projectId);return `<div class="task-row"><button class="check-btn ${t.done?'checked':''}" data-action="toggle-task" data-id="${htmlEscape(t.id)}" aria-label="${t.done?'Cofnij wykonanie':'Oznacz jako wykonane'}">${t.done?icon('check'):''}</button><div class="task-text"><b class="${t.done?'done':''}">${htmlEscape(t.title)}</b><small>${p?htmlEscape(p.title)+' · ':''}${t.due?'Termin: '+fDate(t.due):'Bez terminu'}</small></div><button class="btn ghost sm" data-action="edit-task" data-id="${htmlEscape(t.id)}" aria-label="Edytuj zadanie">${icon('pencil')}</button><button class="btn ghost sm" data-action="delete-task" data-id="${htmlEscape(t.id)}" aria-label="Usuń zadanie">${icon('trash')}</button></div>`;}
 function calendarEvents(){
@@ -1626,6 +1628,9 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  if(previous==='home'&&next==='calendar'&&b.closest('.command-center'))calendarReturnToHomeY=window.scrollY;
  else if(previous==='calendar'&&next!=='calendar')calendarReturnToHomeY=null;
  else if(next==='calendar'&&previous!=='calendar')calendarReturnToHomeY=null;
+ if(previous==='home'&&next==='finance'&&b.closest('.command-center'))financeReturnToHomeY=window.scrollY;
+ else if(previous==='finance'&&next!=='finance')financeReturnToHomeY=null;
+ else if(next==='finance'&&previous!=='finance')financeReturnToHomeY=null;
  const notebookOrder={home:0,projects:1,clients:2,gallery:3,templates:4,quotes:5,finance:6,tasks:7,calendar:8};
  notebookTurn=Object.hasOwn(notebookOrder,previous)&&Object.hasOwn(notebookOrder,next)&&previous!==next
    ?notebookOrder[next]>notebookOrder[previous]?'next':'prev':'';
@@ -1637,6 +1642,14 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
   if(calendarReturnToHomeY===null)break;
   const top=calendarReturnToHomeY;
   calendarReturnToHomeY=null;
+  notebookTurn='';view='home';
+  render();
+  window.scrollTo({left:0,top,behavior:'instant'});
+  break;
+}case 'finance-return-home':{
+  if(financeReturnToHomeY===null)break;
+  const top=financeReturnToHomeY;
+  financeReturnToHomeY=null;
   notebookTurn='';view='home';
   render();
   window.scrollTo({left:0,top,behavior:'instant'});
