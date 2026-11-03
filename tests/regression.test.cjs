@@ -19,11 +19,14 @@ assert.match(appSource, injectPoint, 'Nie udało się znaleźć końca aplikacji
 function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const alerts = [];
   const callbacks = {};
+  const nodes = {};
   const persisted = new Map();
   let rejectWrites = false;
   let seq = 0;
   const document = {
-    querySelector: () => null,
+    querySelector: selector => nodes[selector] || null,
+    querySelectorAll: () => [],
+    visibilityState: 'visible',
     getElementById: () => null,
     addEventListener: (name, fn, capture) => {
       (callbacks[name] ||= []).push({fn, capture});
@@ -65,7 +68,12 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
     ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot,',
-    ' waitForWrites: () => writeQueue,',
+    ' renderProjectGrid, renderClientList, renderTaskList, filteredProjects, filteredClients, filteredTasks, liveTimerRefresh,',
+    ' getListVisible: () => ({...listVisible}),',
+    ' setListSearch: (kind,query) => {if(kind==="projects")search=query;else if(kind==="clients")clientSearch=query;},',
+    ' setListType: type => {filter=type;},',
+    ' setTaskFilter: type => {taskFilter=type;},',
+    ' waitForWrites: () => writeQueue,
     ' storageState: () => ({storageBlocked, pendingWrites, saveStatus}),',
     ' useLocalStorage: () => {dbAvailable=false;},',
     ' failRender: () => {render=()=>{throw Error("Testowy błąd interfejsu")};},',
@@ -88,7 +96,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const api = context.__MANU_TEST;
   api.setState(snapshot);
   api.stubEffects();
-  return {api, alerts, callbacks, context, persisted,
+  return {api, alerts, callbacks, context, nodes, document, persisted,
     rejectWrites: value => {rejectWrites=!!value;} };
 }
 
@@ -341,4 +349,96 @@ test('Chmura: błąd odświeżenia ekranu nie cofa poprawnie zapisanych danych',
   assert.equal(api.getState().projects[0].id, 'po');
   assert.equal(JSON.parse(persisted.get('snapshot')).projects[0].id, 'po');
   assert.equal(api.storageState().storageBlocked, false);
+});
+
+
+test('Mobile: duża lista projektów ładuje pierwszych 40, ale przeszukuje całą bazę', () => {
+  const projects = Array.from({length:150},(_,i)=>job('p'+String(i).padStart(3,'0'),{
+    title:i===149?'Projekt unikalny':'Zlecenie '+i,
+    createdAt:'2026-11-03T10:00:00Z'
+  }));
+  const {api} = boot({version:18,projects,tasks:[]});
+  let first=api.renderProjectGrid();
+  assert.equal((first.match(/class="project-card"/g)||[]).length, 40);
+  assert.match(first, /Pokaż kolejne 40/);
+  assert.doesNotMatch(first, /Projekt unikalny/);
+  api.setListSearch('projects','Projekt unikalny');
+  const found=api.renderProjectGrid();
+  assert.match(found,/Projekt unikalny/);
+  assert.equal((found.match(/class="project-card"/g)||[]).length,1);
+});
+
+test('Mobile: doładowanie projektów dokleja elementy bez nadpisywania poprzednich', () => {
+  const projects=Array.from({length:92},(_,i)=>job('p'+String(i).padStart(3,'0')));
+  const {api,nodes} = boot({version:18,projects,tasks:[]});
+  const initial=api.renderProjectGrid();
+  let inserted='',removed=false;
+  const footer={insertAdjacentHTML:(position,html)=>{assert.equal(position,'beforebegin');inserted=html;},remove:()=>{removed=true}};
+  const container={querySelector:selector=>selector==='.manu-list-more'?footer:null};
+  nodes['#project-list']=container;
+  api.handleAction({dataset:{action:'list-more',list:'projects'}});
+  assert.equal(api.getListVisible().projects,80);
+  assert.equal((inserted.match(/class="project-card"/g)||[]).length,40);
+  assert.ok(removed);
+  assert.match(inserted,/Pokaż kolejne 12/);
+  assert.equal((initial.match(/class="project-card"/g)||[]).length,40);
+  assert.doesNotMatch(inserted,/data-id="p000"/);
+});
+
+test('Mobile: lista klientów pokazuje 40 kart, liczy wartości bez podwójnych przebiegów', () => {
+  const clients=Array.from({length:120},(_,i)=>({
+    id:'client'+i,name:'Klient '+String(i).padStart(3,'0')
+  }));
+  const projects=[
+    job('a',{clientId:'client0',price:300}),
+    job('b',{clientId:'client0',price:400}),
+    job('c',{clientId:'client0',price:999,status:'Anulowane'})
+  ];
+  const {api}=boot({version:18,projects,tasks:[],clients});
+  const markup=api.renderClientList();
+  assert.equal((markup.match(/class="crm-client-card"/g)||[]).length,40);
+  assert.match(markup,/Pokaż kolejne 40/);
+  assert.match(markup,/3 projektów/);
+  assert.match(markup,/700/);
+  api.setListSearch('clients','Klient 119');
+  const last=api.renderClientList();
+  assert.match(last,/Klient 119/);
+  assert.equal((last.match(/class="crm-client-card"/g)||[]).length,1);
+});
+
+test('Mobile: filtrowanie dużej listy zadań zachowuje kolejne strony', () => {
+  const tasks=Array.from({length:130},(_,i)=>({
+    id:'t'+i,title:'Zadanie '+i,done:i===0,projectId:'',due:''
+  }));
+  const {api}=boot({version:18,projects:[],tasks});
+  let markup=api.renderTaskList();
+  assert.equal((markup.match(/class="task-row"/g)||[]).length,40);
+  assert.match(markup,/Pokaż kolejne 40/);
+  assert.doesNotMatch(markup,/Zadanie 0</);
+  api.setTaskFilter('done');
+  markup=api.renderTaskList();
+  assert.equal((markup.match(/class="task-row"/g)||[]).length,1);
+  api.setTaskFilter('all');
+  markup=api.renderTaskList();
+  assert.equal((markup.match(/class="task-row"/g)||[]).length,40);
+});
+
+test('Mobile: stoper nie odświeża DOM w tle i aktualizuje tylko widoczne elementy', () => {
+  const startedAt=new Date(Date.now()-11000).toISOString();
+  const {api,document}=boot({version:18,projects:[
+    job('a',{timer:{startedAt,seconds:0}}),
+    job('b',{timer:{startedAt:'',seconds:0}})
+  ],tasks:[]});
+  let scans=0,updated='';
+  document.querySelectorAll=()=>{
+    scans++;
+    return [{dataset:{timerValue:'a'},set textContent(value){updated=value;}}];
+  };
+  document.visibilityState='hidden';
+  api.liveTimerRefresh();
+  assert.equal(scans,0);
+  document.visibilityState='visible';
+  api.liveTimerRefresh();
+  assert.equal(scans,1);
+  assert.ok(updated.length>0);
 });
