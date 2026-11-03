@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.8.1';
+const APP_VERSION='3.8.2';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -755,8 +755,10 @@ function projectForm(p,prefillClientId='',templateId=''){
   const autoWorkshop=edit&&x.type==='Warsztat'&&x.financeMode==='participants';
   const moneyFieldValue=autoWorkshop?projectIncome(x):x.price||0;
   const paidFieldValue=autoWorkshop?projectPaid(x):x.paid||0;
+  const advancedFilled=!!(x.paymentDue||x.notes||x.workLocation||x.location||x.startTime||val(x.durationHours)||val(x.hours)||val(x.estimatedHours)||val(x.estimatedMaterials)||val(x.travelKm)||val(x.paidTransportCost)||val(x.travelExtra)||val(x.paid)||val(x.quantity)>1);
   modal(edit?'Edytuj projekt lub warsztat':'Nowy projekt lub warsztat',`<form id="project-form" data-id="${htmlEscape(x.id||'')}" data-old-manual="${oldManualWorkshop?'yes':'no'}" data-is-edit="${edit?'yes':'no'}" data-original-type="${htmlEscape(x.type)}" data-original-auto="${autoWorkshop?'yes':'no'}" data-template="${htmlEscape(template?.id||'')}">
   ${template?`<p class="form-note">Używasz szablonu: <b>${htmlEscape(template.name)}</b>. Sprawdź ceny, koszty i terminy przed zapisaniem. ${template.expenses.length?`Powtarzalne koszty: ${template.expenses.length} pozycji; zostaną wpisane przy utworzeniu projektu.`:''}</p>`:''}
+  <p class="project-form-step-label">Podstawowe informacje</p>
   <div class="form-cols type-select-row">
     <div class="field"><label>Rodzaj działalności</label><select name="type"><option value="Zlecenie" ${x.type==='Zlecenie'?'selected':''}>Zlecenie / realizacja</option><option value="Warsztat" ${x.type==='Warsztat'?'selected':''}>Warsztat</option></select></div>
     <div class="field"><label>Status</label><select name="status">${optionsStatus(x.status)}</select></div>
@@ -766,9 +768,27 @@ function projectForm(p,prefillClientId='',templateId=''){
     <div class="field field-full"><label>Powiąż z kartą klienta</label><select name="clientId" aria-label="Klient z bazy MANU"><option value="">Bez powiązania z bazą</option>${state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(c=>'<option value="'+htmlEscape(c.id)+'" '+(c.id===linkedClientId?'selected':'')+'>'+htmlEscape(c.name)+'</option>').join('')}</select><p class="muted tiny">Wybierz kartę z bazy klientów lub wpisz nazwę poniżej. Uczestników warsztatów dodajesz osobno.</p></div>
     <div class="field"><label data-label="client">Klient / zamawiający</label><input name="client" maxlength="100" placeholder="Opcjonalnie" value="${htmlEscape(linkedClient?.name||(x.type==='Warsztat'&&!linkedClientId?'':x.client))}" ${linkedClient?'readonly':''}></div>
     <div class="field"><label data-label="date">Termin wykonania</label><input name="date" type="date" value="${htmlEscape(x.date)}"></div>
-    <div class="field"><label>Termin płatności / rozliczenia (opcjonalnie)</label><input name="paymentDue" type="date" value="${htmlEscape(x.paymentDue||'')}"></div>
   </div>
 
+
+  <section class="project-kind-section project-form-primary-workshop" data-kind="Warsztat" hidden>
+    <div class="field"><label>Organizator / prowadzący</label><input name="organizer" maxlength="120" placeholder="Np. Adam — organizator warsztatów" value="${htmlEscape(x.organizer??(x.type==='Warsztat'&&!linkedClientId?x.client:''))}"><p class="muted tiny">To pole jest niezależne od klienta powiązanego z bazą MANU.</p></div>
+    <div class="form-cols">
+    <div class="field"><label>Liczba dostępnych miejsc</label><input name="capacity" type="number" min="0" step="1" value="${Math.floor(val(x.capacity))}"></div>
+    <div class="field"><label>Cena za uczestnika (zł)</label><input name="participantFee" type="number" min="0" step="0.01" value="${money(x.participantFee)}"></div>
+    </div>
+  </section>
+  <section class="project-kind-section project-form-primary-price" data-field="money">
+    <div class="field"><label data-label="price">Cena realizacji (zł)</label><input name="price" type="number" min="0" step="0.01" value="${money(moneyFieldValue)}"></div>
+  </section>
+  <details class="project-form-advanced" ${advancedFilled?'open':''}>
+    <summary class="project-form-advanced-trigger">
+      <span class="project-form-advanced-icon">${icon('settings')}</span>
+      <span class="project-form-advanced-copy"><strong>Więcej ustawień</strong><small>Rozliczenia, miejsce, dojazd, czas pracy i notatki</small></span>
+      <span class="project-form-advanced-chevron" aria-hidden="true">⌄</span>
+    </summary>
+    <div class="project-form-advanced-content">
+      <div class="field"><label>Termin płatności / rozliczenia (opcjonalnie)</label><input name="paymentDue" type="date" value="${htmlEscape(x.paymentDue||'')}"></div>
   <section class="project-kind-section" data-kind="Zlecenie">
     <div class="kind-heading"><span class="kind-symbol">${icon('brief')}</span><div><h3>Szczegóły realizacji</h3><p>Zaplanuj wykonanie i przewidywany koszt.</p></div></div>
     <details class="location-accordion" ${x.workLocation||travelCost(x)>0||val(x.travelKm)>0||val(x.paidTransportCost)>0?'open':''}>
@@ -824,27 +844,24 @@ function projectForm(p,prefillClientId='',templateId=''){
   </section>
   <section class="project-kind-section" data-kind="Warsztat" hidden>
     <div class="kind-heading"><span class="kind-symbol">${icon('users')}</span><div><h3>Organizacja warsztatu</h3><p>Ustal miejsce, uczestników i przebieg zajęć.</p></div></div>
-    <div class="field"><label>Organizator / prowadzący</label><input name="organizer" maxlength="120" placeholder="Np. Adam — organizator warsztatów" value="${htmlEscape(x.organizer??(x.type==='Warsztat'&&!linkedClientId?x.client:''))}"><p class="muted tiny">To pole jest niezależne od klienta powiązanego z bazą MANU.</p></div>
     <div class="field"><label>Miejsce warsztatu</label><input name="location" maxlength="180" placeholder="Np. sala, pracownia lub adres" value="${htmlEscape(x.location||'')}"></div>
     <div class="form-cols">
       <div class="field"><label>Godzina rozpoczęcia</label><input name="startTime" type="time" value="${htmlEscape(x.startTime||'')}"></div>
       <div class="field"><label>Czas trwania zajęć (godz.)</label><input name="durationHours" type="number" min="0" step="0.25" value="${val(x.durationHours)}"></div>
-      <div class="field"><label>Liczba dostępnych miejsc</label><input name="capacity" type="number" min="0" step="1" value="${Math.floor(val(x.capacity))}"></div>
-      <div class="field"><label>Cena za uczestnika (zł)</label><input name="participantFee" type="number" min="0" step="0.01" value="${money(x.participantFee)}"></div>
-      <div class="field field-full"><label>Szacowany czas przygotowania i prowadzenia (godz.)</label><input name="workshopEstimatedHours" type="number" min="0" step="0.25" value="${val(x.estimatedHours)}"></div><div class="field field-full"><label>Przepracowano łącznie przy warsztacie (godz.)</label><input name="workshopHours" type="number" min="0" step="any" value="${val(x.hours)}"></div>
+          <div class="field field-full"><label>Szacowany czas przygotowania i prowadzenia (godz.)</label><input name="workshopEstimatedHours" type="number" min="0" step="0.25" value="${val(x.estimatedHours)}"></div><div class="field field-full"><label>Przepracowano łącznie przy warsztacie (godz.)</label><input name="workshopHours" type="number" min="0" step="any" value="${val(x.hours)}"></div>
     </div>
     <div class="form-note">Po zapisaniu warsztatu dodasz uczestników i ich wpłaty. Cena za osobę będzie automatycznie proponowana w formularzu uczestnika.</div>
   </section>
 
-  <section class="project-kind-section" data-field="money">
-    <div class="kind-heading"><span class="kind-symbol">${icon('wallet')}</span><div><h3>Rozliczenie ${oldManualWorkshop?'warsztatu':'realizacji'}</h3><p data-money-description>Cena dla klienta i otrzymane wpłaty.</p></div></div>
-    <div class="form-cols">
-      <div class="field"><label data-label="price">Cena realizacji (zł)</label><input name="price" type="number" min="0" step="0.01" value="${money(moneyFieldValue)}"></div>
-      <div class="field"><label data-label="paid">Wpłaty wcześniejsze, bez daty (zł)</label><input name="paid" type="number" min="0" step="0.01" value="${money(paidFieldValue)}"></div>
-    </div>
-  </section>
 
+      <section class="project-kind-section project-form-manual-paid" data-field="manualPayment">
+        <div class="kind-heading"><span class="kind-symbol">${icon('wallet')}</span><div><h3>Wpłaty ręczne</h3>
+        <p data-money-description>Cena dla klienta i otrzymane wpłaty.</p></div></div>
+        <div class="field"><label data-label="paid">Wpłaty wcześniejsze, bez daty (zł)</label><input name="paid" type="number" min="0" step="0.01" value="${money(paidFieldValue)}"></div>
+      </section>
   <div class="field"><label>Notatki i ustalenia</label><textarea name="notes" maxlength="5000" placeholder="Materiały, ustalenia, pomysły, informacje…">${htmlEscape(x.notes)}</textarea></div>
+    </div>
+  </details>
   <div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${icon('check')} ${edit?'Zapisz zmiany':'Utwórz projekt'}</button></div>
   </form>`);
   syncProjectFields();
