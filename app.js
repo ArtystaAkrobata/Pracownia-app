@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.12.2';
+const APP_VERSION='3.12.3';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -81,7 +81,10 @@ function save(candidate=state,force=false){
  }).then(()=>{
   // Czas zapisu w obiekcie i na dysku musi być identyczny także po przywróceniu.
   candidate.lastSaved=snapshot.lastSaved;
-  if(candidate===state)window.MANUCloud?.localSaved?.(snapshot);
+  if(candidate===state){
+   try{window.MANUCloud?.localSaved?.(snapshot);}
+   catch(e){console.warn('MANU: lokalny zapis poprawny, ale nie udało się powiadomić chmury',e);}
+  }
   if(force)storageBlocked=false;
   lastSaveError='';
   return true;
@@ -1762,14 +1765,14 @@ async function applyCloudSnapshot(data){
  if(storageBlocked||document.querySelector('.modal'))return false;
  const previous=state;
  state=incoming;
- try{
-  const saved=await save();
-  if(!saved){state=previous;render();return false;}
-  render();
-  return true;
- }catch(e){
-  state=previous;render();throw e;
- }
+ let saved;
+ try{saved=await save();}
+ catch(e){state=previous;render();throw e;}
+ if(!saved){state=previous;render();return false;}
+ // Po skutecznym zapisie nie cofamy danych, nawet gdy ekran wymaga ponownego załadowania.
+ try{render();}
+ catch(e){console.error('MANU: dane chmurowe zapisane, ale odświeżenie ekranu nie powiodło się',e);}
+ return true;
 }
 async function init(){
  window.MANUTemplates?.init?.({
