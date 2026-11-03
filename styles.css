@@ -2874,3 +2874,34 @@ body.gallery-lightbox-open{overflow:hidden}
   transition:none
  }
 }
+
+/* MANU 3.12.0 koszty — dodatkowy rozwijany raport */
+.open-notebook .cost-category-panel{margin:14px 0 18px;border:1px solid #d0b397;border-radius:12px;overflow:hidden;background:#f5e9d8;color:#53392d}
+.open-notebook .cost-category-summary{display:grid;grid-template-columns:minmax(0,1fr) auto 17px;gap:8px;align-items:center;list-style:none;padding:14px 12px;cursor:pointer}
+.open-notebook .cost-category-summary::-webkit-details-marker{display:none}
+.open-notebook .cost-category-summary::marker{content:""}
+.open-notebook .cost-category-summary:focus-visible{outline:2px solid #b77c59;outline-offset:-3px}
+.open-notebook .cost-category-summary>span:first-child{display:flex;flex-direction:column;min-width:0;gap:4px}
+.open-notebook .cost-category-summary strong{display:flex;gap:8px;align-items:center;font:600 17px Georgia,serif;color:#633f2b}
+.open-notebook .cost-category-summary strong .ico{width:17px;height:17px;color:#a66b47}
+.open-notebook .cost-category-summary small{font-size:10px;color:#85705e;line-height:1.4}
+.open-notebook .cost-category-summary em{font:700 15px Georgia,serif;color:#995f40;font-style:normal;white-space:nowrap}
+.open-notebook .cost-category-chevron{font-size:22px;color:#a56b4c;transition:transform .2s}
+.open-notebook .cost-category-panel[open] .cost-category-chevron{transform:rotate(180deg)}
+.open-notebook .cost-category-body{border-top:1px solid #d7b99e;padding:14px 12px}
+.open-notebook .cost-category-item{padding:5px 0 10px}
+.open-notebook .cost-category-caption{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.open-notebook .cost-category-caption strong{font:600 12px Arial,sans-serif;color:#593e2f}
+.open-notebook .cost-category-caption span{font-size:12px;color:#704b34;font-weight:700;text-align:right}
+.open-notebook .cost-category-track{height:8px;border-radius:20px;background:#e4d0ba;overflow:hidden}
+.open-notebook .cost-category-track i{display:block;height:100%;background:linear-gradient(90deg,#8d593a,#bd855c);border-radius:20px}
+.open-notebook .cost-category-estimate{margin:10px 0;background:#efe0c9;border:1px dashed #c7a381;border-radius:8px;padding:10px;font-size:11px;color:#78563d}
+.open-notebook .cost-category-body h4{font:600 15px Georgia,serif;color:#60422f;margin:13px 0 8px}
+.open-notebook .cost-category-projects{display:flex;flex-direction:column;gap:6px}
+.open-notebook .cost-category-project{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;border:1px solid #ddc5aa;border-radius:8px;background:#f9f0e3;padding:11px;font-size:12px;color:#59402f;cursor:pointer}
+.open-notebook .cost-category-project span{min-width:0;overflow-wrap:anywhere}
+.open-notebook .cost-category-project b{color:#925737;white-space:nowrap}
+.open-notebook .cost-category-project:focus-visible{outline:2px solid #a06c47;outline-offset:2px}
+.open-notebook .cost-category-body>.muted{margin:12px 0 0;line-height:1.6}
+@media(max-width:520px){.open-notebook .cost-category-summary{grid-template-columns:minmax(0,1fr) auto 14px;gap:6px;padding:12px 9px}.open-notebook .cost-category-summary strong{font-size:15px}.open-notebook .cost-category-summary em{font-size:12px}.open-notebook .cost-category-body{padding:11px 9px}.open-notebook .cost-category-caption span{font-size:11px}}
+@media(max-width:365px){.open-notebook .cost-category-summary{grid-template-columns:minmax(0,1fr) 14px}.open-notebook .cost-category-summary em{grid-column:1;grid-row:2;justify-self:start}.open-notebook .cost-category-chevron{grid-column:2;grid-row:1}}
