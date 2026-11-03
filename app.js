@@ -833,6 +833,33 @@ function comparisonMarkup(scope=profitabilityScope){
  '<label>Druga realizacja<select id="compare-project-right" '+(!right?'disabled':'')+'>'+optionRows(right)+'</select></label></div>'+
  '<div id="comparison-results">'+comparisonResults(scope)+'</div></div></details>';
 }
+function costCategoryData(scope=profitabilityScope){
+ const projects=active().filter(p=>(scope==='Warsztat'||scope==='Zlecenie')?p.type===scope:true);
+ const ids=['materialy','uslugi','dojazd','inne'];
+ const amounts=Object.fromEntries(ids.map(id=>[id,0]));
+ let estimatedTravel=0;
+ const totals=projects.map(p=>{
+  for(const e of p.expenses||[])amounts[validExpenseCategory(e.category)]+=money(e.amount);
+  const travel=estimatedTravelApplied(p);
+  amounts.dojazd+=travel;estimatedTravel+=travel;
+  return {p,total:expenses(p)};
+ });
+ const total=money(totals.reduce((n,x)=>n+x.total,0));
+ const labels={materialy:'Materiały',uslugi:'Usługi i podwykonawcy',dojazd:'Dojazd',inne:'Pozostałe'};
+ const categories=ids.map(id=>({id,label:labels[id],amount:money(amounts[id]),percent:total>0?Math.max(0,Math.min(100,100*amounts[id]/total)):0})).sort((a,b)=>b.amount-a.amount);
+ return {total,categories,projects,estimatedTravel:money(estimatedTravel),totals:totals.sort((a,b)=>b.total-a.total)};
+}
+function costCategoryPanel(scope=profitabilityScope){
+ const d=costCategoryData(scope);
+ const bars=d.categories.map(x=>'<div class="cost-category-item"><div class="cost-category-caption"><strong>'+htmlEscape(x.label)+'</strong><span>'+fMoney(x.amount)+' <small>('+Math.round(x.percent)+'%)</small></span></div><div class="cost-category-track"><i style="width:'+x.percent.toFixed(2)+'%"></i></div></div>').join('');
+ const top=d.totals.filter(x=>x.total>0).slice(0,5).map(x=>'<button class="cost-category-project" type="button" data-action="open-project" data-id="'+htmlEscape(x.p.id)+'"><span>'+htmlEscape(x.p.title)+'</span><b>'+fMoney(x.total)+'</b></button>').join('');
+ return '<details class="cost-category-panel" '+(costBreakdownExpanded?'open':'')+'>'+
+ '<summary class="cost-category-summary"><span><strong>'+icon('wallet')+' Struktura kosztów</strong><small>Materiały, usługi, dojazd i pozostałe wydatki</small></span><em>'+fMoney(d.total)+'</em><span class="cost-category-chevron" aria-hidden="true">⌄</span></summary>'+
+ '<div class="cost-category-body">'+(d.total>0?bars:'<p class="muted small">Brak wpisanych kosztów w wybranych realizacjach.</p>')+
+ (d.estimatedTravel>0?'<p class="cost-category-estimate">W tym szacowany dojazd: <strong>'+fMoney(d.estimatedTravel)+'</strong>.</p>':'')+
+ (top?'<h4>Realizacje z największymi kosztami</h4><div class="cost-category-projects">'+top+'</div>':'')+
+ '<p class="muted tiny">Łączne koszty '+d.projects.length+' nieanulowanych realizacji. Szacowany dojazd jest zastępowany wydatkiem faktycznym, jeśli go wpisano. Szacunkowe materiały nie są dodawane do poniesionych wydatków. To kwoty orientacyjne, bez podatków i kosztów stałych.</p></div></details>';
+}
 function profitabilityPanel(){
  const d=profitabilityData();
  return '<details class="profitability-panel" '+(profitabilityExpanded?'open':'')+'>'+
