@@ -2251,3 +2251,41 @@ body.gallery-lightbox-open{overflow:hidden}
  .project-checklist-row{gap:7px}
  .project-checklist-row>span{font-size:12px}
 }
+
+/* MANU 3.8.1 · Porządki UX, bez ukrywania funkcji i bez skakania strony */
+.home-recent{margin:0 0 18px}
+.home-recent>.surface{width:100%;min-width:0}
+.project-primary-actions{display:flex;align-items:flex-start;flex-wrap:wrap;gap:9px}
+.project-primary-actions>.btn{min-width:0}
+.project-tools-more{flex:0 1 auto;min-width:0;max-width:100%}
+.project-tools-more>summary{
+ cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+ gap:8px;list-style:none;user-select:none;white-space:normal;text-align:center;
+ min-height:42px
+}
+.project-tools-more>summary::-webkit-details-marker{display:none}
+.project-tools-more>summary::marker{content:""}
+.project-tools-more>summary:focus-visible{
+ outline:2px solid #af7352;outline-offset:3px
+}
+.project-tools-chevron{font-size:17px;line-height:1;display:inline-block;transition:transform .16s ease}
+.project-tools-more[open] .project-tools-chevron{transform:rotate(180deg)}
+.project-tools-more[open]{flex:1 1 100%;max-width:100%;min-width:0}
+.project-tools-panel{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;margin-top:10px;padding:12px;
+ background:linear-gradient(135deg,#efe0cd,#f7eddf);
+ border:1px solid #d3b596;border-radius:12px
+}
+.project-tools-panel .btn{min-width:0;white-space:normal;text-align:center;line-height:1.35}
+@media(max-width:760px){
+ .project-primary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+ .project-primary-actions>.btn{width:100%;min-width:0;white-space:normal}
+ .project-tools-more{grid-column:1/-1;width:100%;max-width:none}
+ .project-tools-more>summary{width:100%;white-space:normal}
+ .project-tools-panel{grid-template-columns:1fr;padding:10px}
+ .project-tools-panel .btn{width:100%;justify-content:flex-start;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+ .project-tools-chevron{transition:none}
+}
