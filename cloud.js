@@ -396,8 +396,63 @@ document.addEventListener('submit',event=>{
  else if(id==='cloud-change-password-form')void changePassword(event);
  else if(id==='cloud-reset-password-form')void finishRecovery(event);
 });
+
+const GALLERY_BUCKET='manu-gallery';
+function galleryConnected(){
+ return !!client&&!!user&&ready&&!conflict&&binding?.userId===user.id;
+}
+function galleryEnsureReady(){
+ if(!client||!user)throw Error('Zaloguj się do MANU, aby używać prywatnej galerii.');
+ if(!galleryConnected())throw Error('Włącz i sprawdź synchronizację w Ustawieniach przed wysyłaniem zdjęć.');
+ if(navigator.onLine===false)throw Error('Zdjęcia wymagają połączenia z internetem.');
+}
+function galleryValidatePath(path){
+ if(!client||!user||typeof path!=='string')throw Error('Brak dostępu do zdjęcia.');
+ const prefix=user.id+'/';
+ if(!path.startsWith(prefix)||!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.jpg$/.test(path)){
+  throw Error('Nieprawidłowa ścieżka zdjęcia.');
+ }
+ return path;
+}
+async function galleryUpload(projectId,blob){
+ galleryEnsureReady();
+ const name=String(projectId||'');
+ if(!/^[a-zA-Z0-9_-]{1,120}$/.test(name))throw Error('Nieprawidłowy projekt.');
+ if(!(blob instanceof Blob)||blob.type!=='image/jpeg'||blob.size<=0||blob.size>5242880){
+  throw Error('Zdjęcie musi być zapisane jako JPEG i mieć maksymalnie 5 MB.');
+ }
+ const id=crypto.randomUUID();
+ const path=user.id+'/'+name+'/'+id+'.jpg';
+ const {error}=await client.storage.from(GALLERY_BUCKET).upload(path,blob,{
+  contentType:'image/jpeg',cacheControl:'3600',upsert:false
+ });
+ if(error){
+  if(/bucket not found|not found|does not exist/i.test(String(error.message||'')))
+   throw Error('Nie uruchomiono jeszcze magazynu zdjęć. Wykonaj kod supabase/manu_gallery.sql w SQL Editor.');
+  throw error;
+ }
+ return {id,path,size:blob.size};
+}
+async function galleryUrls(paths){
+ if(!client||!user||navigator.onLine===false)return {};
+ const unique=[...new Set((Array.isArray(paths)?paths:[]).filter(p=>{
+  try{return galleryValidatePath(p)&&true}catch(e){return false}
+ }))].slice(0,100);
+ if(!unique.length)return {};
+ const {data,error}=await client.storage.from(GALLERY_BUCKET).createSignedUrls(unique,1800);
+ if(error)throw error;
+ return Object.fromEntries((data||[]).map((item,i)=>[unique[i],item?.signedUrl||'']));
+}
+async function galleryRemove(path){
+ galleryEnsureReady();
+ galleryValidatePath(path);
+ const {error}=await client.storage.from(GALLERY_BUCKET).remove([path]);
+ if(error)throw error;
+ return true;
+}
 window.MANUCloud={
  init,markup:statusMarkup,
+ galleryConnected,galleryUpload,galleryUrls,galleryRemove,
  displayName:()=>String(user?.user_metadata?.display_name||'').trim().slice(0,48),
  localSaved:()=>{if(!applying)schedulePush()},
  async action(name){
