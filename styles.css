@@ -1815,3 +1815,23 @@ body{background:#08090b;color:var(--text)}
 }
 .open-notebook-content .quote-exit:hover{background:#e8c8ad}
 .open-notebook-content .quote-exit:focus-visible{outline:3px solid #ba7958;outline-offset:3px}
+
+/* MANU 3.2.0 · Konta i chmura */
+.cloud-section{border:1px solid #bb9879}
+.cloud-auth-form{display:grid;gap:14px;margin-top:15px}
+.cloud-auth-form label{display:grid;gap:7px;font-size:12px;font-weight:700}
+.cloud-auth-form input{
+ min-width:0;width:100%;min-height:45px;padding:11px 13px;
+ color:var(--text);background:var(--panel2);border:1px solid var(--stroke);
+ border-radius:11px;font:inherit;
+}
+.cloud-auth-form input:focus{outline:2px solid #bc825f;outline-offset:2px}
+.cloud-section .settings-actions{display:flex;flex-wrap:wrap;gap:9px}
+.cloud-section .settings-actions .btn{white-space:normal;text-align:center;min-height:42px}
+.cloud-status{padding:11px 13px;border-radius:10px;border:1px solid #95a993;background:#e7efe4;color:#2f5b3e;font-weight:700}
+.cloud-status-warning{background:#fff0db;border-color:#d2a56c;color:#815227}
+@media(max-width:500px){
+ .cloud-section .settings-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .cloud-section .settings-actions .btn{font-size:11px;white-space:normal;min-width:0}
+ .cloud-section .settings-actions .btn:first-child{grid-column:1/-1}
+}
