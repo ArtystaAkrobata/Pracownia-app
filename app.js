@@ -1017,7 +1017,7 @@ function backupDownload(){
  const json=JSON.stringify(data,null,2),url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
  const el=document.createElement('a'),stamp=exportedAt.replace(/:/g,'-').slice(0,19);
  el.href=url;el.download='manu-kopia-'+stamp+'.json';document.body.appendChild(el);
- try{el.click();toast('Przygotowano kopię. Sprawdź folder Pobrane i zachowaj plik w bezpiecznym miejscu.')}
+ try{el.click();toast('Przygotowano kopię JSON (bez plików zdjęć). Zachowaj ją poza telefonem.')}
  finally{el.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 }
 function exportData(){try{backupDownload()}catch(e){alert('Nie udało się pobrać kopii: '+String(e.message||e))}}
@@ -1027,9 +1027,9 @@ function showBackupPreview(){
  const title=item.mode==='check'?'Sprawdzenie kopii MANU':item.mode==='recovery'?'Poprzedni zapis MANU':'Przywracanie kopii MANU';
  const action=item.mode==='check'?'':'<button class="btn" type="button" data-action="backup-apply">'+icon('upload')+' Zastąp obecne dane</button>';
  const summary='<p class="muted small">'+htmlEscape(item.filename)+'</p><div class="backup-preview-info"><strong>'+(item.mode==='check'?'Plik został odczytany poprawnie.':'Sprawdzono strukturę danych. Przed przywróceniem porównaj zawartość.')+'</strong>'
- +'<p>Obecnie w MANU: <b>'+current.projects+' projektów</b>, '+current.clients+' klientów, '+current.tasks+' zadań, '+current.participants+' uczestników, '+current.quotes+' wycen.</p>'
- +'<p>W wybranej kopii: <b>'+next.projects+' projektów</b>, '+next.clients+' klientów, w tym '+next.workshops+' warsztatów, '+next.tasks+' zadań, '+next.participants+' uczestników, '+next.quotes+' wycen.</p>'
- +'<p class="muted small">Zapis kopii: '+htmlEscape(item.snapshot.lastSaved||'Brak daty')+'. Sprawdź liczbę zapisanych rekordów.</p></div>';
+ +'<p>Obecnie w MANU: <b>'+current.projects+' projektów</b>, '+current.clients+' klientów, '+current.tasks+' zadań, '+current.participants+' uczestników, '+current.quotes+' wycen, '+current.photos+' opisów zdjęć.</p>'
+ +'<p>W wybranej kopii: <b>'+next.projects+' projektów</b>, '+next.clients+' klientów, w tym '+next.workshops+' warsztatów, '+next.tasks+' zadań, '+next.participants+' uczestników, '+next.quotes+' wycen, '+next.photos+' opisów zdjęć.</p>'
+ +'<p class="muted small">Zapis kopii: '+htmlEscape(item.snapshot.lastSaved||'Brak daty')+'. Sprawdź liczbę zapisanych rekordów. Plik JSON przechowuje opisy i ścieżki zdjęć, ale nie kopiuje fotografii z Supabase Storage.</p></div>';
  const warning=item.mode==='check'?'<p class="form-note">To była tylko kontrola pliku. Nic nie zostało przywrócone ani zmienione.</p>':
  '<p class="form-note backup-warning">Uwaga: przywrócenie ZASTĄPI obecne dane. Najpierw pobierz kopię obecnego stanu. Lokalny punkt przywracania nie zastępuje kopii poza telefonem.</p>';
  modal(title,'<form id="backup-preview-form">'+summary+warning+'<div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button>'+action+'</div></form>');
