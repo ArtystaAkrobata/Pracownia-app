@@ -281,6 +281,7 @@ async function saveProfile(event){
   if(error)throw error;
   user=data.user||user;errorText='';
   emit('Zapisano nazwę profilu.');
+  bridge?.refreshHome?.();
  }catch(e){errorText=textError(e);window.alert('Nie udało się zapisać profilu: '+errorText);}
  finally{busy=false;renderIfSettings();}
 }
@@ -352,11 +353,15 @@ async function init(callbacks){
      if(!recoveryMode)void inspect();
     }
    }
-   if(['SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY','USER_UPDATED','INITIAL_SESSION'].includes(event))renderIfSettings();
+   if(['SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY','USER_UPDATED','INITIAL_SESSION'].includes(event)){
+    renderIfSettings();
+    bridge?.refreshHome?.();
+   }
   });
   const result=await client.auth.getUser();
   if(result.error)throw result.error;
   user=result.data?.user||null;activeUserId=user?.id||null;
+  bridge?.refreshHome?.();
   if(recoveryFromUrl && user){
    recoveryMode=true;
    bridge?.openSettings?.();
@@ -376,6 +381,7 @@ document.addEventListener('submit',event=>{
 });
 window.MANUCloud={
  init,markup:statusMarkup,
+ displayName:()=>String(user?.user_metadata?.display_name||'').trim().slice(0,48),
  localSaved:()=>{if(!applying)schedulePush()},
  async action(name){
   if(name==='cloud-upload')await push(true);
