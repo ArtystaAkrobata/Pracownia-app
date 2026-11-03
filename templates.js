@@ -62,7 +62,7 @@ function fromProject(p){
   type:p.type,price:p.type==='Warsztat'?0:p.price,
   quantity:p.quantity,capacity:p.capacity,participantFee:p.participantFee,
   estimatedHours:p.estimatedHours,estimatedMaterials:p.estimatedMaterials,
-  location:p.location,workLocation:p.workLocation,startTime:p.startTime,
+  location:'',workLocation:'',startTime:p.startTime,
   durationHours:p.durationHours,transportType:p.transportType,travelMode:p.travelMode,
   travelKm:p.travelKm,fuelConsumption:p.fuelConsumption,fuelPrice:p.fuelPrice,
   travelRate:p.travelRate,travelExtra:p.travelExtra,paidTransportCost:p.paidTransportCost,
@@ -143,7 +143,7 @@ function editor(t=null,sourceProject=''){
   '<div class="field"><label>'+label+'</label><input name="'+key+'" type="'+kind+'" '+(step?'step="'+step+'" min="0" ':'')+
   (max?'maxlength="'+max+'" ':'')+'value="'+escape(item[key]??'')+'"></div>';
  const html='<form id="template-form" data-id="'+escape(t?.id||'')+'" class="template-form">'+
- '<p class="muted small">W szablonie przechowuj tylko powtarzalne ustawienia. Dane klienta, wpłaty i zdjęcia nie zostaną przeniesione.</p>'+
+ '<p class="muted small">Z projektu kopiowane są powtarzalne ustawienia, tytuły etapów i koszty, ale nie klienci, terminy, adresy, wpłaty ani zdjęcia. Przejrzyj nazwy i koszty przed zapisaniem, aby nie pozostawić w nich danych osobowych.</p>'+
  field('name','Nazwa szablonu *','text','','90')+
  field('title','Proponowana nazwa nowego projektu *','text','','120')+
  '<div class="field"><label>Rodzaj projektu</label><select name="type">'+TYPES.map(x=>'<option value="'+x+'" '+(item.type===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
