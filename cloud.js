@@ -116,8 +116,11 @@ async function applyRecord(row){
  if(!bridge.canReplace())throw Error('Najpierw zamknij otwarty formularz, aby nie stracić niezapisanych zmian.');
  applying=true;
  try{
-  const saved=await bridge.applyCloud(row.payload);
-  if(!saved)throw Error('Lokalny zapis nie powiódł się. Nie zastąpiono danych.');
+  const expectedLastSaved=bridge.getState().lastSaved;
+  await bridge.waitForWrites();
+  if(bridge.getState().lastSaved!==expectedLastSaved)throw Error('W trakcie pobierania chmury zmieniły się dane na telefonie. Sprawdź synchronizację ponownie.');
+  const saved=await bridge.applyCloud(row.payload,expectedLastSaved);
+  if(!saved)throw Error('Lokalne dane zmieniły się w trakcie synchronizacji albo zapis nie powiódł się. Nie zastąpiono danych.');
   storeBinding(row.revision,bridge.getState().lastSaved);
   ready=true;conflict=false;errorText='';
  }finally{applying=false;}
@@ -128,6 +131,9 @@ async function inspect(){
  try{
   binding=readBinding();
   const row=await fetchRemote();
+  // Po odpowiedzi serwera odczekaj na lokalne zapisy, zanim zdecydujesz o pobraniu nowszej wersji.
+  await bridge.waitForWrites();
+  if(bridge.isStorageBlocked())throw Error('Lokalny zapis jest wstrzymany. Nie zmieniono danych z chmury.');
   ready=false;conflict=false;
   if(binding?.userId===user.id){
    if(row&&row.revision===binding.revision){
