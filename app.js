@@ -2099,7 +2099,41 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
   render();
   window.scrollTo({left:0,top,behavior:'instant'});
   break;
-}case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
+}case 'quote-fill-project':{
+ const form=$('#quote-form'),pid=form?.querySelector('[name="projectId"]')?.value;
+ const p=state.projects.find(x=>x.id===pid);
+ if(!form||!p)return;
+ if(!confirm('Wstawić tytuł, klienta i cenę z projektu? Obecne pozycje wyceny oraz rabat zostaną zastąpione. Rozliczenia projektu pozostaną bez zmian.'))break;
+ const c=state.clients.find(x=>x.id===p.clientId);
+ const fields=c?quoteClientFields(c):{client:p.client||'',clientContact:'',clientAddress:''};
+ form.querySelector('[name="title"]').value=('Wycena — '+p.title).slice(0,140);
+ for(const [name,value] of Object.entries(fields))form.querySelector('[name="'+name+'"]').value=value;
+ form.querySelector('[name="discount"]').value='0';
+ const lines=$('#quote-lines');if(lines)lines.innerHTML=quoteItemRow(quoteProjectItem(p));
+ const clientSelect=$('#quote-client-source');if(clientSelect)clientSelect.value=c?.id||'';
+ refreshQuoteTotal();toast('Wstawiono dane projektu. Sprawdź cenę oferty.');
+ break;
+}
+case 'quote-fill-client':{
+ const form=$('#quote-form'),cid=$('#quote-client-source')?.value;
+ const c=state.clients.find(x=>x.id===cid);
+ if(!form||!c){toast('Najpierw wybierz klienta z bazy.');break;}
+ const fields=quoteClientFields(c),current=form.querySelector('[name="client"]')?.value||'';
+ if(current.trim()&&current.trim()!==fields.client&&!confirm('Zastąpić obecne dane odbiorcy wyceny danymi wybranego klienta?'))break;
+ for(const [name,value] of Object.entries(fields))form.querySelector('[name="'+name+'"]').value=value;
+ toast('Wstawiono dane klienta do formularza.');
+ break;
+}
+case 'quote-add-hint':{
+ const form=$('#quote-form'),pid=form?.querySelector('[name="projectId"]')?.value;
+ const p=state.projects.find(x=>x.id===pid),hint=quoteCostHints(p)[Number(b.dataset.index)];
+ const lines=$('#quote-lines');if(!form||!lines||!hint)return;
+ if(lines.querySelectorAll('[data-quote-row]').length>=80){toast('Maksymalnie 80 pozycji wyceny.');break;}
+ lines.insertAdjacentHTML('beforeend',quoteItemRow({description:hint.description,quantity:hint.quantity,unit:'szt.',unitPrice:0}));
+ refreshQuoteTotal();toast('Dodano opis z ceną 0 zł. Sprawdź ją: koszt projektu to nie cena sprzedaży.');
+ break;
+}
+case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
 case 'quote-preview':quotePreview(id);break;
 case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q)quoteForm(q.projectId,q.id);break;}
 case 'quote-add-line':{
@@ -2359,6 +2393,12 @@ function events(){
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(e.target.id==='quote-form-project'){
+  const p=state.projects.find(x=>x.id===e.target.value);
+  const hints=$('#quote-project-hints');if(hints)hints.innerHTML=quoteProjectHintsMarkup(p);
+  const fill=$('#quote-fill-project');if(fill)fill.disabled=!p;
+  return;
+ }
  if(e.target.matches?.('input[data-manu-quick]')){
   const id=e.target.dataset.manuQuick;
   if(!UI_QUICK_ACTION_IDS.includes(id))return;
