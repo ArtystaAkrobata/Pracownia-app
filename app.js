@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.23.1';
+const APP_VERSION='3.23.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -726,6 +726,35 @@ function quoteLastIssuer(){
   .slice().sort((a,b)=>(b.createdAt||b.issued||'').localeCompare(a.createdAt||a.issued||''))[0]||null;
 }
 
+
+/* MANU 3.23.2 — krok wstecz: podgląd → edycja/kopia → ten sam podgląd.
+   Dotyczy tylko dokumentów; historia kart i rozliczenia pozostają nienaruszone. */
+let quoteModalReturn=null;
+function rememberQuotePreview(id){
+ const actions=$('.quote-preview-actions'),current=$('.modal');
+ quoteModalReturn=actions?.dataset?.quotePreview===id&&current
+  ?{id,scrollTop:current.scrollTop||0,pageX:window.scrollX,pageY:window.scrollY}
+  :null;
+}
+function returnToQuotePreview(){
+ if(!$('#quote-form')||!quoteModalReturn)return false;
+ const previous=quoteModalReturn;
+ quoteModalReturn=null;
+ // Powrót z formularza wyceny nie powinien przywracać przewinięcia formularza
+ // do podglądu ani naruszać zapamiętanej pozycji karty projektu.
+ detailReturnScroll=null;
+ if(!(state.quotes||[]).some(q=>q.id===previous.id)){
+  closeModal();
+  return true;
+ }
+ quotePreview(previous.id);
+ const current=$('.modal');
+ if(current)current.scrollTop=previous.scrollTop;
+ if(window.scrollX!==previous.pageX||window.scrollY!==previous.pageY)
+  window.scrollTo(previous.pageX,previous.pageY);
+ return true;
+}
+
 function quoteForm(projectId='',quoteId='',sourceId=''){
  const existing=(state.quotes||[]).find(q=>q.id===quoteId);
  const source=!existing&&sourceId?(state.quotes||[]).find(q=>q.id===sourceId):null;
@@ -762,7 +791,7 @@ function quoteForm(projectId='',quoteId='',sourceId=''){
  <div class="field quote-discount-field"><label>Rabat kwotowy (zł)</label><input name="discount" type="number" min="0" step="0.01" max="100000000" value="${money(q.discount)}"></div>
  <div class="quote-form-summary"><span>Suma po rabacie</span><strong id="quote-live-total">${fMoney(quoteTotal(q))}</strong></div>
  <div class="field"><label>Warunki / uwagi</label><textarea name="notes" maxlength="900" rows="3" placeholder="Np. Termin realizacji ustalany indywidualnie">${htmlEscape(q.notes)}</textarea></div>
- <div class="modal-actions"><button type="button" class="btn ghost" data-action="quote-cancel" data-project="${htmlEscape(q.projectId)}">Anuluj</button><button class="btn" type="submit">${icon('check')} Zapisz wycenę</button></div>
+ <div class="modal-actions"><button type="button" class="btn ghost" data-action="quote-cancel" data-project="${htmlEscape(q.projectId)}">${quoteModalReturn?'Wróć do podglądu':'Anuluj'}</button><button class="btn" type="submit">${icon('check')} Zapisz wycenę</button></div>
  </form>`);
 }
 function quoteFormItems(form){
@@ -804,8 +833,9 @@ function quoteDocument(q){
  <footer class="quote-doc-footer"><span>${q.documentType==='offer'?'Oferta cenowa':'Wycena'} nie jest fakturą ani potwierdzeniem płatności.</span><span>MANU · Organizer twórcy</span><small>Kwoty w PLN. Aplikacja nie oblicza podatku VAT — sprawdź właściwe zasady rozliczeń.</small></footer></article>`;
 }
 function quotePreview(id){
+ quoteModalReturn=null;
  const q=(state.quotes||[]).find(q=>q.id===id);if(!q)return;
- modal((q.documentType==='offer'?'Oferta cenowa ':'Wycena ')+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn secondary" data-action="quote-clone" data-id="${htmlEscape(q.id)}">${icon('copy')} Powiel dokument</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
+ modal((q.documentType==='offer'?'Oferta cenowa ':'Wycena ')+q.number,`<div class="quote-preview-actions" data-quote-preview="${htmlEscape(q.id)}"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn secondary" data-action="quote-clone" data-id="${htmlEscape(q.id)}">${icon('copy')} Powiel dokument</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
 }
 function projectsPage(){return `${returnToHomeButton('projects')}${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions project-primary-actions"><button type="button" class="btn" data-action="new-project">${icon('plus')} Dodaj projekt</button><button type="button" class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><details class="project-tools-more"${projectToolsExpanded?' open':''}><summary class="btn secondary" aria-label="Pokaż dodatkowe narzędzia">${icon('copy')} Więcej narzędzi <span class="project-tools-chevron" aria-hidden="true">⌄</span></summary><div class="project-tools-panel"><button type="button" class="btn secondary" data-action="nav" data-view="gallery">${icon('folder')} Galeria realizacji</button><button type="button" class="btn secondary" data-action="nav" data-view="templates">${icon('copy')} Szablony projektów</button><button type="button" class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button></div></details></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
 
@@ -1487,7 +1517,7 @@ function modal(title,body,options={}){
   if(detail)detailReturnScroll=null;
  }
 }
-function closeModal(){if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+function closeModal(){quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
 
 // MANU 13.5 — jeden szkic nowego projektu, wyłącznie na tym urządzeniu.
 // Nie zapisujemy go jako projektu i nie wysyłamy do chmury.
@@ -2170,7 +2200,7 @@ function onManuBack(event){
   window.MANUGallery.closePreview();
   keepCurrentPage=true;
  }else if($('.modal')){
-  closeModal();
+  if(!returnToQuotePreview())closeModal();
   keepCurrentPage=true;
  }else if(manuPageHistory.length){
   const previous=manuPageHistory.pop();
@@ -2292,13 +2322,14 @@ case 'quote-add-hint':{
  refreshQuoteTotal();toast('Dodano opis z ceną 0 zł. Sprawdź ją: koszt projektu to nie cena sprzedaży.');
  break;
 }
-case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
+case 'quote-new':quoteModalReturn=null;quoteForm(b.dataset.project||'');break;case 'quote-cancel':{if(returnToQuotePreview())break;const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
 case 'quote-preview':quotePreview(id);break;
-case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q)quoteForm(q.projectId,q.id);break;}
+case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q){rememberQuotePreview(q.id);quoteForm(q.projectId,q.id)}break;}
 case 'quote-clone':{
  const q=(state.quotes||[]).find(x=>x.id===id);
  if(!q)return;
  if(state.quotes.length>=3000){alert('Osiągnięto limit 3000 wycen.');break;}
+ rememberQuotePreview(q.id);
  quoteForm('', '', q.id);
  break;
 }
@@ -2341,7 +2372,7 @@ case 'quote-remove-line':{
 }
 case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
-case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
+case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':if(!returnToQuotePreview())closeModal();break;case 'close-overlay':if(!returnToQuotePreview())closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
  const ev=calendarEvents().find(x=>x.key===b.dataset.event&&x.date===b.dataset.date&&!x.done);
  if(!ev||!state.smartAlerts?.enabled)break;
  const until=plusDaysDate(localDay(),1),snoozed=state.smartAlerts.snoozed||{};
@@ -2591,7 +2622,7 @@ function events(){
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
- if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape'&&!returnToQuotePreview())closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.id==='payment-control-filter'){
   paymentControlFilter=['all','late','soon','none'].includes(e.target.value)?e.target.value:'all';
   paymentControlVisible=12;
