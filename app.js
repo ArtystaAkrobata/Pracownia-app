@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.15.1';
+const APP_VERSION='3.16.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
