@@ -35,7 +35,7 @@ let projectReturnContext=null;
 // Stan rozwinięcia menu Więcej narzędzi w Projektach — także po powrocie z podstrony.
 let projectToolsExpanded=false;
 let calendarMonth='',calendarSelected='';
-let lastVisibleDay=localDay();
+let lastVisibleDay='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
@@ -2091,7 +2091,7 @@ async function init(){
  });
  events();
  await load();
- calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);
+ calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);lastVisibleDay=calendarSelected;
  render();
  void window.MANUCloud?.init?.({
   getState:()=>state,
