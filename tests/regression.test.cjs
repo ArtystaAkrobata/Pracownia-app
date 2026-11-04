@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -505,4 +505,59 @@ test('Personalizacja: ukrycie wszystkich skrótów ukrywa pasek Start', () => {
   assert.equal(api.updateUiPreferences({quickActions:[]}),true);
   assert.equal(api.quickAccessMarkup(),'');
   assert.match(api.quickActionOrderMarkup(),/Zaznacz przynajmniej jeden skrót/);
+});
+
+
+test('Etap 15.1: oferta z projektu zachowuje wartość, kosztów nie dodaje do ceny', () => {
+  const {api,context}=boot({version:18, projects:[
+    job('p1',{title:'Lustro GKS 50 cm',price:600,quantity:2,estimatedMaterials:90,
+      expenses:[{id:'e1',title:'Taśma i folia',amount:30,category:'materialy'}]})
+  ],tasks:[]});
+  const p=api.getState().projects[0];
+  const item=api.quoteProjectItem(p);
+  assert.equal(item.quantity,2);
+  assert.equal(item.unitPrice,300);
+  const hints=api.quoteCostHints(p);
+  assert.equal(hints.length,1);
+  assert.equal(hints[0].cost,30);
+  assert.equal(hints[0].unitPrice,undefined,'Koszt nie może być ceną sprzedaży');
+  api.quoteForm('p1');
+  const markup=context.__lastModal.body;
+  assert.match(markup,/Asystent wyceny/);
+  assert.match(markup,/quote-fill-project/);
+  assert.match(markup,/Taśma i folia/);
+  assert.match(markup,/name="clientAddress"/);
+  assert.match(markup,/name="clientContact"/);
+  assert.equal(p.price,600);
+  assert.equal(p.expenses[0].amount,30);
+});
+
+test('Etap 15.1: kontakt klienta można skopiować, a dawną wycenę nadal odczytać', () => {
+  const {api}=boot({version:18,projects:[],tasks:[]});
+  const contact=api.quoteClientFields({name:'Kowalski',company:'Studio Art',email:'a@example.test',phone:'500 200 300',address:'Łęczna'});
+  assert.equal(contact.client,'Studio Art — Kowalski');
+  assert.match(contact.clientContact,/a@example.test/);
+  assert.equal(contact.clientAddress,'Łęczna');
+  const legacy=api.normalizeQuotes([{
+    id:'old',number:'MANU-2026-001',title:'Oferta',issued:'2026-11-01',
+    client:'Odbiorca',items:[{description:'Praca',quantity:1,unit:'szt.',unitPrice:100}]
+  }])[0];
+  assert.equal(legacy.clientContact,'');
+  assert.equal(legacy.clientAddress,'');
+  assert.match(api.quoteDocument(legacy),/WARTOŚĆ WYCENY/);
+});
+
+test('Etap 15.1: podpowiedź kosztu jest bezpiecznie kodowana i nie zmienia wyceny', () => {
+  const {api}=boot({version:18,projects:[],tasks:[]});
+  const project=job('safe',{expenses:[{title:'<img src=x onerror=alert(1)>',amount:55,category:'materialy'}]});
+  const source=api.quoteProjectHintsMarkup(project);
+  assert.doesNotMatch(source,/<img src=x/);
+  assert.match(source,/&lt;img/);
+  assert.match(source,/koszt: 55/);
+  const quote={number:'MANU-2026-007',title:'Wycena',issued:'2026-11-04',client:'Klient',
+    clientContact:'a@example.test',clientAddress:'Adres 5',items:[{description:'Grawer',quantity:1,unit:'szt.',unitPrice:200}],discount:0};
+  const doc=api.quoteDocument(quote);
+  assert.match(doc,/a@example.test/);
+  assert.match(doc,/Adres 5/);
+  assert.match(doc,/200/);
 });
