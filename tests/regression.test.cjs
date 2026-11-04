@@ -810,3 +810,17 @@ test('Etap 15.4: ostatnie dane pracowni nie nadpisują klienta ani cen', () => {
  assert.equal(client.value,'Klient testowy');
  assert.equal(JSON.stringify(api.getState()),before);
 });
+
+test('MANU 3.23.1: przy czterech przyciskach podglądu Zamknij jest wyśrodkowany na telefonie', () => {
+ const css=fs.readFileSync(path.join(ROOT,'styles.css'),'utf8');
+ assert.ok(css.includes('.quote-preview-actions .btn:nth-child(4):last-child{'));
+ assert.match(css,/\.quote-preview-actions \.btn:nth-child\(4\):last-child\{[\s\S]*?grid-column:1\/-1;[\s\S]*?justify-self:center;[\s\S]*?width:calc\(\(100% - 8px\)\/2\)/);
+ const {api,context}=boot({version:18,projects:[],tasks:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Oferta',issued:'2026-11-04',
+  items:[{description:'Projekt',quantity:1,unit:'szt.',unitPrice:200}]
+ }]});
+ api.quotePreview('q1');
+ const body=context.__lastModal.body;
+ assert.equal((body.match(/class="btn(?: secondary| ghost)?"/g)||[]).length,4);
+ assert.ok(body.indexOf('Powiel dokument')<body.indexOf('Zamknij'));
+});
