@@ -3564,6 +3564,13 @@ html[data-manu-text="large"] .manu-quick-order-title{font-size:14px}
  .manu-quick-label{width:100%}
  .manu-quick-buttons{flex:1 1 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  .manu-quick-button{min-width:0;padding:9px 8px;white-space:normal;text-align:center}
+ /* Układ 3 skrótów: trzeci pośrodku, szerokość równa górnym przyciskom. */
+ .manu-quick-buttons>.manu-quick-button:nth-child(3):last-child{
+  grid-column:1 / -1;
+  justify-self:center;
+  width:calc((100% - 7px) / 2);
+  box-sizing:border-box;
+ }
 }
 @media(max-width:380px){
  .manu-quick-preferences{grid-template-columns:1fr}
