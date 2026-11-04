@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.25.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.25.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.25.1 — Etap 16.2: porównanie danych przed synchronizacją
+- Moduł Supabase nadal korzysta z istniejącego konta i tego samego algorytmu wykrywania konfliktów wersji. Nie powstało drugie połączenie ani dodatkowa baza; **nie uruchomiono automatycznej wysyłki ani pobierania danych bez zgody**.
+- Przed ręcznym poleceniem **Wyślij dane lokalne do chmury** lub **Pobierz dane z chmury** pojawia się dokładniejsze potwierdzenie z **porównaniem dwóch zbiorów**: liczba projektów, klientów, wycen, zadań i uczestników oraz data ostatniego zapisu. Komunikat uwzględnia rewizję zdalną i kierunek zastąpienia.
+- Okno nie pokazuje nazw klientów, adresów e-mail, treści dokumentów, kwot ani uczestników — tylko liczniki i daty. Nic nie trafia na zewnętrzny serwer na potrzeby tego porównania; dane są odczytywane z aktualnej lokalnej bazy i wcześniej pobranej kopii własnego konta.
+- Przed ręcznym **pobraniem** czekamy na zakończenie lokalnych zapisów, sprawdzamy wstrzymanie pamięci oraz stan aktywnych formularzy. Jeżeli pamięć jest zablokowana, operacja nie nastąpi.
+- Komunikat podkreśla, że ręczne zastąpienie może usunąć zmiany znajdujące się tylko w jednej wersji; radzi wybrać „Anuluj” w razie wątpliwości i zachować **zewnętrzne kopie JSON obu wersji**.
+- Samo sprawdzenie statusu chmury i konta nadal nie nadpisuje lokalnej bazy, a przesłanie z automatu jest zabezpieczone sprawdzeniem rewizji. Chmura działa tylko po skonfigurowaniu Supabase i zalogowaniu się.
+- Testy sprawdzają porównanie z pięcioma licznikami, ręczne zastąpienie w obu kierunkach, pierwszą synchronizację oraz niewyświetlanie danych osobowych.
+- Brak migracji `version:18`, zmian cen, płatności czy wydruków. Wersja PWA `manu-app-v3.25.1`, moduł `cloud.js?v=3.25.1`. Backup kodu: `backup-manu-v3-25-0-before-cloud-conflict-preflight`.
+
+### Test etapu 16.2
+1. Jeśli konto Supabase jest skonfigurowane i zalogowane, wejdź w **Ustawienia → Konto i synchronizacja → Sprawdź synchronizację**. To kontrola stanu.
+2. Po **Wyślij dane lokalne do chmury** lub **Pobierz dane z chmury** zobaczysz porównanie liczb i dat. Wybierz **Anuluj**, jeśli nie przygotowałeś kopii JSON lub jeśli daty i liczby wymagają wyjaśnienia.
+3. Jeśli nie używasz konta, nic nie musisz robić — ta zmiana nie wpływa na zapis lokalny. Wciąż korzystaj z **Kontroli bezpieczeństwa danych** oraz eksportu JSON.
 
 ## MANU 3.25.0 — Etap 16.1: kontrola bezpieczeństwa danych
 - Rozpoczęto etap 16 — bezpieczeństwo i przygotowanie do testów przez innych twórców. W **Ustawienia i dane → Zabezpieczenia i kopie danych** dodano kompaktową **Kontrolę bezpieczeństwa danych** z przyciskiem **Sprawdź**.
