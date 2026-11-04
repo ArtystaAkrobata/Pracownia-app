@@ -1,6 +1,18 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.1.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.19.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.19.4 — Etap 14.4: kolejność szybkich działań
+- W **Ustawienia → Personalizacja MANU** pod listą maksymalnie trzech szybkich działań widoczna jest teraz ich kolejność na ekranie Start. Przyciskami **↑** i **↓** zmienisz miejsce zaznaczonych skrótów bez przeciągania i bez przeskoków strony.
+- Strzałki na początku i końcu listy są nieaktywne. Zaznaczanie i odznaczanie skrótów automatycznie aktualizuje widoczną kolejność; całkowite wyłączenie skrótów ukrywa pasek na ekranie Start.
+- Zmiany zapisują się **lokalnie na urządzeniu**. Nie zmieniono bazy projektów, danych finansowych, wyglądu okładki ani dolnej nawigacji. Po powrocie do Start zobaczysz nowy porządek skrótów.
+- Testy regresyjne obejmują walidację listy, zapis ustawień, przesuwanie i ukrywanie paska.
+
+### Sprawdź na telefonie
+1. Otwórz **Ustawienia → Personalizacja MANU** i zaznacz 2–3 szybkie działania.
+2. W sekcji ich kolejności przesuń wybraną pozycję **↑** lub **↓**. Strona nie powinna przewijać się na górę.
+3. Wróć na **Start** i sprawdź kolejność przycisków.
+4. Wyłącz wszystkie szybkie działania i sprawdź, że pasek na Start znika. Włącz je ponownie i ustaw własną kolejność.
 
 ## MANU 3.1.1 — Końcowe poprawki etapu 6
 - **Unikalna numeracja po usunięciu:** ostatni numer dla roku zapisywany jest w `quoteCounters` we wspólnej kopii JSON v12. Skasowanie wyceny nie pozwala ponownie użyć starego numeru.
