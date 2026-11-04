@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' normalize, normalizeQuotes, quoteForm, quotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -722,4 +722,91 @@ test('Etap 15.3: panel koduje niebezpieczne nazwy i otwiera rozliczenie projektu
  api.handleAction({dataset:{action:'payment-control-open',id:'x'}});
  assert.equal(api.opened('x','finance'),true);
  assert.match(context.__lastModal.body,/Finanse i koszty/);
+});
+
+
+test('Etap 15.4: kopia oferty dostaje nowy numer, dzisiejszą datę i czysty termin ważności', () => {
+ const {api}=boot({version:18,tasks:[],projects:[job('project', {title:'Lustro'})],quotes:[{
+  id:'original',number:'MANU-2026-001',projectId:'project',
+  title:'Oferta — Lustro',issued:'2026-10-31',validUntil:'2026-11-01',
+  client:'Klient A',clientContact:'a@example.test',issuer:'Pracownia',
+  issuerContact:'kontakt',documentType:'offer',documentStyle:'minimal',
+  introduction:'Propozycja',deliveryTerms:'14 dni',paymentTerms:'Przelew',
+  notes:'Dodatkowe informacje',discount:25,
+  items:[{id:'line-old',description:'Grawer',quantity:2,unit:'szt.',unitPrice:200}],
+  createdAt:'2026-10-31T12:00:00.000Z'
+ }]});
+ const source=api.getState().quotes[0],before=JSON.stringify(api.getState());
+ const clone=api.quoteCloneDraft(source);
+ assert.equal(clone.title,source.title);
+ assert.equal(clone.issued,api.localDay());
+ assert.equal(clone.validUntil,'');
+ assert.equal(clone.number,'MANU-2026-002');
+ assert.equal(clone.projectId,'project');
+ assert.equal(clone.clientContact,'a@example.test');
+ assert.equal(clone.documentType,'offer');
+ assert.equal(clone.documentStyle,'minimal');
+ assert.equal(clone.discount,25);
+ assert.equal(clone.items.length,1);
+ assert.equal(clone.items[0].description,'Grawer');
+ assert.notEqual(clone.items[0].id,source.items[0].id);
+ assert.equal(clone.id,undefined);
+ assert.equal(JSON.stringify(api.getState()),before);
+});
+
+test('Etap 15.4: powielenie otwiera niezapisaną kopię, nie edycję oryginału', () => {
+ const {api,context}=boot({version:18,tasks:[],projects:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Oferta cenowa',issued:'2026-11-01',
+  client:'Klient',issuer:'Artysta Akrobata',documentType:'offer',
+  items:[{id:'i1',description:'Matowienie',quantity:1,unit:'szt.',unitPrice:450}]
+ }]});
+ const before=JSON.stringify(api.getState());
+ api.handleAction({dataset:{action:'quote-clone',id:'q1'}});
+ const body=context.__lastModal.body;
+ assert.match(context.__lastModal.title,/Nowy dokument na podstawie/);
+ assert.match(body,/data-quote=""/);
+ assert.match(body,/Nowa kopia dokumentu/);
+ assert.match(body,/MANU-2026-002/);
+ assert.match(body,/Matowienie/);
+ assert.match(body,/value="450"/);
+ assert.match(body,/name="validUntil" type="date" value=""/);
+ assert.equal(JSON.stringify(api.getState()),before);
+ api.quotePreview('q1');
+ assert.match(context.__lastModal.body,/Powiel dokument/);
+ assert.match(context.__lastModal.body,/data-action="quote-clone"/);
+});
+
+test('Etap 15.4: osierocony projekt nie jest kopiowany jako błędne powiązanie', () => {
+ const {api}=boot({version:18,tasks:[],projects:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',projectId:'removed',
+  title:'Stara oferta',issued:'2026-11-01',
+  items:[{id:'i1',description:'Grawer',quantity:1,unit:'szt.',unitPrice:100}]
+ }]});
+ const draft=api.quoteCloneDraft(api.getState().quotes[0]);
+ assert.equal(draft.projectId,'');
+});
+
+test('Etap 15.4: ostatnie dane pracowni nie nadpisują klienta ani cen', () => {
+ const {api,nodes,context}=boot({version:18,tasks:[],projects:[],quotes:[
+  {id:'old',number:'MANU-2026-001',title:'Stare',
+   issued:'2026-11-01',createdAt:'2026-11-01T12:00:00.000Z',
+   issuer:'Stara pracownia',issuerContact:'stary kontakt',
+   items:[{description:'Praca',quantity:1,unit:'szt.',unitPrice:250}]},
+  {id:'new',number:'MANU-2026-002',title:'Nowe',
+   issued:'2026-11-02',createdAt:'2026-11-02T12:00:00.000Z',
+   issuer:'Nowa pracownia',issuerContact:'nowszy kontakt',
+   items:[{description:'Praca',quantity:1,unit:'szt.',unitPrice:600}]}
+ ]});
+ const issuer={value:''},contact={value:''},client={value:'Klient testowy'};
+ nodes['#quote-form']={querySelector:selector=>({
+  '[name="issuer"]':issuer,'[name="issuerContact"]':contact,'[name="client"]':client
+ })[selector]};
+ context.window.scrollTo=()=>{throw Error('Nie przewijaj formularza do góry');};
+ const before=JSON.stringify(api.getState());
+ assert.equal(api.quoteLastIssuer().issuer,'Nowa pracownia');
+ api.handleAction({dataset:{action:'quote-fill-issuer'}});
+ assert.equal(issuer.value,'Nowa pracownia');
+ assert.equal(contact.value,'nowszy kontakt');
+ assert.equal(client.value,'Klient testowy');
+ assert.equal(JSON.stringify(api.getState()),before);
 });
