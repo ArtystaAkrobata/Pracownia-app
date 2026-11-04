@@ -3859,3 +3859,9 @@ html[data-manu-text="large"] .manu-quick-order-title{font-size:14px}
  .manu-quick-preferences{grid-template-columns:1fr}
 }
 html[data-manu-text="large"] .manu-quick-button{font-size:14px;line-height:1.45}
+
+/* MANU 16.4 — zwarta lista kontrolna dla pierwszych testerów */
+.manu-tester-guide{margin-top:14px}
+.manu-tester-steps{margin:12px 0 14px;padding-left:23px;display:grid;gap:8px}
+.manu-tester-steps li{font-size:13px;line-height:1.55;padding-left:2px}
+.manu-tester-actions{margin-top:12px}
