@@ -2974,3 +2974,32 @@ body.gallery-lightbox-open{overflow:hidden}
  .calendar-return-toolbar{margin:-3px 0 11px}
  .calendar-return-button{min-height:44px;padding:7px 12px}
 }
+
+/* MANU 3.14.1 · spójne przyciski powrotu i zamykania (etap 12.2) */
+/* Jednolity styl dla powrotów z podstron i dla zamykania kart pracy. */
+.open-notebook .calendar-return-button{
+  min-height:44px;
+  touch-action:manipulation;
+}
+.modal-header .close{
+  box-sizing:border-box;
+  display:grid;
+  place-items:center;
+  flex:0 0 44px;
+  width:44px;
+  min-width:44px;
+  height:44px;
+  min-height:44px;
+  padding:0;
+  font-size:26px;
+  touch-action:manipulation;
+}
+.modal-header .close:focus-visible,
+.manu-lightbox-close:focus-visible{
+  outline:2px solid #aa7250;
+  outline-offset:3px;
+}
+.manu-lightbox-close{
+  min-width:44px;
+  min-height:44px;
+}
