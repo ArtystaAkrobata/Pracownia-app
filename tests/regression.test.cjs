@@ -1428,7 +1428,7 @@ test('MANU 3.26.2: odświeżenie otwartej karty projektu nie dopisuje kolejnych 
  api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
  api.projectDetail('test');
  const count=android.entries.length;
- nodes['.modal']={scrollTop:0,classList:{contains:()=>true}};
+ nodes['.modal']={scrollTop:0,scrollTo:()=>{},classList:{contains:()=>true}};
  api.projectDetail('test');
  assert.equal(android.entries.length,count,'Ponowne wyświetlenie projektu nie może tworzyć nowego wpisu');
  assert.equal(api.getProjectModalGuard(),true);
