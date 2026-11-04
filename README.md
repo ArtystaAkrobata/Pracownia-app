@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.21.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.22.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.22.0 — Etap 15.3: kontrola należności i zaliczek
+- Na kartce **Finanse** dodano zwijany panel **Należności i zaliczki**. Zawiera podsumowanie: **Otrzymano łącznie**, **Zaliczki w historii**, **Do otrzymania** oraz **Po terminie**.
+- Lista pokazuje tylko realizacje z nieopłaconą kwotą, z wyraźnym stanem terminów: **po terminie**, **dzisiaj**, **w ciągu 7 dni**, **później** lub **bez terminu**. Daty pochodzą z istniejącego pola **Termin płatności** projektu.
+- Dostępne filtry: wszystkie, po terminie, najbliższe 7 dni (wraz z dzisiaj), bez terminu. Widać 12 pozycji na raz z opcją „Pokaż kolejne”. Filtry i rozwinięcie działają bez przewijania strony na początek.
+- Przy należności można otworzyć właściwy rozdział projektu. **Zlecenia i warsztaty rozliczane ręcznie** mają również bezpośredni przycisk **Dodaj wpłatę**; **warsztaty rozliczane według uczestników** prowadzą do sekcji **Uczestnicy i wpłaty** i nie pozwalają zaksięgować wpłaty zbiorczej niewłaściwą metodą.
+- Obliczenia używają istniejących funkcji `projectIncome` i `projectPaid`. Zaliczki sumują jedynie wpisy oznaczone `kind='zaliczka'` z historii, **bez** kwalifikowania starszych kwot bez rodzaju jako zaliczek. Przy warsztacie uczestnikowym nie sumuje się ręcznych kwot warsztatu z rozliczeniami uczestników; uczestnicy rezerwowi są wykluczeni.
+- Projekty anulowane są wykluczone. W pełni opłacone nie pojawiają się na liście należności, ale kwoty otrzymane nadal uwzględnia podsumowanie. Brak zmian danych, terminów, wpłat, numeracji dokumentów, schematu JSON i bazy.
+- Wersja PWA `manu-app-v3.22.0`; gałąź bezpieczeństwa `backup-manu-v3-21-1-before-payment-control`.
+
+### Test etapu 15.3 na telefonie
+1. Przejdź do **Finanse** i otwórz panel **Należności i zaliczki** (pod ogólnym podsumowaniem finansów).
+2. Sprawdź kwoty łączne i filtr **Po terminie**, następnie **Dzisiaj i najbliższe 7 dni** oraz **Bez terminu**. Zmiana filtra nie powinna przenosić strony do góry.
+3. Przy zleceniu naciśnij **Otwórz rozliczenie**, a następnie **Dodaj wpłatę**; sprawdź historię i pozostałą kwotę.
+4. Jeśli masz warsztat rozliczany uczestnikami, naciśnij **Uczestnicy i wpłaty** — powinien otworzyć się szczegółowy widok ich rozliczeń.
+5. Zweryfikuj, czy starsze wpłaty bez kategorii nie są błędnie nazwane zaliczkami, oraz że nie pojawiają się anulowane projekty.
 
 ## MANU 3.21.1 — Dopasowanie tytułu do rodzaju dokumentu
 - Przy zmianie **Wycena → Oferta cenowa** MANU aktualizuje wyłącznie domyślny tytuł, np. „Wycena — Lustro” → „Oferta — Lustro”. Nie nadpisuje samodzielnie wpisanego tytułu.
