@@ -1,6 +1,23 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.25.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.26.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.26.0 — Etap 16.3: izolowany tryb demonstracyjny dla testerów
+- W **Ustawienia → Testowanie aplikacji** zamiast dotychczasowego przycisku „Wstaw dane demonstracyjne” znajduje się **Uruchom bezpieczny tryb demo**. Wcześniej MANU dodawało przykłady bezpośrednio do bieżących projektów — teraz tego nie robi.
+- Po wejściu otwiera się **osobna, tymczasowa sesja w pamięci RAM** z wyłącznie fikcyjnymi danymi: zlecenie z kosztami i zaliczką, warsztat z uczestnikami, dwie karty klientów, zadanie i wycena.
+- Na wszystkich kartach jest wyraźny pasek **TRYB DEMO** z akcją **Zakończ demo**. Można tworzyć, edytować i usuwać dane w ramach demo. Przycisk przywraca aktualny prawdziwy notes i poprzednią pozycję widoku.
+- Zapis `save()` w demonstracji jest wyłącznie sukcesem dla pracy interfejsu i **nie wykonuje transakcji IndexedDB, nie aktualizuje localStorage ani nie powiadamia synchronizacji**. Wyjście z demo lub ponowne uruchomienie aplikacji porzuca dane fikcyjne.
+- Wstrzymana jest automatyczna synchronizacja i moduł chmury; nie można rozpocząć demo w trakcie aktywnej operacji chmurowej. W demo blokowane są działania związane z wysyłką/pobieraniem chmury, galerią chmurową, eksportem i importem JSON, przywracaniem kopii, czyszczeniem prawdziwej bazy i zmianą ochrony pamięci.
+- Prawdziwy szkic nowego projektu z telefonu jest chroniony przed odczytem i nadpisaniem z demo; pozostałe ustawienia oraz zapisy na urządzeniu nie są zmieniane. Demo ukrywa też rzeczywiste dane profilu w powitaniu i ma osobną stronę ustawień bez informacji o koncie.
+- **Uwaga:** tryb demo nie jest osobnym kontem, systemem uprawnień ani mechanizmem zabezpieczającym przed dostępem osoby mającej odblokowany telefon. Do testów przez inne osoby najlepiej używać ich własnych telefonów, świeżej instalacji i fikcyjnych danych.
+- Bez zmian schematu `version:18`, danych w chmurze, kosztów i dokumentów. Cache PWA `manu-app-v3.26.0`, `cloud.js?v=3.26.0`. Backup kodu: `backup-manu-v3-25-1-before-isolated-demo`.
+
+### Test etapu 16.3 na telefonie
+1. Otwórz **Ustawienia → Testowanie aplikacji → Uruchom bezpieczny tryb demo**.
+2. Powinien pojawić się pasek **TRYB DEMO** i fikcyjne projekty, zadania, warsztat oraz wycena; Twoje rzeczywiste dane nie powinny być widoczne.
+3. Zmień przykładowe zlecenie, dodaj fikcyjne zadanie albo powiel przykładową wycenę.
+4. Naciśnij **Zakończ demo**. Potwierdź, że prawdziwe 9 projektów, 3 wyceny i 3 karty klientów nadal są na miejscu (według ostatniej kontroli na Twoim telefonie).
+5. Pobierz zewnętrzną kopię JSON prawdziwych danych, jeśli jeszcze nie jest zachowana poza telefonem.
 
 ## MANU 3.25.1 — Etap 16.2: porównanie danych przed synchronizacją
 - Moduł Supabase nadal korzysta z istniejącego konta i tego samego algorytmu wykrywania konfliktów wersji. Nie powstało drugie połączenie ani dodatkowa baza; **nie uruchomiono automatycznej wysyłki ani pobierania danych bez zgody**.
