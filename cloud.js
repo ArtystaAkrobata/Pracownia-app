@@ -460,7 +460,7 @@ document.addEventListener('submit',event=>{
 
 const GALLERY_BUCKET='manu-gallery';
 function galleryConnected(){
- return !!client&&!!user&&ready&&!conflict&&binding?.userId===user.id;
+ return !demoStopped()&&!!client&&!!user&&ready&&!conflict&&binding?.userId===user.id;
 }
 function galleryEnsureReady(){
  if(!client||!user)throw Error('Zaloguj się do MANU, aby używać prywatnej galerii.');
