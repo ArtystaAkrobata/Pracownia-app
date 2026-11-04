@@ -3539,6 +3539,26 @@ html[data-manu-text="large"] .notebook-page select{
  white-space:normal;
 }
 .manu-quick-preferences .smart-settings-check span{overflow-wrap:anywhere}
+/* MANU 3.19.4 · etap 14.4: kolejność wybranych skrótów w Ustawieniach */
+.manu-quick-order{margin-top:10px}
+.manu-quick-order-list{display:grid;gap:6px}
+.manu-quick-order-row{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ border:1px solid #6f534440;border-radius:9px;
+ padding:5px 8px 5px 12px;
+ background:#9d775614;
+}
+.manu-quick-order-title{font-size:13px;font-weight:650;line-height:1.5;overflow-wrap:anywhere}
+.manu-quick-order-controls{display:inline-flex;gap:6px;flex-shrink:0}
+.manu-quick-order-controls button{
+ min-width:40px;min-height:40px;border:1px solid #85654e;
+ border-radius:8px;background:#30251f;color:#f3d9bf;
+ font-size:21px;line-height:1;cursor:pointer;
+}
+.manu-quick-order-controls button:disabled{opacity:.32;cursor:default}
+.manu-quick-order-controls button:focus-visible{outline:2px solid var(--manu-choice,#b67759);outline-offset:2px}
+html[data-manu-text="large"] .manu-quick-order-title{font-size:14px}
+
 @media(max-width:650px){
  .manu-quick-access{padding:11px 12px;gap:8px;margin-bottom:17px}
  .manu-quick-label{width:100%}
