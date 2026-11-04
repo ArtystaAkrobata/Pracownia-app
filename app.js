@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.2';
+const APP_VERSION='3.18.3';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -35,6 +35,7 @@ let projectReturnContext=null;
 // Stan rozwinięcia menu Więcej narzędzi w Projektach — także po powrocie z podstrony.
 let projectToolsExpanded=false;
 let calendarMonth='',calendarSelected='';
+let lastVisibleDay=localDay();
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
@@ -1955,7 +1956,33 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(view==='calendar'){calendarSelected=date;calendarMonth=date.slice(0,7)}
  closeModal();afterDataChange(original?'Przypomnienie zapisane':'Dodano przypomnienie');break;
 }}}
-function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});
+// Powrót z tła bez niszczenia otwartego formularza lub pozycji scrolla.
+function refreshAfterResume(){
+ if(document.visibilityState==='hidden')return;
+ const chip=$('.date-chip');
+ if(chip)chip.textContent=new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date());
+ refreshNetworkStatus();
+ liveTimerRefresh();
+ const today=localDay();
+ if(today===lastVisibleDay)return;
+ // Nie przebudowuj listy, jeśli edytowany jest formularz lub otwarte są szczegóły.
+ if($('.modal'))return;
+ const scrollX=window.scrollX,scrollY=window.scrollY;
+ if(view==='home'){
+  const center=$('.command-center');
+  if(center)center.outerHTML=commandCenter();
+ }else if(view==='calendar'){
+  refreshCalendarPanel();
+ }
+ lastVisibleDay=today;
+ if(window.scrollX!==scrollX||window.scrollY!==scrollY)
+  window.scrollTo({left:scrollX,top:scrollY,behavior:'instant'});
+}
+function events(){
+ window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});
+ // Po powrocie z innej aplikacji nie wykonujemy render() ani nie zamykamy formularzy.
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshAfterResume()});
+ window.addEventListener('pageshow',()=>refreshAfterResume());
  // Przy niepoprawnym polu wewnątrz zwiniętej sekcji rozwiń ją przed komunikatem przeglądarki.
  document.addEventListener('invalid',e=>{
   const field=e.target,modal=field?.closest?.('.modal');
