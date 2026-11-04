@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.21.1';
+const APP_VERSION='3.22.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -160,6 +160,7 @@ let detailReturnScroll=null;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
 let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='',costBreakdownExpanded=false;
+let paymentControlExpanded=false,paymentControlFilter='all',paymentControlVisible=12;
 // Rozwinięte sekcje pamiętamy w UI, bez zmian zapisanych danych.
 const detailSectionStates=new Map();
 let financeMonth=[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0')].join('-');
@@ -1156,10 +1157,91 @@ function profitabilityPanel(){
  '<option value="Warsztat" '+(profitabilityScope==='Warsztat'?'selected':'')+'>Warsztaty</option></select></label>'+
  '<div id="profitability-results">'+profitabilityResults()+'</div></div></details>';
 }
+
+/* Etap 15.3 — odczytowe zestawienie należności bez nowej bazy ani zmian wpłat. */
+function paymentControlData(today=localDay()){
+ const sevenDays=plusDaysDate(today,7);
+ const rows=[];
+ let received=0,advance=0,remaining=0,overdue=0;
+ for(const p of active()){
+  const participantsMode=p.type==='Warsztat'&&p.financeMode==='participants';
+  const history=participantsMode
+   ?confirmedParticipants(p).flatMap(person=>person.payments||[])
+   :(p.payments||[]);
+  const projectAdvance=money(history.reduce((n,item)=>n+(item.kind==='zaliczka'?money(item.amount):0),0));
+  const income=projectIncome(p),paid=projectPaid(p),unpaid=money(Math.max(0,income-paid));
+  const due=validDate(p.paymentDue);
+  const status=!due?'none':due<today?'late':due===today?'today':due<=sevenDays?'soon':'later';
+  received+=paid;advance+=projectAdvance;remaining+=unpaid;
+  if(unpaid<=0)continue;
+  if(status==='late')overdue+=unpaid;
+  rows.push({id:p.id,title:p.title,client:p.client||'',type:p.type,
+   paid,advance:projectAdvance,unpaid,due,status,participantsMode});
+ }
+ const rank={late:0,today:1,soon:2,later:3,none:4};
+ rows.sort((a,b)=>rank[a.status]-rank[b.status]
+  ||(a.due||'9999-12-31').localeCompare(b.due||'9999-12-31')
+  ||a.title.localeCompare(b.title,'pl'));
+ return {rows,received:money(received),advance:money(advance),
+  remaining:money(remaining),overdue:money(overdue)};
+}
+function paymentControlRows(filter=paymentControlFilter,visible=paymentControlVisible){
+ const data=paymentControlData();
+ const options=['all','late','soon','none'];
+ const kind=options.includes(filter)?filter:'all';
+ const filtered=data.rows.filter(row=>kind==='all'
+  ||(kind==='late'&&row.status==='late')
+  ||(kind==='soon'&&['today','soon'].includes(row.status))
+  ||(kind==='none'&&row.status==='none'));
+ const statusNames={late:'Po terminie',today:'Termin dzisiaj',
+  soon:'W ciągu 7 dni',later:'Późniejszy termin',none:'Bez terminu'};
+ const list=filtered.slice(0,visible).map(row=>{
+  const rowId=htmlEscape(row.id);
+  return '<article class="payment-control-item'+(row.status==='late'?' payment-control-item--late':'')+'">'
+   +'<div class="payment-control-info"><strong>'+htmlEscape(row.title)+'</strong>'
+   +'<small>'+htmlEscape(row.type)+(row.client?' · '+htmlEscape(row.client):'')+'</small>'
+   +'<span class="payment-control-date">'+htmlEscape(statusNames[row.status])
+   +(row.due?' · '+htmlEscape(fDate(row.due)):'')+'</span></div>'
+   +'<div class="payment-control-money"><div><small>Wpłacono</small><b>'+fMoney(row.paid)+'</b></div>'
+   +'<div><small>Do otrzymania</small><strong>'+fMoney(row.unpaid)+'</strong></div>'
+   +(row.advance>0?'<small>Zaliczki w historii: '+fMoney(row.advance)+'</small>':'')+'</div>'
+   +'<div class="payment-control-actions">'
+   +'<button type="button" class="btn secondary sm" data-action="payment-control-open" data-id="'+rowId+'">'
+   +(row.participantsMode?'Uczestnicy i wpłaty':'Otwórz rozliczenie')+'</button>'
+   +(row.participantsMode?'':'<button type="button" class="btn sm" data-action="payment-add" data-id="'+rowId+'">Dodaj wpłatę</button>')
+   +'</div></article>';
+ }).join('');
+ const button=filtered.length>visible
+  ?'<button type="button" class="btn secondary sm payment-control-more" data-action="payment-control-more">'
+   +'Pokaż kolejne '+Math.min(12,filtered.length-visible)+' ('+(filtered.length-visible)+' pozostało)</button>':'';
+ return (list||'<div class="payment-control-empty">Nie ma należności spełniających ten filtr.</div>')
+  +button+'<p class="muted tiny payment-control-explain">Terminy pochodzą z projektów, także przy warsztatach rozliczanych przez uczestników. '
+  +'Zaliczki obejmują tylko wpłaty oznaczone jako „Zaliczka” w historii; starsze kwoty bez oznaczenia rodzaju nie są tu nazywane zaliczkami. '
+  +'Anulowane projekty i opłacone w całości nie występują na liście należności.</p>';
+}
+function paymentControlPanel(){
+ const data=paymentControlData();
+ return '<details class="payment-control-panel" '+(paymentControlExpanded?'open':'')+'>'
+  +'<summary class="payment-control-summary"><span class="payment-control-symbol">'+icon('wallet')+'</span>'
+  +'<span class="payment-control-heading"><strong>Należności i zaliczki</strong>'
+  +'<small>'+data.rows.length+' realizacji z kwotą do otrzymania · kontrola terminów i wpłat</small></span>'
+  +'<b>'+fMoney(data.remaining)+'</b><span class="payment-control-chevron" aria-hidden="true">⌄</span></summary>'
+  +'<div class="payment-control-body"><div class="payment-control-totals">'
+  +'<div><small>Otrzymano łącznie</small><strong>'+fMoney(data.received)+'</strong></div>'
+  +'<div><small>Zaliczki w historii</small><strong>'+fMoney(data.advance)+'</strong></div>'
+  +'<div><small>Do otrzymania</small><strong>'+fMoney(data.remaining)+'</strong></div>'
+  +'<div><small>Po terminie</small><strong>'+fMoney(data.overdue)+'</strong></div>'
+  +'</div><label class="payment-control-filter">Pokaż należności'
+  +'<select id="payment-control-filter" aria-label="Filtr należności">'
+  +[['all','Wszystkie'],['late','Po terminie'],['soon','Dzisiaj i najbliższe 7 dni'],['none','Bez terminu']]
+   .map(([id,label])=>'<option value="'+id+'" '+(paymentControlFilter===id?'selected':'')+'>'+label+'</option>').join('')
+  +'</select></label><div id="payment-control-results">'+paymentControlRows()+'</div></div></details>';
+}
+
 function financePage(m){
  const perHour=profitabilityData().rate,margin=m.income?Math.round(m.profit/m.income*100):0,pct=m.income?Math.min(100,Math.max(0,Math.round(m.cost/m.income*100))):0;
  const metricsBlock=(!m.income&&!m.cost)?empty('Finanse czekają na pierwszy projekt','Dodaj zlecenie lub warsztat z ceną i kosztami, aby zobaczyć podsumowanie.',`<button class="btn" data-action="new-project">Dodaj projekt</button>`):`<div class="stat-grid">${statsCard('Wartość realizacji',fMoney(m.income),'Wpisane ceny wszystkich nieanulowanych projektów','wallet')}${statsCard('Koszty do wyniku',fMoney(m.cost),'Wydatki + szacowany dojazd, gdy brak kosztu faktycznego','folder')}${statsCard('Po kosztach',fMoney(m.profit),'Przed podatkami i kosztami stałymi','trend',m.profit>=0?'accent':'warning')}${statsCard('Za godzinę',perHour==null?'—':fMoney(perHour),'Wyłącznie projekty z wpisanym czasem pracy','clock')}</div><div class="finance-grid finance-overview-grid"><section class="surface"><div class="section-head"><h2>Rentowność wszystkich realizacji</h2><span class="muted small">Bez anulowanych</span></div><div class="donut" style="--pct:${pct}%"><div class="donut-inner"><b>${fNum(margin)}%</b><small>marży*</small></div></div><div class="summary-line"><span>Wartość projektów</span><b>${fMoney(m.income)}</b></div><div class="summary-line"><span>Koszty</span><b>${fMoney(m.cost)}</b></div><div class="summary-line"><span>Otrzymano łącznie</span><b>${fMoney(m.paid)}</b></div><div class="summary-line"><span>Pozostało do zapłaty</span><b>${fMoney(m.unpaid)}</b></div></section></div><div class="form-note finance-detail">* Marża = (wpisana wartość projektów − ujęte koszty) / wartość. To wynik orientacyjny, nie księgowy zysk netto. Koszt faktycznego dojazdu zastępuje szacunek, jeśli został wpisany.</div>`;
- return `${returnToHomeButton('finance')}${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}${profitabilityPanel()}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
+ return `${returnToHomeButton('finance')}${pageHeading('Finanse','Rentowność realizacji i rzeczywisty przepływ wpłat.')}${metricsBlock}${paymentControlPanel()}${profitabilityPanel()}<section class="surface finance-month-section"><div class="section-head"><div><h2>Raport miesięczny</h2><p class="muted small">Wpłaty i wydatki z datą transakcji</p></div><label class="finance-month-select">Wybierz miesiąc<input id="finance-month-picker" type="month" value="${htmlEscape(financeMonth)}" min="2020-01" max="2100-12"></label></div><div id="finance-month-results">${monthlyReportMarkup(financeMonth)}</div></section>`;
 }
 function taskRow(t,projectById=null){let p=projectById?projectById.get(t.projectId):state.projects.find(p=>p.id===t.projectId);return `<div class="task-row"><button class="check-btn ${t.done?'checked':''}" data-action="toggle-task" data-id="${htmlEscape(t.id)}" aria-label="${t.done?'Cofnij wykonanie':'Oznacz jako wykonane'}">${t.done?icon('check'):''}</button><div class="task-text"><b class="${t.done?'done':''}">${htmlEscape(t.title)}</b><small>${p?htmlEscape(p.title)+' · ':''}${t.due?'Termin: '+fDate(t.due):'Bez terminu'}</small></div><button class="btn ghost sm" data-action="edit-task" data-id="${htmlEscape(t.id)}" aria-label="Edytuj zadanie">${icon('pencil')}</button><button class="btn ghost sm" data-action="delete-task" data-id="${htmlEscape(t.id)}" aria-label="Usuń zadanie">${icon('trash')}</button></div>`;}
 function calendarEvents(){
@@ -2241,7 +2323,20 @@ case 'list-more':{
  footer.insertAdjacentHTML('afterend',extra);
  footer.remove();
  break;
-}case 'payment-add':paymentForm(id,b.dataset.participant||'');break;case 'payment-delete':{const p=state.projects.find(x=>x.id===id),pid=b.dataset.participant;const owner=pid?p?.participants?.find(x=>x.id===pid):p;const item=owner?.payments?.find(x=>x.id===b.dataset.payment);if(item&&confirm('Usunąć wpłatę '+fMoney(item.amount)+'? Kwota zostanie odjęta z rozliczenia.')){owner.payments=owner.payments.filter(x=>x.id!==item.id);recordActivity(p,'Usunięto wpis wpłaty '+fMoney(item.amount));afterDataChange('Usunięto wpłatę',id)}break;}case 'add-expense':expenseForm(id);break;case 'delete-expense':{let p=state.projects.find(p=>p.id===id);if(p&&confirm('Usunąć ten koszt?')){p.expenses=p.expenses.filter(x=>x.id!==b.dataset.expense);afterDataChange('Koszt usunięty',id)}break;}case 'workshop-attendance':setWorkshopAttendance(id,b.dataset.participant,b.dataset.attendance);break;case 'workshop-promote':promoteWorkshopParticipant(id,b.dataset.participant);break;case 'workshop-waitlist':moveWorkshopToWaitlist(id,b.dataset.participant);break;case 'workshop-material-add':workshopMaterialForm(id);break;case 'workshop-material-toggle':toggleWorkshopMaterial(id,b.dataset.material);break;case 'workshop-material-remove':removeWorkshopMaterial(id,b.dataset.material);break;case 'workshop-finish':finishWorkshop(id);break;case 'add-participant':participantForm(id);break;case 'edit-participant':participantForm(id,b.dataset.participant);break;case 'finance-mode':{let p=state.projects.find(p=>p.id===id);if(!p||p.type!=='Warsztat')break;const enable=p.financeMode!=='participants';if(confirm(enable?'Liczyć wartość i wpłaty warsztatu na podstawie uczestników? Dotychczasowe ręczne kwoty zostaną zachowane, ale nie będą dodawane do tych sum.':'Wrócić do ręcznie wpisanych kwot warsztatu? Dane uczestników zostaną zachowane.')){p.financeMode=enable?'participants':'manual';afterDataChange('Zmieniono sposób rozliczania warsztatu',id)}break;}case 'delete-participant':{const p=state.projects.find(x=>x.id===id),person=p?.participants.find(x=>x.id===b.dataset.participant);if(!person)break;const received=participantPaid(person);const warning='Usunąć '+person.name+'? '+(received>0?'Uwaga: zapisane wpłaty '+fMoney(received)+' oraz ich historia zostaną usunięte z rozliczenia. W razie zwrotu pieniędzy najpierw zadbaj o własną dokumentację. ':'')+(person.bookingStatus!=='waitlist'&&waitlistedParticipants(p).length?'Zwolni się miejsce do potwierdzenia dla osoby z kolejki.':'');if(confirm(warning)){p.participants=p.participants.filter(x=>x.id!==person.id);recordActivity(p,'Usunięto zapis uczestnika: '+person.name);afterDataChange('Usunięto uczestnika',id)}break;}case 'duplicate-project':{let p=state.projects.find(p=>p.id===id);if(!p)return;let clone=structuredClone(p);clone.id=uid();clone.title=p.title+' (kopia)';clone.date='';clone.paymentDue='';clone.status='Planowane';clone.paid=0;clone.payments=[];clone.hours=0;clone.stages=(clone.stages||defaultStages(clone.type)).map(st=>({...st,done:false}));clone.workLog=[];clone.activityLog=[];clone.photos=[];clone.timer={startedAt:'',seconds:0};clone.expenses=clone.expenses.map(x=>({...x,id:uid(),date:''}));clone.participants=[];clone.workshopMaterials=(clone.workshopMaterials||[]).map(x=>({...x,id:uid(),done:false}));clone.createdAt=now();state.projects.push(clone);closeModal();afterDataChange('Utworzono kopię projektu');projectDetail(clone.id);break;}case 'delete-project':if((state.projects.find(p=>p.id===id)?.photos||[]).length){alert('Najpierw usuń zdjęcia z galerii projektu, aby nie pozostawić osieroconych plików w chmurze.');break;}if(confirm('Usunąć projekt? Tego nie można cofnąć bez kopii zapasowej.')){state.projects=state.projects.filter(x=>x.id!==id);state.tasks=state.tasks.map(t=>t.projectId===id?{...t,projectId:''}:t);state.reminders=state.reminders.map(r=>r.projectId===id?{...r,projectId:''}:r);closeModal();afterDataChange('Projekt usunięty')}break;case 'demo':if(confirm('Dodać przykładowe dane do obecnych?'))demo();break;case 'export':exportData();break;case 'import':importData();break;case 'backup-check':importData('check');break;case 'backup-recovery':recoverPrevious();break;case 'backup-apply':applyBackup();break;case 'storage-persist':(async()=>{try{if(!navigator.storage?.persist){toast('Ta przeglądarka nie udostępnia tej funkcji.');return}const granted=await navigator.storage.persist();toast(granted?'Przeglądarka zaakceptowała trwalsze przechowywanie danych.':'Przeglądarka nie przyznała trwalszej pamięci. Pamiętaj o kopiach JSON.')}catch(e){toast('Nie udało się sprawdzić ochrony danych.')}})();break;case 'clear':if(state.projects.some(p=>(p.photos||[]).length)){alert('Masz zdjęcia w chmurze. Usuń je najpierw z poszczególnych projektów. Nie wymazano danych.');break;}if(confirm('Usunąć WSZYSTKIE dane? Jeśli synchronizacja jest aktywna, zmiana może trafić również do chmury. Najpierw pobierz kopię JSON!')&&confirm('Ostatnie potwierdzenie: na pewno usunąć wszystkie projekty, szablony, klientów, koszty, uczestników i zadania?')){state=blank();afterDataChange('Dane usunięte')}break;case 'install':if(installEvent){
+}case 'payment-control-open':{
+ const p=state.projects.find(x=>x.id===id);
+ if(!p)return;
+ const target=p.type==='Warsztat'&&p.financeMode==='participants'?'participants':'finance';
+ let sections=detailSectionStates.get(id);
+ if(!sections){sections=new Set();detailSectionStates.set(id,sections);}
+ sections.add(target);projectDetail(id);break;
+}
+case 'payment-control-more':{
+ paymentControlVisible=Math.min(10000,paymentControlVisible+12);
+ const results=$('#payment-control-results');if(results)results.innerHTML=paymentControlRows();
+ break;
+}
+case 'payment-add':paymentForm(id,b.dataset.participant||'');break;case 'payment-delete':{const p=state.projects.find(x=>x.id===id),pid=b.dataset.participant;const owner=pid?p?.participants?.find(x=>x.id===pid):p;const item=owner?.payments?.find(x=>x.id===b.dataset.payment);if(item&&confirm('Usunąć wpłatę '+fMoney(item.amount)+'? Kwota zostanie odjęta z rozliczenia.')){owner.payments=owner.payments.filter(x=>x.id!==item.id);recordActivity(p,'Usunięto wpis wpłaty '+fMoney(item.amount));afterDataChange('Usunięto wpłatę',id)}break;}case 'add-expense':expenseForm(id);break;case 'delete-expense':{let p=state.projects.find(p=>p.id===id);if(p&&confirm('Usunąć ten koszt?')){p.expenses=p.expenses.filter(x=>x.id!==b.dataset.expense);afterDataChange('Koszt usunięty',id)}break;}case 'workshop-attendance':setWorkshopAttendance(id,b.dataset.participant,b.dataset.attendance);break;case 'workshop-promote':promoteWorkshopParticipant(id,b.dataset.participant);break;case 'workshop-waitlist':moveWorkshopToWaitlist(id,b.dataset.participant);break;case 'workshop-material-add':workshopMaterialForm(id);break;case 'workshop-material-toggle':toggleWorkshopMaterial(id,b.dataset.material);break;case 'workshop-material-remove':removeWorkshopMaterial(id,b.dataset.material);break;case 'workshop-finish':finishWorkshop(id);break;case 'add-participant':participantForm(id);break;case 'edit-participant':participantForm(id,b.dataset.participant);break;case 'finance-mode':{let p=state.projects.find(p=>p.id===id);if(!p||p.type!=='Warsztat')break;const enable=p.financeMode!=='participants';if(confirm(enable?'Liczyć wartość i wpłaty warsztatu na podstawie uczestników? Dotychczasowe ręczne kwoty zostaną zachowane, ale nie będą dodawane do tych sum.':'Wrócić do ręcznie wpisanych kwot warsztatu? Dane uczestników zostaną zachowane.')){p.financeMode=enable?'participants':'manual';afterDataChange('Zmieniono sposób rozliczania warsztatu',id)}break;}case 'delete-participant':{const p=state.projects.find(x=>x.id===id),person=p?.participants.find(x=>x.id===b.dataset.participant);if(!person)break;const received=participantPaid(person);const warning='Usunąć '+person.name+'? '+(received>0?'Uwaga: zapisane wpłaty '+fMoney(received)+' oraz ich historia zostaną usunięte z rozliczenia. W razie zwrotu pieniędzy najpierw zadbaj o własną dokumentację. ':'')+(person.bookingStatus!=='waitlist'&&waitlistedParticipants(p).length?'Zwolni się miejsce do potwierdzenia dla osoby z kolejki.':'');if(confirm(warning)){p.participants=p.participants.filter(x=>x.id!==person.id);recordActivity(p,'Usunięto zapis uczestnika: '+person.name);afterDataChange('Usunięto uczestnika',id)}break;}case 'duplicate-project':{let p=state.projects.find(p=>p.id===id);if(!p)return;let clone=structuredClone(p);clone.id=uid();clone.title=p.title+' (kopia)';clone.date='';clone.paymentDue='';clone.status='Planowane';clone.paid=0;clone.payments=[];clone.hours=0;clone.stages=(clone.stages||defaultStages(clone.type)).map(st=>({...st,done:false}));clone.workLog=[];clone.activityLog=[];clone.photos=[];clone.timer={startedAt:'',seconds:0};clone.expenses=clone.expenses.map(x=>({...x,id:uid(),date:''}));clone.participants=[];clone.workshopMaterials=(clone.workshopMaterials||[]).map(x=>({...x,id:uid(),done:false}));clone.createdAt=now();state.projects.push(clone);closeModal();afterDataChange('Utworzono kopię projektu');projectDetail(clone.id);break;}case 'delete-project':if((state.projects.find(p=>p.id===id)?.photos||[]).length){alert('Najpierw usuń zdjęcia z galerii projektu, aby nie pozostawić osieroconych plików w chmurze.');break;}if(confirm('Usunąć projekt? Tego nie można cofnąć bez kopii zapasowej.')){state.projects=state.projects.filter(x=>x.id!==id);state.tasks=state.tasks.map(t=>t.projectId===id?{...t,projectId:''}:t);state.reminders=state.reminders.map(r=>r.projectId===id?{...r,projectId:''}:r);closeModal();afterDataChange('Projekt usunięty')}break;case 'demo':if(confirm('Dodać przykładowe dane do obecnych?'))demo();break;case 'export':exportData();break;case 'import':importData();break;case 'backup-check':importData('check');break;case 'backup-recovery':recoverPrevious();break;case 'backup-apply':applyBackup();break;case 'storage-persist':(async()=>{try{if(!navigator.storage?.persist){toast('Ta przeglądarka nie udostępnia tej funkcji.');return}const granted=await navigator.storage.persist();toast(granted?'Przeglądarka zaakceptowała trwalsze przechowywanie danych.':'Przeglądarka nie przyznała trwalszej pamięci. Pamiętaj o kopiach JSON.')}catch(e){toast('Nie udało się sprawdzić ochrony danych.')}})();break;case 'clear':if(state.projects.some(p=>(p.photos||[]).length)){alert('Masz zdjęcia w chmurze. Usuń je najpierw z poszczególnych projektów. Nie wymazano danych.');break;}if(confirm('Usunąć WSZYSTKIE dane? Jeśli synchronizacja jest aktywna, zmiana może trafić również do chmury. Najpierw pobierz kopię JSON!')&&confirm('Ostatnie potwierdzenie: na pewno usunąć wszystkie projekty, szablony, klientów, koszty, uczestników i zadania?')){state=blank();afterDataChange('Dane usunięte')}break;case 'install':if(installEvent){
  const event=installEvent;installEvent=null;
  event.prompt();
  event.userChoice.finally(()=>refreshPwaPanel());
@@ -2442,10 +2537,17 @@ function events(){
  if(el?.matches?.('details.project-tools-more')&&el.isConnected){projectToolsExpanded=!!el.open;return;}
  if(el?.matches?.('details.manu-personalization')&&el.isConnected){personalizationExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
+ if(el?.matches?.('details.payment-control-panel')&&el.isConnected){paymentControlExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(e.target.id==='payment-control-filter'){
+  paymentControlFilter=['all','late','soon','none'].includes(e.target.value)?e.target.value:'all';
+  paymentControlVisible=12;
+  const results=$('#payment-control-results');if(results)results.innerHTML=paymentControlRows();
+  return;
+ }
  if(e.target.id==='quote-document-type'){
   const title=$('#quote-form input[name="title"]');
   if(title)title.value=quoteTitleForDocumentType(title.value,e.target.value);
