@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.22.0';
+const APP_VERSION='3.23.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -694,17 +694,47 @@ function quoteAssistantMarkup(q,p){
   +'<option value="">Wybierz zapisany kontakt</option>'+options+'</select></div>'
   +'<button type="button" class="btn secondary sm" data-action="quote-fill-client" '+(!state.clients.length?'disabled':'')+'>'
   +icon('users')+' Uzupełnij dane klienta</button>'
+  +'<button type="button" class="btn secondary sm" data-action="quote-fill-issuer" '+(!quoteLastIssuer()?'disabled':'')+'>'
+  +icon('copy')+' Wstaw dane wystawiającego z ostatniego dokumentu</button>'
   +'<details class="quote-cost-helper"><summary>Materiały i koszty — podpowiedzi pozycji</summary>'
   +'<div id="quote-project-hints">'+quoteProjectHintsMarkup(p)+'</div></details></div></details>';
 }
 
-function quoteForm(projectId='',quoteId=''){
+
+/* MANU 15.4 — bezpieczne powielanie dokumentów i ponowne wykorzystanie danych pracowni. */
+function quoteCloneDraft(source){
+ const projectId=state.projects.some(p=>p.id===source.projectId)?source.projectId:'';
+ return {
+  number:quoteNewNumber(),projectId,title:String(source.title||'Nowa wycena'),
+  issuer:String(source.issuer||''),issuerContact:String(source.issuerContact||''),
+  client:String(source.client||''),clientContact:String(source.clientContact||''),
+  clientAddress:String(source.clientAddress||''),
+  documentType:source.documentType==='offer'?'offer':'quote',
+  documentStyle:source.documentStyle==='minimal'?'minimal':'classic',
+  introduction:String(source.introduction||''),deliveryTerms:String(source.deliveryTerms||''),
+  paymentTerms:String(source.paymentTerms||''),
+  issued:localDay(),validUntil:'',notes:String(source.notes||''),
+  discount:money(source.discount),
+  items:(source.items||[]).map(item=>({
+   id:uid(),description:String(item.description||''),quantity:Number(item.quantity)||1,
+   unit:String(item.unit||'szt.'),unitPrice:money(item.unitPrice)
+  }))
+ };
+}
+function quoteLastIssuer(){
+ return (state.quotes||[]).filter(q=>String(q.issuer||'').trim()||String(q.issuerContact||'').trim())
+  .slice().sort((a,b)=>(b.createdAt||b.issued||'').localeCompare(a.createdAt||a.issued||''))[0]||null;
+}
+
+function quoteForm(projectId='',quoteId='',sourceId=''){
  const existing=(state.quotes||[]).find(q=>q.id===quoteId);
- const p=state.projects.find(p=>p.id===(existing?.projectId||projectId));
+ const source=!existing&&sourceId?(state.quotes||[]).find(q=>q.id===sourceId):null;
+ const p=state.projects.find(p=>p.id===(existing?.projectId||source?.projectId||projectId));
  const itemDefault=p?quoteProjectItem(p):{description:'',quantity:1,unit:'szt.',unitPrice:0};
- const q=existing||{number:quoteNewNumber(),projectId:p?.id||'',title:p?.title?'Wycena — '+p.title:'Nowa wycena',client:p?.client||'',clientContact:'',clientAddress:'',documentType:'quote',documentStyle:'classic',introduction:'',deliveryTerms:'',paymentTerms:'',issued:localDay(),validUntil:'',issuer:'',issuerContact:'',notes:'',discount:0,items:[itemDefault]};
- modal(existing?'Edytuj wycenę':'Nowa wycena',`<form id="quote-form" data-id="${htmlEscape(q.projectId)}" data-quote="${htmlEscape(existing?.id||'')}">
+ const q=existing||(source?quoteCloneDraft(source):{number:quoteNewNumber(),projectId:p?.id||'',title:p?.title?'Wycena — '+p.title:'Nowa wycena',client:p?.client||'',clientContact:'',clientAddress:'',documentType:'quote',documentStyle:'classic',introduction:'',deliveryTerms:'',paymentTerms:'',issued:localDay(),validUntil:'',issuer:'',issuerContact:'',notes:'',discount:0,items:[itemDefault]});
+ modal(existing?'Edytuj wycenę':source?'Nowy dokument na podstawie wyceny':'Nowa wycena',`<form id="quote-form" data-id="${htmlEscape(q.projectId)}" data-quote="${htmlEscape(existing?.id||'')}">
  <p class="form-note">Wycena nie zmienia ceny projektu, kosztów ani historii wpłat. To dokument ofertowy, nie faktura.</p>
+ ${source?'<p class="quote-clone-note"><strong>Nowa kopia dokumentu '+htmlEscape(source.number)+'</strong><span>Numer będzie nowy, data wystawienia jest dzisiejsza, a pole „Ważna do” wyczyszczone. Sprawdź klienta, pozycje, ceny i warunki przed zapisaniem. Oryginał nie zostanie zmieniony.</span></p>':''}
  <div class="form-cols"><div class="field"><label>Numer</label><input value="${htmlEscape(q.number)}" disabled></div><div class="field"><label>Data wystawienia *</label><input name="issued" type="date" required value="${htmlEscape(q.issued)}"></div><div class="field"><label>Ważna do</label><input name="validUntil" type="date" value="${htmlEscape(q.validUntil)}"></div><div class="field"><label>Projekt (opcjonalnie)</label><select id="quote-form-project" name="projectId"><option value="">Bez projektu</option>${state.projects.map(project=>`<option value="${htmlEscape(project.id)}" ${project.id===q.projectId?'selected':''}>${htmlEscape(project.title)}</option>`).join('')}</select></div></div>
  ${quoteAssistantMarkup(q,p)}
  <details class="quote-document-options" ${q.introduction||q.deliveryTerms||q.paymentTerms?'open':''}>
@@ -775,7 +805,7 @@ function quoteDocument(q){
 }
 function quotePreview(id){
  const q=(state.quotes||[]).find(q=>q.id===id);if(!q)return;
- modal((q.documentType==='offer'?'Oferta cenowa ':'Wycena ')+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
+ modal((q.documentType==='offer'?'Oferta cenowa ':'Wycena ')+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn secondary" data-action="quote-clone" data-id="${htmlEscape(q.id)}">${icon('copy')} Powiel dokument</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
 }
 function projectsPage(){return `${returnToHomeButton('projects')}${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions project-primary-actions"><button type="button" class="btn" data-action="new-project">${icon('plus')} Dodaj projekt</button><button type="button" class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><details class="project-tools-more"${projectToolsExpanded?' open':''}><summary class="btn secondary" aria-label="Pokaż dodatkowe narzędzia">${icon('copy')} Więcej narzędzi <span class="project-tools-chevron" aria-hidden="true">⌄</span></summary><div class="project-tools-panel"><button type="button" class="btn secondary" data-action="nav" data-view="gallery">${icon('folder')} Galeria realizacji</button><button type="button" class="btn secondary" data-action="nav" data-view="templates">${icon('copy')} Szablony projektów</button><button type="button" class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button></div></details></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
 
@@ -2265,6 +2295,26 @@ case 'quote-add-hint':{
 case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
 case 'quote-preview':quotePreview(id);break;
 case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q)quoteForm(q.projectId,q.id);break;}
+case 'quote-clone':{
+ const q=(state.quotes||[]).find(x=>x.id===id);
+ if(!q)return;
+ if(state.quotes.length>=3000){alert('Osiągnięto limit 3000 wycen.');break;}
+ quoteForm('', '', q.id);
+ break;
+}
+case 'quote-fill-issuer':{
+ const form=$('#quote-form'),last=quoteLastIssuer();
+ if(!form||!last){toast('Brak wcześniej zapisanych danych wystawiającego.');break;}
+ const issuer=form.querySelector('[name="issuer"]'),contact=form.querySelector('[name="issuerContact"]');
+ if(!issuer||!contact)break;
+ const different=(issuer.value.trim()&&issuer.value.trim()!==(last.issuer||''))
+  ||(contact.value.trim()&&contact.value.trim()!==(last.issuerContact||''));
+ if(different&&!confirm('Zastąpić obecne dane wystawiającego informacjami z ostatniej zapisanej wyceny?'))break;
+ issuer.value=last.issuer||'';
+ contact.value=last.issuerContact||'';
+ toast('Wstawiono dane pracowni. Sprawdź je przed wysłaniem dokumentu.');
+ break;
+}
 case 'quote-add-line':{
  const form=$('#quote-form'),box=$('#quote-lines');
  if(box&&form){
