@@ -1095,7 +1095,7 @@ test('Etap 16.1: poprawna kopia jest rozpoznawana, brak poprzedniej nie jest uda
  assert.match(html,/Poprzedni zapis/);
  assert.match(html,/>Brak</);
  assert.match(html,/Nieznana/);
- assert.match(html,/nie potwierdza posiadania pobranego pliku JSON/);
+ assert.match(html,/nie potwierdza posiadania pobranego pliku JSON/i);
 });
 
 test('Etap 16.1: raport zabezpiecza treść przed wstrzyknięciem HTML', () => {
