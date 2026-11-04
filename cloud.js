@@ -108,6 +108,39 @@ function statusMarkup(){
   body+(notice?'<p class="muted small" role="status">'+escape(notice)+'</p>':'')+
   (errorText&&client?'<p class="cloud-status cloud-status-warning">'+escape(errorText)+'</p>':'')+'</div>';
 }
+
+/* Etap 16.2 — porównanie kopii przed każdą ręczną operacją zastąpienia danych.
+   Liczymy tylko rekordy i daty; nie ujawniamy danych klientów w oknie potwierdzenia. */
+function cloudDataSummary(snapshot){
+ const x=snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)?snapshot:{};
+ const count=key=>Array.isArray(x[key])?x[key].length:0;
+ return {
+  projects:count('projects'),clients:count('clients'),quotes:count('quotes'),
+  tasks:count('tasks'),participants:Array.isArray(x.projects)
+    ?x.projects.reduce((n,p)=>n+(Array.isArray(p?.participants)?p.participants.length:0),0):0,
+  lastSaved:typeof x.lastSaved==='string'&&Number.isFinite(Date.parse(x.lastSaved))
+    ?new Date(x.lastSaved).toLocaleString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    :'Brak potwierdzonej daty'
+ };
+}
+function cloudReplacePrompt(direction,localSnapshot,remoteSnapshot,revision){
+ const local=cloudDataSummary(localSnapshot),remote=cloudDataSummary(remoteSnapshot);
+ const rows=x=>'Projekty: '+x.projects+', klienci: '+x.clients+', wyceny: '+x.quotes
+  +', zadania: '+x.tasks+', uczestnicy: '+x.participants
+  +'\nOstatni zapis: '+x.lastSaved;
+ const isUpload=direction==='upload';
+ return (isUpload?'WYSYŁANIE DO CHMURY':'POBIERANIE Z CHMURY')
+  +'\n\nDane na telefonie:\n'+rows(local)
+  +'\n\nDane w chmurze:\n'+(remoteSnapshot?rows(remote):'Brak zapisanej kopii')
+  +'\nWersja w chmurze: '+(Number.isSafeInteger(revision)?revision:'brak')
+  +'\n\n'+(isUpload
+   ?'Nowa wersja z telefonu ZASTĄPI dane w chmurze.'
+   :'Dane z chmury ZASTĄPIĄ obecną bazę na telefonie.')
+  +'\n\nPrzed kontynuacją zachowaj sprawdzoną kopię JSON POZA telefonem.'
+  +'\nJeśli wersje różnią się lub nie masz pewności, wybierz Anuluj i najpierw pobierz kopie obu wersji.'
+  +'\n\nKontynuować?';
+}
+
 async function fetchRemote(){
  if(!client||!user)throw Error('Zaloguj się ponownie.');
  const {data,error}=await client.from('manu_snapshots').select('payload,revision,updated_at').eq('user_id',user.id).maybeSingle();
@@ -181,12 +214,7 @@ async function push(manual){
    conflict=true;ready=false;
    throw Error('Chmura została zmieniona na innym urządzeniu. Najpierw wybierz, którą wersję zachować.');
   }
-  if(manual){
-   const msg=row?
-     'UWAGA: wysłanie danych z telefonu ZASTĄPI istniejące dane w chmurze. Najpierw pobierz kopię chmurową i lokalną. Kontynuować?':
-     'Przesłać projekty, wyceny i inne dane z tego urządzenia na Twoje konto w chmurze?';
-   if(!window.confirm(msg))return;
-  }
+  if(manual && !window.confirm(cloudReplacePrompt('upload',bridge.getState(),row?.payload||null,row?.revision)))return;
   const snapshot=structuredClone(bridge.getState()),stamp=snapshot.lastSaved;
   let response;
   if(row){
@@ -223,12 +251,13 @@ async function download(){
  if(!client||!user||busy)return;
  busy=true;
  try{
+  await bridge.waitForWrites();
+  if(bridge.isStorageBlocked())throw Error('Zapis lokalny jest wstrzymany. Nie pobrano chmury i nie zmieniono bazy.');
   const row=await fetchRemote();
   if(!row){emit('Na koncie nie ma jeszcze danych do pobrania.');return;}
   const local=bridge.getState();
-  const counts='Lokalnie: '+local.projects.length+' projektów, '+(local.quotes||[]).length+' wycen. W chmurze: '+
-    (row.payload?.projects?.length||0)+' projektów, '+(row.payload?.quotes?.length||0)+' wycen.';
-  if(!window.confirm(counts+'\n\nPobranie ZASTĄPI wszystkie lokalne dane. Czy wcześniej pobrano i sprawdzono kopię JSON?'))return;
+  if(!bridge.canReplace())throw Error('Zamknij otwarte formularze przed pobieraniem chmury.');
+  if(!window.confirm(cloudReplacePrompt('download',local,row.payload,row.revision)))return;
   await applyRecord(row);
   emit('Pobrano dane z chmury. Automatyczna synchronizacja włączona.');
  }catch(e){errorText=textError(e);window.alert('Nie udało się pobrać: '+errorText)}
