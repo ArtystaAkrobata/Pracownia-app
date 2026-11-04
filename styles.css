@@ -3101,3 +3101,58 @@ body.gallery-lightbox-open{overflow:hidden}
   .command-small-link{font-size:11px}
   .command-date{font-size:10px}
 }
+
+/* MANU 3.17.0 · etap 12.5: animacje tylko przy zmianie kartki */
+/* Aktualizacja danych i przywrócenie miejsca przewijania nie animują całej kartki. */
+.open-notebook{animation:none}
+.open-notebook.page-open{
+ transform-origin:50% 50%;
+ animation:manu-open-page 310ms cubic-bezier(.2,.72,.26,1) both;
+}
+.open-notebook.page-turn-next,
+.open-notebook.page-turn-prev{animation-duration:310ms}
+.open-notebook.page-turn-next .open-notebook-sheet::before,
+.open-notebook.page-turn-prev .open-notebook-sheet::before{animation-duration:310ms}
+
+/* Mniejszy obrót i łagodniejsza zmiana przezroczystości ograniczają migotanie treści. */
+@keyframes manu-open-page{
+ from{opacity:.92;transform:perspective(1100px) rotateY(-1.7deg) translateY(6px)}
+ to{opacity:1;transform:perspective(1100px) rotateY(0deg) translateY(0)}
+}
+@keyframes manu-page-forward{
+ 0%{opacity:.88;transform:perspective(1400px) rotateY(-2.5deg) translateX(8px) scale(.996)}
+ 65%{opacity:1;transform:perspective(1400px) rotateY(.4deg) translateX(0) scale(1)}
+ 100%{opacity:1;transform:perspective(1400px) rotateY(0deg) translateX(0) scale(1)}
+}
+@keyframes manu-page-backward{
+ 0%{opacity:.88;transform:perspective(1400px) rotateY(2.5deg) translateX(-8px) scale(.996)}
+ 65%{opacity:1;transform:perspective(1400px) rotateY(-.4deg) translateX(0) scale(1)}
+ 100%{opacity:1;transform:perspective(1400px) rotateY(0deg) translateX(0) scale(1)}
+}
+@keyframes manu-paper-unfold{
+ from{opacity:.9;transform:perspective(1100px) rotateY(-2.5deg) translateY(7px) scale(.995)}
+ to{opacity:1;transform:perspective(1100px) rotateY(0deg) translateY(0) scale(1)}
+}
+.modal.notebook-page{animation-duration:290ms}
+@media(max-width:690px){
+ .open-notebook.page-open{animation-duration:250ms}
+ .open-notebook.page-turn-next,.open-notebook.page-turn-prev{animation-duration:230ms}
+ .open-notebook.page-turn-next .open-notebook-sheet::before,
+ .open-notebook.page-turn-prev .open-notebook-sheet::before{animation-duration:230ms}
+ .modal.notebook-page{animation-duration:230ms}
+}
+@media(prefers-reduced-motion:reduce){
+ .open-notebook.page-open,
+ .open-notebook.page-turn-next,
+ .open-notebook.page-turn-prev,
+ .modal.notebook-page{
+  animation:none!important;
+  transform:none!important;
+  filter:none!important;
+ }
+ .open-notebook.page-turn-next .open-notebook-sheet::before,
+ .open-notebook.page-turn-prev .open-notebook-sheet::before{
+  content:none!important;
+  animation:none!important;
+ }
+}
