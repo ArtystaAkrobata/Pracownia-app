@@ -3210,3 +3210,33 @@ body.gallery-lightbox-open{overflow:hidden}
   padding-left:16px;padding-right:17px;
  }
 }
+
+/* MANU 3.17.2 · bezpieczne odstępy napisów obok zakładki notesu */
+/* Dekoracyjna wstążka znajduje się na krawędzi kartki.
+   Nagłówek rezerwuje dla niej miejsce, bez przesuwania głównej treści. */
+.open-notebook:not(.open-notebook--right) .open-notebook-lead{
+  padding-right:36px;
+}
+.open-notebook--right .open-notebook-lead{
+  padding-left:36px;
+}
+.open-notebook-lead>span{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:break-word;
+}
+.open-notebook-lead>span:last-child{
+  text-align:right;
+}
+@media(max-width:690px){
+  .open-notebook:not(.open-notebook--right) .open-notebook-lead{
+    padding-right:26px;
+  }
+  .open-notebook--right .open-notebook-lead{
+    padding-left:26px;
+  }
+  .open-notebook-lead{
+    column-gap:6px;
+    row-gap:5px;
+  }
+}
