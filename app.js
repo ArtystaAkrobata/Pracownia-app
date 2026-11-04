@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.5';
+const APP_VERSION='3.18.6';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1803,6 +1803,9 @@ function rememberManuPage(){
   tools:projectToolsExpanded
  });
  if(manuPageHistory.length>30)manuPageHistory.shift();
+ // Android wymaga prawdziwego wpisu historii dla KAŻDEJ kartki.
+ // Ponowne dodawanie jednego strażnika wewnątrz popstate działało niestabilnie.
+ if(!armManuBackGuard())manuBackGuardReady=false;
 }
 function consumeManuReturn(page){
  if(manuBackGuardReady&&manuPageHistory.at(-1)?.view===page)manuPageHistory.pop();
@@ -1817,12 +1820,17 @@ function armManuBackGuard(){
  }
 }
 function onManuBack(event){
- if(!manuBackGuardReady||!event.state?.manuBackRoot)return;
+ // Cofanie między kartkami prowadzi do wcześniejszego manuBackGuard,
+ // a ostatnie cofnięcie — do początkowego manuBackRoot.
+ if(!manuBackGuardReady||!(event.state?.manuBackGuard===1||event.state?.manuBackRoot===1))return;
+ let keepCurrentPage=false;
  // Pierwszy gest zamyka podgląd lub aktualnie otwartą kartę/formularz.
  if(window.MANUGallery?.isPreviewOpen?.()){
   window.MANUGallery.closePreview();
+  keepCurrentPage=true;
  }else if($('.modal')){
   closeModal();
+  keepCurrentPage=true;
  }else if(manuPageHistory.length){
   const previous=manuPageHistory.pop();
   view=previous.view;
@@ -1840,11 +1848,13 @@ function onManuBack(event){
   render();
   window.scrollTo({left:0,top:0,behavior:'instant'});
  }else{
-  // Na pulpicie drugi krok powinien pozwolić opuścić aplikację.
+  // Na pulpicie nie ma już wewnętrznej strony do cofnięcia.
   window.history.back();
   return;
  }
- if(!armManuBackGuard())manuBackGuardReady=false;
+ // Po zwykłym cofnięciu historia przeglądarki JEST JUŻ w poprzedniej kartce.
+ // Nowy wpis potrzebny jest wyłącznie wtedy, gdy Wstecz zamknął okno.
+ if(keepCurrentPage&&!armManuBackGuard())manuBackGuardReady=false;
 }
 function initManuBackGuard(){
  if(!window.history?.pushState||!window.history?.replaceState)return;
@@ -1883,6 +1893,11 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
 }case 'return-projects':{
  if(!['clients','quotes','gallery','templates'].includes(view))break;
  const top=projectReturnContext?.page===view?projectReturnContext.top:0;
+ // Użyj tego samego mechanizmu co gest Androida: cofa UI oraz wpis historii.
+ if(manuBackGuardReady&&manuPageHistory.at(-1)?.view==='projects'){
+  window.history.back();
+  break;
+ }
  consumeManuReturn('projects');
  projectReturnContext=null;
  notebookTurn='';view='projects';
@@ -1892,6 +1907,10 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
 }case 'return-home':{
   if(!homeReturnContext||view!==homeReturnContext.page)break;
   const top=homeReturnContext.top;
+  if(manuBackGuardReady&&manuPageHistory.at(-1)?.view==='home'){
+   window.history.back();
+   break;
+  }
   consumeManuReturn('home');
   homeReturnContext=null;
   notebookTurn='';view='home';
