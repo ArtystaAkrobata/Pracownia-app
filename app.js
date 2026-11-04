@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.4';
+const APP_VERSION='3.19.5';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
