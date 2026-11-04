@@ -2782,6 +2782,84 @@ body.gallery-lightbox-open{overflow:hidden}
  .open-notebook .profitability-panel-chevron{transition:none}
 }
 
+
+/* MANU 3.22.0 · etap 15.3 — należności i zaliczki na kartce Finansów */
+.open-notebook .payment-control-panel{
+ margin:20px 0 17px;border:1px solid #d0ab8d;border-radius:13px;overflow:hidden;
+ background:linear-gradient(155deg,#f8eee2,#eedcc9);color:#503a2c;
+ box-shadow:0 6px 16px #73553f1c;
+}
+.open-notebook .payment-control-panel[open]{border-color:#b98b68}
+.open-notebook .payment-control-summary{
+ display:grid;grid-template-columns:39px minmax(0,1fr) auto 17px;
+ align-items:center;gap:11px;min-height:77px;padding:14px 13px;
+ cursor:pointer;list-style:none;user-select:none;
+}
+.open-notebook .payment-control-summary::-webkit-details-marker{display:none}
+.open-notebook .payment-control-summary::marker{content:""}
+.open-notebook .payment-control-summary:focus-visible{outline:2px solid #ab7655;outline-offset:-3px}
+.open-notebook .payment-control-panel[open]>.payment-control-summary{border-bottom:1px solid #ddc3a9}
+.payment-control-symbol{width:39px;height:39px;display:grid;place-items:center;border-radius:10px;border:1px solid #cda98d;background:#e9d3bd;color:#986749}
+.payment-control-symbol .ico{width:20px;height:20px}
+.payment-control-heading{display:flex;flex-direction:column;gap:4px;min-width:0}
+.payment-control-heading strong{font:600 20px/1.25 Georgia,serif;overflow-wrap:anywhere}
+.payment-control-heading small{font-size:11px;line-height:1.4;color:#86715d}
+.payment-control-summary>b{font:700 17px Georgia,serif;white-space:nowrap;color:#865234}
+.payment-control-chevron{font-size:24px;color:#a36a49;transition:transform .15s}
+.payment-control-panel[open] .payment-control-chevron{transform:rotate(180deg)}
+.payment-control-body{padding:15px 13px 17px}
+.payment-control-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.payment-control-totals>div{display:flex;flex-direction:column;gap:7px;min-width:0;padding:13px 9px;border:1px solid #dfc7b1;border-radius:9px;background:#fcf5eb}
+.payment-control-totals small{font-size:10px;line-height:1.4;color:#856c5a}
+.payment-control-totals strong{font:700 16px/1.3 Georgia,serif;color:#5b3c2b;overflow-wrap:anywhere}
+.payment-control-totals>div:last-child strong{color:#a04c3d}
+.payment-control-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 13px;font-size:12px;font-weight:700;color:#74543d}
+.payment-control-filter select{min-width:0;max-width:100%;font-size:12px;border-radius:9px;border:1px solid #c9a382;padding:10px 11px;background:#fff8ef;color:#593e2f}
+#payment-control-results{display:grid;gap:9px}
+.payment-control-item{
+ display:grid;grid-template-columns:minmax(0,1.35fr) minmax(145px,.85fr);
+ gap:12px;align-items:center;min-width:0;padding:14px;
+ border:1px solid #dfc8b0;border-left:4px solid #b88660;
+ border-radius:10px;background:#fff8ef;
+}
+.payment-control-item--late{border-left-color:#a45144;background:#fdf5ed}
+.payment-control-info{display:flex;flex-direction:column;gap:6px;min-width:0}
+.payment-control-info strong{font:600 17px/1.25 Georgia,serif;color:#4c3428;overflow-wrap:anywhere}
+.payment-control-info small{font-size:11px;color:#816b5b;overflow-wrap:anywhere}
+.payment-control-date{font-size:11px;font-weight:700;color:#8b684c;overflow-wrap:anywhere}
+.payment-control-item--late .payment-control-date{color:#a04539}
+.payment-control-money{display:flex;flex-direction:column;gap:5px;text-align:right;min-width:0}
+.payment-control-money>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.payment-control-money small{color:#856f5f;font-size:11px}
+.payment-control-money b{font-weight:650;font-size:12px;white-space:nowrap}
+.payment-control-money strong{font:700 17px Georgia,serif;color:#805037;white-space:nowrap}
+.payment-control-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;grid-column:1/-1}
+.payment-control-actions>.btn{font-size:11px;min-height:38px;white-space:normal;text-align:center}
+.payment-control-more{justify-self:center;margin-top:5px}
+.payment-control-empty{padding:16px;border:1px dashed #d1b59b;border-radius:8px;text-align:center;font-size:12px;color:#7b6453}
+#payment-control-results .payment-control-explain{font-size:11px;line-height:1.6;margin:9px 0 0;color:#826d5c}
+@media(max-width:770px){
+ .payment-control-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .payment-control-item{grid-template-columns:1fr}
+ .payment-control-money{text-align:left;max-width:390px}
+ .payment-control-actions{justify-content:flex-start;grid-column:1}
+}
+@media(max-width:480px){
+ .open-notebook .payment-control-summary{grid-template-columns:31px minmax(0,1fr) 14px;gap:8px;padding:12px 10px}
+ .payment-control-symbol{width:31px;height:31px}
+ .payment-control-symbol .ico{width:16px;height:16px}
+ .payment-control-heading strong{font-size:17px}
+ .payment-control-heading small{font-size:10px}
+ .payment-control-summary>b{grid-column:2;grid-row:2;justify-self:start;font-size:16px}
+ .payment-control-chevron{grid-column:3;grid-row:1}
+ .payment-control-totals strong{font-size:14px}
+ .payment-control-body{padding:12px 10px 14px}
+ .payment-control-item{padding:12px 10px}
+ .payment-control-filter{align-items:stretch;flex-direction:column}
+ .payment-control-filter select{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.payment-control-chevron{transition:none}}
+
 /* MANU 3.11.0 · Porównanie dwóch realizacji — dodatkowe narzędzie ukryte w Finansach */
 .open-notebook .profitability-compare{
  margin:18px 0 14px;border:1px solid #d2b498;border-radius:12px;
