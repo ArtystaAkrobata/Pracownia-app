@@ -3624,6 +3624,24 @@ html[data-manu-text="large"] .notebook-page select{
 }
 
 
+
+/* MANU 3.23.0 — etap 15.4: czytelne oznaczenie roboczej kopii dokumentu */
+.quote-clone-note{
+ display:flex;flex-direction:column;gap:6px;
+ border:1px solid #d1ad8e;border-left:4px solid #b87854;
+ border-radius:9px;padding:11px 13px;margin:12px 0 17px;
+ background:linear-gradient(130deg,#fff4e6,#efdfc9);
+ color:#644a38;
+}
+.quote-clone-note strong{font-size:12px;line-height:1.4;color:#66432f;overflow-wrap:anywhere}
+.quote-clone-note span{font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.quote-preview-actions .btn{min-height:41px;white-space:normal;text-align:center}
+@media(max-width:440px){
+ .quote-preview-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quote-preview-actions .btn{min-width:0;padding:10px 8px}
+ .quote-preview-actions .btn:first-child{grid-column:1/-1}
+}
+
 /* MANU 3.20.0 · etap 15.1: zwijany, oszczędny asystent wycen */
 .quote-assistant{
  margin:13px 0 16px;border:1px solid #cfad8d;border-radius:12px;
