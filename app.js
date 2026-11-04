@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.14.2';
+const APP_VERSION='3.15.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1658,8 +1658,30 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
 }case 'quote-new':quoteForm(b.dataset.project||'');break;case 'quote-cancel':{const projectId=b.dataset.project||'';if(projectId&&detailReturnScroll?.projectId===projectId)projectDetail(projectId);else closeModal();break;}
 case 'quote-preview':quotePreview(id);break;
 case 'quote-edit':{const q=(state.quotes||[]).find(x=>x.id===id);if(q)quoteForm(q.projectId,q.id);break;}
-case 'quote-add-line':{const form=$('#quote-form'),box=$('#quote-lines');if(box&&form){if(box.querySelectorAll('[data-quote-row]').length>=80){alert('Maksymalnie 80 pozycji.');return}box.insertAdjacentHTML('beforeend',quoteItemRow());refreshQuoteTotal()}break;}
-case 'quote-remove-line':{const row=b.closest('.quote-line'),box=$('#quote-lines');if(row&&box){if(box.querySelectorAll('[data-quote-row]').length>1){row.remove();refreshQuoteTotal()}else toast('Wycena musi mieć co najmniej jedną pozycję.')}break;}
+case 'quote-add-line':{
+ const form=$('#quote-form'),box=$('#quote-lines');
+ if(box&&form){
+  if(box.querySelectorAll('[data-quote-row]').length>=80){alert('Maksymalnie 80 pozycji.');return}
+  box.insertAdjacentHTML('beforeend',quoteItemRow());
+  const newRow=box.lastElementChild;
+  // Pokazuj tylko nowy wiersz, nie przewijaj całego formularza do początku.
+  newRow?.scrollIntoView?.({block:'nearest',behavior:'instant'});
+  newRow?.querySelector('input[name="description"]')?.focus({preventScroll:true});
+  refreshQuoteTotal();
+ }
+ break;
+}
+case 'quote-remove-line':{
+ const row=b.closest('.quote-line'),box=$('#quote-lines');
+ if(row&&box){
+  if(box.querySelectorAll('[data-quote-row]').length>1){
+   const scroller=row.closest('.modal'),previousScroll=scroller?.scrollTop??0;
+   row.remove();refreshQuoteTotal();
+   if(scroller)scroller.scrollTop=Math.min(previousScroll,Math.max(0,scroller.scrollHeight-scroller.clientHeight));
+  }else toast('Wycena musi mieć co najmniej jedną pozycję.');
+ }
+ break;
+}
 case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
 case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);view='calendar';render();break;}case 'smart-snooze':{
@@ -1805,13 +1827,26 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(view==='calendar'){calendarSelected=date;calendarMonth=date.slice(0,7)}
  closeModal();afterDataChange(original?'Przypomnienie zapisane':'Dodano przypomnienie');break;
 }}}
-function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
+function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});
+ // Przy niepoprawnym polu wewnątrz zwiniętej sekcji rozwiń ją przed komunikatem przeglądarki.
+ document.addEventListener('invalid',e=>{
+  const field=e.target,modal=field?.closest?.('.modal');
+  if(!modal||!field.closest('form'))return;
+  let parent=field.parentElement;
+  while(parent&&parent!==modal){
+   if(parent.tagName==='DETAILS'&&!parent.open)parent.open=true;
+   parent=parent.parentElement;
+  }
+  field.classList?.add('manu-form-invalid');
+ },true);
+ document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.project-tools-more')&&el.isConnected){projectToolsExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
- if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
+ if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
+ if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
   afterDataChange(e.target.checked?'Przypomnienia włączone':'Przypomnienia wyłączone');
