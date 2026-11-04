@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.3';
+const APP_VERSION='3.18.4';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1146,10 +1146,66 @@ function modal(title,body,options={}){
   if(detail)detailReturnScroll=null;
  }
 }
-function closeModal(){detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+function closeModal(){if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+
+// MANU 13.5 — jeden szkic nowego projektu, wyłącznie na tym urządzeniu.
+// Nie zapisujemy go jako projektu i nie wysyłamy do chmury.
+const PROJECT_DRAFT_KEY='manu-new-project-draft-v1';
+const PROJECT_DRAFT_MAX_AGE=14*24*60*60*1000;
+let projectDraftTimer=null;
+function readProjectDraft(){
+ try{
+  const raw=localStorage.getItem(PROJECT_DRAFT_KEY);
+  if(!raw)return null;
+  const item=JSON.parse(raw);
+  if(item?.version!==1||!Array.isArray(item.fields)||item.fields.length>120||
+   !Number.isFinite(item.savedAt)||item.savedAt>Date.now()+60000||
+   Date.now()-item.savedAt>PROJECT_DRAFT_MAX_AGE)return null;
+  return item;
+ }catch(e){return null}
+}
+function clearProjectDraft(){
+ if(projectDraftTimer!==null){clearTimeout(projectDraftTimer);projectDraftTimer=null}
+ try{localStorage.removeItem(PROJECT_DRAFT_KEY)}catch(e){console.warn('MANU: nie udało się usunąć szkicu',e)}
+}
+function writeProjectDraft(){
+ if(projectDraftTimer!==null){clearTimeout(projectDraftTimer);projectDraftTimer=null}
+ const form=$('#project-form');
+ if(!form||form.dataset.draftEligible!=='yes')return;
+ const fields=[...form.querySelectorAll('input[name],select[name],textarea[name]')].slice(0,120).map(input=>({
+  name:input.name,
+  type:input.type||input.tagName.toLowerCase(),
+  value:String(input.value||'').slice(0,6000),
+  checked:!!input.checked
+ }));
+ const opened=[...form.querySelectorAll('details')].map(item=>!!item.open);
+ try{localStorage.setItem(PROJECT_DRAFT_KEY,JSON.stringify({version:1,savedAt:Date.now(),fields,opened}))}
+ catch(e){console.warn('MANU: brak miejsca na szkic formularza',e)}
+}
+function scheduleProjectDraft(){
+ if(!$('#project-form[data-draft-eligible="yes"]'))return;
+ if(projectDraftTimer!==null)clearTimeout(projectDraftTimer);
+ projectDraftTimer=setTimeout(writeProjectDraft,500);
+}
+function restoreProjectDraft(form,draft){
+ if(!form||!draft)return;
+ const controls=[...form.querySelectorAll('input[name],select[name],textarea[name]')];
+ for(let i=0;i<Math.min(controls.length,draft.fields.length);i++){
+  const el=controls[i],field=draft.fields[i];
+  if(!field||field.name!==el.name||field.type!==(el.type||el.tagName.toLowerCase()))continue;
+  if(el.type==='radio'||el.type==='checkbox')el.checked=!!field.checked;
+  else if(typeof field.value==='string')el.value=field.value;
+ }
+ const details=[...form.querySelectorAll('details')];
+ for(let i=0;i<Math.min(details.length,draft.opened?.length||0);i++)
+  details[i].open=draft.opened[i]===true;
+}
+
 function optionsStatus(selected){return validStatus.map(x=>`<option value="${x}" ${x===selected?'selected':''}>${x}</option>`).join('');}
 function projectForm(p,prefillClientId='',templateId=''){
   const edit=!!p;
+  const draftEligible=!edit&&!prefillClientId&&!templateId;
+  const draft=draftEligible?readProjectDraft():null;
   const template=!edit&&templateId?window.MANUTemplates?.findTemplate?.(templateId):null;
   const linkedClientId=String(p?.clientId||prefillClientId);
   const linkedClient=state.clients.find(c=>c.id===linkedClientId);
@@ -1159,7 +1215,8 @@ function projectForm(p,prefillClientId='',templateId=''){
   const moneyFieldValue=autoWorkshop?projectIncome(x):x.price||0;
   const paidFieldValue=autoWorkshop?projectPaid(x):x.paid||0;
   const advancedFilled=!!(x.paymentDue||x.notes||x.workLocation||x.location||x.startTime||val(x.durationHours)||val(x.hours)||val(x.estimatedHours)||val(x.estimatedMaterials)||val(x.travelKm)||val(x.paidTransportCost)||val(x.travelExtra)||val(x.paid)||val(x.quantity)>1);
-  modal(edit?'Edytuj projekt lub warsztat':'Nowy projekt lub warsztat',`<form id="project-form" data-id="${htmlEscape(x.id||'')}" data-old-manual="${oldManualWorkshop?'yes':'no'}" data-is-edit="${edit?'yes':'no'}" data-original-type="${htmlEscape(x.type)}" data-original-auto="${autoWorkshop?'yes':'no'}" data-template="${htmlEscape(template?.id||'')}">
+  modal(edit?'Edytuj projekt lub warsztat':'Nowy projekt lub warsztat',`<form id="project-form" data-draft-eligible="${draftEligible?'yes':'no'}" data-id="${htmlEscape(x.id||'')}" data-old-manual="${oldManualWorkshop?'yes':'no'}" data-is-edit="${edit?'yes':'no'}" data-original-type="${htmlEscape(x.type)}" data-original-auto="${autoWorkshop?'yes':'no'}" data-template="${htmlEscape(template?.id||'')}">
+  ${draft?`<div class="manu-draft-note" role="status"><span>Przywrócono niezapisany formularz z poprzedniego uruchomienia MANU. To tylko szkic na tym urządzeniu.</span><button class="btn ghost sm" type="button" data-action="project-draft-clear">Zacznij od nowa</button></div>`:''}
   ${template?`<p class="form-note">Używasz szablonu: <b>${htmlEscape(template.name)}</b>. Sprawdź ceny, koszty i terminy przed zapisaniem. ${template.expenses.length?`Powtarzalne koszty: ${template.expenses.length} pozycji; zostaną wpisane przy utworzeniu projektu.`:''}</p>`:''}
   <p class="project-form-step-label">Podstawowe informacje</p>
   <div class="form-cols type-select-row">
@@ -1268,6 +1325,7 @@ function projectForm(p,prefillClientId='',templateId=''){
   </details>
   <div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${icon('check')} <span data-project-submit-label>${edit?'Zapisz zmiany':'Utwórz projekt'}</span></button></div>
   </form>`,{rightPage:view==='projects'});
+  if(draft)restoreProjectDraft($('#project-form'),draft);
   syncProjectFields();
   syncProjectClientField();
 }
@@ -1795,7 +1853,7 @@ case 'quote-remove-line':{
 }
 case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
-case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);view='calendar';render();break;}case 'smart-snooze':{
+case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);view='calendar';render();break;}case 'smart-snooze':{
  const ev=calendarEvents().find(x=>x.key===b.dataset.event&&x.date===b.dataset.date&&!x.done);
  if(!ev||!state.smartAlerts?.enabled)break;
  const until=plusDaysDate(localDay(),1),snoozed=state.smartAlerts.snoozed||{};
@@ -1981,7 +2039,8 @@ function refreshAfterResume(){
 function events(){
  window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});
  // Po powrocie z innej aplikacji nie wykonujemy render() ani nie zamykamy formularzy.
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshAfterResume()});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')writeProjectDraft();else refreshAfterResume()});
+ window.addEventListener('pagehide',writeProjectDraft);
  window.addEventListener('pageshow',()=>refreshAfterResume());
  // Przy niepoprawnym polu wewnątrz zwiniętej sekcji rozwiń ją przed komunikatem przeglądarki.
  document.addEventListener('invalid',e=>{
@@ -2000,7 +2059,8 @@ function events(){
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
- if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(e.target.closest?.('#project-form'))scheduleProjectDraft();
  if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
