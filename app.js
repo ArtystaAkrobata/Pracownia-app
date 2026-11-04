@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.15.0';
+const APP_VERSION='3.15.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1097,6 +1097,7 @@ function projectForm(p,prefillClientId='',templateId=''){
     <div class="field"><label>Liczba dostępnych miejsc</label><input name="capacity" type="number" min="0" step="1" value="${Math.floor(val(x.capacity))}"></div>
     <div class="field"><label>Cena za uczestnika (zł)</label><input name="participantFee" type="number" min="0" step="0.01" value="${money(x.participantFee)}"></div>
     </div>
+    <p class="workshop-potential" data-workshop-potential hidden aria-live="polite"></p>
   </section>
   <section class="project-kind-section project-form-primary-price" data-field="money">
     <div class="field"><label data-label="price">Cena realizacji (zł)</label><input name="price" type="number" min="0" step="0.01" value="${money(moneyFieldValue)}"></div>
@@ -1203,15 +1204,35 @@ function syncProjectClientField(){
   input.readOnly=false;
  }
 }
+function syncWorkshopPotential(){
+ const form=document.getElementById('project-form'),hint=form?.querySelector('[data-workshop-potential]');
+ if(!form||!hint)return;
+ const count=Number(form.elements.namedItem('capacity')?.value);
+ const fee=Number(form.elements.namedItem('participantFee')?.value);
+ const show=form.elements.namedItem('type')?.value==='Warsztat'&&Number.isFinite(count)&&Number.isFinite(fee)&&count>0&&fee>0;
+ hint.hidden=!show;
+ if(show)hint.textContent='Przychód przy komplecie miejsc: '+Math.floor(count)+' × '+fMoney(fee)+' = '+fMoney(money(Math.floor(count)*fee))+'. To szacunek, nie otrzymana wpłata.';
+ else hint.textContent='';
+}
 function syncTravelFields(){
   const form=document.getElementById('project-form');
   if(!form)return;
   const transport=form.querySelector('input[name="transportType"]:checked')?.value||'none';
   const mode=form.elements.namedItem('travelMode')?.value==='rate'?'rate':'fuel';
-  form.querySelectorAll('[data-transport-type]').forEach(el=>el.hidden=el.dataset.transportType!==transport);
-  form.querySelectorAll('[data-travel-mode]').forEach(el=>el.hidden=transport!=='car'||el.dataset.travelMode!==mode);
+  const workshop=form.elements.namedItem('type')?.value==='Warsztat';
+  form.querySelectorAll('[data-transport-type]').forEach(el=>{
+   el.hidden=el.dataset.transportType!==transport;
+   el.querySelectorAll('input,select,textarea').forEach(input=>input.disabled=workshop||el.hidden);
+  });
+  form.querySelectorAll('[data-travel-mode]').forEach(el=>{
+   el.hidden=transport!=='car'||el.dataset.travelMode!==mode;
+   el.querySelectorAll('input,select,textarea').forEach(input=>input.disabled=workshop||el.hidden);
+  });
   const extra=form.querySelector('[data-transport-extra]');
-  if(extra)extra.hidden=transport==='none';
+  if(extra){
+   extra.hidden=transport==='none';
+   extra.querySelectorAll('input,select,textarea').forEach(input=>input.disabled=workshop||extra.hidden);
+  }
   const get=k=>val(form.elements.namedItem(k)?.value);
   const distance=get('travelKm'),litres=distance*get('fuelConsumption')/100;
   const fuelCharge=litres*get('fuelPrice'),rateCharge=distance*get('travelRate');
@@ -1224,14 +1245,19 @@ function syncProjectFields(){
   const form=document.getElementById('project-form');
   if(!form)return;
   const workshop=form.elements.namedItem('type').value==='Warsztat';
-  form.querySelectorAll('[data-kind]').forEach(el=>el.hidden=el.dataset.kind!==(workshop?'Warsztat':'Zlecenie'));
+  form.querySelectorAll('[data-kind]').forEach(el=>{
+   el.hidden=el.dataset.kind!==(workshop?'Warsztat':'Zlecenie');
+   // Pola ukryte przy zmianie rodzaju nie blokują zapisu, lecz zachowują wpisane wartości.
+   el.querySelectorAll('input,select,textarea').forEach(input=>input.disabled=el.hidden);
+  });
   const isOldManualWorkshop=workshop&&form.dataset.oldManual==='yes';
   const moneySection=form.querySelector('[data-field="money"]');
   moneySection.hidden=workshop&&!isOldManualWorkshop;
   const manualPayment=form.querySelector('[data-field="manualPayment"]');
   if(manualPayment)manualPayment.hidden=workshop&&!isOldManualWorkshop;
   const autoWorkshop=workshop&&form.dataset.originalAuto==='yes';
-  for(const key of ['price','paid'])form.elements.namedItem(key).disabled=autoWorkshop;
+  form.elements.namedItem('price').disabled=autoWorkshop||moneySection.hidden;
+  form.elements.namedItem('paid').disabled=autoWorkshop||!!manualPayment?.hidden;
   form.querySelector('[data-label="client"]').textContent='Klient / zamawiający';
   form.querySelector('[data-label="date"]').textContent=workshop?'Data warsztatu':'Termin wykonania';
   const submitLabel=form.querySelector('[data-project-submit-label]');
@@ -1241,6 +1267,7 @@ function syncProjectFields(){
   form.querySelector('[data-label="paid"]').textContent='Wcześniejsze wpłaty (bez historii) (zł)';
   form.querySelector('[data-money-description]').textContent=workshop?'Zachowane ręczne rozliczenie starszego warsztatu. Nowe wpłaty zapisuj w historii na karcie realizacji.':'Tutaj zachowujesz tylko kwoty bez daty. Nowe zaliczki i dopłaty dopisuj w historii wpłat na karcie realizacji, aby nie liczyć ich drugi raz.';
   syncTravelFields();
+  syncWorkshopPotential();
 }
 function setWorkshopAttendance(id,participantId,attendance){
  const p=state.projects.find(x=>x.id===id),person=p?.participants.find(x=>x.id===participantId);
@@ -1845,7 +1872,7 @@ function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0|
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
- if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields()});document.addEventListener('change',e=>{
+ if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
