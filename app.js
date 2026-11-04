@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.26.0';
+const APP_VERSION='3.26.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -2369,7 +2369,12 @@ function armManuBackGuard(){
 function onManuBack(event){
  // Cofanie między kartkami prowadzi do wcześniejszego manuBackGuard,
  // a ostatnie cofnięcie — do początkowego manuBackRoot.
- if(!manuBackGuardReady||!(event.state?.manuBackGuard===1||event.state?.manuBackRoot===1))return;
+ if(!manuBackGuardReady)return;
+ const inManuHistory=event.state?.manuBackGuard===1||event.state?.manuBackRoot===1;
+ // Na Androidzie / po aktualizacji PWA wpis historii może nie mieć już
+ // znacznika MANU. Jeżeli wciąż mamy wewnętrzny ekran lub modal,
+ // wykorzystaj go zamiast pozwalać przeglądarce przypadkowo zamknąć aplikację.
+ if(!inManuHistory&&!$('.modal')&&!manuPageHistory.length&&view==='home')return;
  let keepCurrentPage=false;
  // Pierwszy gest zamyka podgląd lub aktualnie otwartą kartę/formularz.
  if(window.MANUGallery?.isPreviewOpen?.()){
@@ -2395,22 +2400,24 @@ function onManuBack(event){
   render();
   window.scrollTo({left:0,top:0,behavior:'instant'});
  }else{
-  // Na pulpicie nie ma już wewnętrznej strony do cofnięcia.
-  window.history.back();
+  // Jesteśmy już na Start: nie wywołuj history.back() ponownie wewnątrz
+  // popstate, bo na Androidzie jeden gest może przez to zamknąć PWA.
   return;
  }
- // Po zwykłym cofnięciu historia przeglądarki JEST JUŻ w poprzedniej kartce.
- // Nowy wpis potrzebny jest wyłącznie wtedy, gdy Wstecz zamknął okno.
- if(keepCurrentPage&&!armManuBackGuard())manuBackGuardReady=false;
+ // Przy cofnięciu z modalu przywróć strażnika dla pozostałych kartek.
+ // Odbuduj go również, jeśli przeglądarka oddała wpis bez znacznika.
+ if((keepCurrentPage||!inManuHistory)&&!armManuBackGuard())manuBackGuardReady=false;
 }
 function initManuBackGuard(){
  if(!window.history?.pushState||!window.history?.replaceState)return;
  try{
-  if(window.history.state?.manuBackGuard!==1){
-   const existing=window.history.state&&typeof window.history.state==='object'?window.history.state:{};
-   window.history.replaceState({...existing,manuBackRoot:1},'');
-   if(!armManuBackGuard())return;
-  }
+  // Przy każdym uruchomieniu PWA tworzymy świeżą parę root + guard.
+  // Przestarzały manuBackGuard w odtworzonej sesji nie dowodzi istnienia
+  // rzeczywistego poprzedniego wpisu w historii przeglądarki.
+  const existing=window.history.state&&typeof window.history.state==='object'?window.history.state:{};
+  const {manuBackGuard:oldGuard,manuBackRoot:oldRoot,...other}=existing;
+  window.history.replaceState({...other,manuBackRoot:1},'');
+  if(!armManuBackGuard())return;
   manuBackGuardReady=true;
   window.addEventListener('popstate',onManuBack);
  }catch(e){
