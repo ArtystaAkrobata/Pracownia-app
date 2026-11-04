@@ -3339,3 +3339,45 @@ body.gallery-lightbox-open{overflow:hidden}
  }
  .notebook-page .manu-draft-note .btn{width:100%;text-align:center}
 }
+
+/* MANU 3.19.0 · etap 14.1: personalizacja bez zbędnego obciążenia ustawień */
+.manu-personalization .manu-personalization-subtitle{
+ font-size:11px;
+ font-weight:750;
+ letter-spacing:.07em;
+ text-transform:uppercase;
+ color:#d7b69a;
+ margin:17px 0 5px;
+ padding-top:13px;
+ border-top:1px solid #594536;
+}
+.manu-personalization .smart-settings-check{
+ min-height:42px;
+}
+.manu-personalization-footer{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ flex-wrap:wrap;
+ margin-top:10px;
+ padding-top:13px;
+ border-top:1px solid #594536;
+}
+.manu-personalization-footer p{
+ flex:1 1 200px;
+ margin:0;
+ line-height:1.6;
+}
+.manu-personalization-footer .btn{
+ min-height:42px;
+ max-width:100%;
+ white-space:normal;
+}
+@media(max-width:520px){
+ .manu-personalization-footer{
+  flex-direction:column;
+  align-items:stretch;
+ }
+ .manu-personalization-footer .btn{width:100%}
+}
