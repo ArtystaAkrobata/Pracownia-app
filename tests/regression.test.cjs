@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1031,4 +1031,80 @@ test('Etap 15.5: PDF i rozliczenie projektu są niezależne od zapisanej wyceny'
  assert.equal(finance.received,250);
  assert.equal(finance.advance,150);
  assert.equal(JSON.stringify(api.getState().projects),before);
+});
+
+
+test('Etap 16.1: raport kontroluje dane bez zapisywania lub modyfikacji pamięci', async () => {
+ const {api,context,nodes,persisted}=boot({
+  version:18,projects:[job('a',{title:'Lustro'}),job('b',{title:'Warsztat'})],tasks:[]
+ });
+ api.useLocalStorage();
+ assert.equal(await api.save(),true);
+ api.getState().projects.push(job('c',{title:'Dodatkowa praca'}));
+ assert.equal(await api.save(),true);
+ context.navigator.storage={persisted:async()=>true};
+ const panel={innerHTML:''},button={disabled:false};
+ nodes['#manu-security-audit']=panel;
+ nodes['#manu-security-check']=button;
+ const snapshot=persisted.get('snapshot'),previous=persisted.get('safety-previous-v1');
+ const before=JSON.stringify(api.getState());
+ await api.runSecurityAudit();
+ assert.equal(button.disabled,false);
+ assert.match(panel.innerHTML,/Bieżący zapis/);
+ assert.match(panel.innerHTML,/Poprzedni zapis/);
+ assert.match(panel.innerHTML,/Ochrona pamięci/);
+ assert.match(panel.innerHTML,/Zgodny/);
+ assert.match(panel.innerHTML,/Czytelny/);
+ assert.match(panel.innerHTML,/Przyznana/);
+ assert.match(panel.innerHTML,/2 projektów/);
+ assert.equal(JSON.stringify(api.getState()),before);
+ assert.equal(persisted.get('snapshot'),snapshot);
+ assert.equal(persisted.get('safety-previous-v1'),previous);
+});
+
+test('Etap 16.1: uszkodzony zapis zostaje pokazany jako błąd bez nadpisywania', async () => {
+ const {api,context,nodes,persisted}=boot({version:18,projects:[job('safe')],tasks:[]});
+ api.useLocalStorage();
+ assert.equal(await api.save(),true);
+ persisted.set('snapshot','{invalid data');
+ context.navigator.storage={persisted:async()=>false};
+ nodes['#manu-security-audit']={innerHTML:''};
+ const stateBefore=JSON.stringify(api.getState());
+ await api.runSecurityAudit();
+ const output=nodes['#manu-security-audit'].innerHTML;
+ assert.match(output,/Wykryto problem wymagający uwagi/);
+ assert.match(output,/Błąd/);
+ assert.match(output,/Nieprzyznana/);
+ assert.equal(persisted.get('snapshot'),'{invalid data');
+ assert.equal(JSON.stringify(api.getState()),stateBefore);
+});
+
+test('Etap 16.1: poprawna kopia jest rozpoznawana, brak poprzedniej nie jest udawany', async () => {
+ const {api,context,nodes}=boot({version:18,projects:[job('only')],tasks:[]});
+ api.useLocalStorage();
+ await api.save();
+ const current=api.securityAuditSnapshot(api.getState());
+ assert.equal(current.status,'ok');
+ assert.equal(current.summary.projects,1);
+ assert.equal(api.securityAuditSnapshot(null).status,'missing');
+ assert.equal(api.securityAuditSnapshot('{bad').status,'invalid');
+ context.navigator.storage={};
+ nodes['#manu-security-audit']={innerHTML:''};
+ await api.runSecurityAudit();
+ const html=nodes['#manu-security-audit'].innerHTML;
+ assert.match(html,/Poprzedni zapis/);
+ assert.match(html,/>Brak</);
+ assert.match(html,/Nieznana/);
+ assert.match(html,/nie potwierdza posiadania pobranego pliku JSON/);
+});
+
+test('Etap 16.1: raport zabezpiecza treść przed wstrzyknięciem HTML', () => {
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ const checked=api.securityAuditSnapshot({version:18,projects:[
+  job('x',{title:'<img src=x onerror=alert(1)>'})],tasks:[]});
+ assert.equal(checked.status,'ok');
+ assert.equal(checked.summary.projects,1);
+ const markup=api.securityAuditMarkup();
+ assert.doesNotMatch(markup,/<script/);
+ assert.match(api.settingsPage(),/data-action="security-audit"/);
 });
