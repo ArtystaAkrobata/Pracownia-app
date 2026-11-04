@@ -124,8 +124,7 @@ function page(){
  const custom=api?.getState()?.templates||[],filtered=custom
   .filter(t=>[t.name,t.title,t.type].some(v=>String(v||'').toLocaleLowerCase('pl').includes(search.toLocaleLowerCase('pl'))));
  const opening='<div class="template-heading"><h1>Szablony projektów</h1><p>Powtarzalne realizacje, warsztaty i kosztorysy. Wybierz wzór, dostosuj pola i dopiero potem zapisz projekt.</p>'+
-  '<div class="template-toolbar"><button class="btn secondary" data-action="template-back" type="button">Wróć do projektów</button>'+
-  '<button class="btn" data-action="template-new" type="button">+ Nowy szablon</button></div></div>';
+  '<div class="template-toolbar"><button class="btn" data-action="template-new" type="button">+ Nowy szablon</button></div></div>';
  const presets='<section class="template-section"><div class="section-head"><h2>Gotowe wzory</h2></div><div class="template-grid">'+
  builtins.map(x=>card(sanitize(x),true)).join('')+'</div></section>';
  const own='<section class="template-section"><div class="section-head"><h2>Moje szablony <span>('+custom.length+')</span></h2></div>'+
