@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.25.0';
+const APP_VERSION='3.25.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1443,7 +1443,7 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.18.2',
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.25.1',
   './gallery.js?v=3.13.0','./templates.js?v=3.14.1'
  ];
  try{
