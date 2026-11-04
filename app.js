@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.3';
+const APP_VERSION='3.19.4';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -63,6 +63,21 @@ function quickAccessMarkup(){
   <div class="manu-quick-buttons">${actions.map(([id,label,ic])=>`<button type="button" class="manu-quick-button" data-action="${id}">${icon(ic)}<span>${label}</span></button>`).join('')}</div>
  </section>`;
 }
+function quickActionOrderMarkup(){
+ const selected=uiPreferences.quickActions;
+ if(!selected.length)return '<p class="muted tiny">Zaznacz przynajmniej jeden skrót, aby ustawić kolejność.</p>';
+ return '<div class="manu-quick-order-list" role="list" aria-label="Kolejność szybkich działań">'+selected.map((id,index)=>{
+  const entry=UI_QUICK_ACTIONS.find(item=>item[0]===id);
+  if(!entry)return '';
+  const label=entry[1];
+  return '<div class="manu-quick-order-row" role="listitem">'+
+   '<span class="manu-quick-order-title">'+(index+1)+'. '+label+'</span>'+
+   '<span class="manu-quick-order-controls">'+
+    '<button type="button" data-action="ui-quick-move" data-id="'+id+'" data-direction="up" aria-label="Przesuń '+label+' wyżej" '+(index===0?'disabled':'')+'>↑</button>'+
+    '<button type="button" data-action="ui-quick-move" data-id="'+id+'" data-direction="down" aria-label="Przesuń '+label+' niżej" '+(index===selected.length-1?'disabled':'')+'>↓</button>'+
+   '</span></div>';
+ }).join('')+'</div>';
+}
 function personalizationMarkup(){
  const p=uiPreferences;
  const screens=[
@@ -94,6 +109,7 @@ function personalizationMarkup(){
   <div class="manu-quick-preferences">
    ${UI_QUICK_ACTIONS.map(([id,label])=>`<label class="smart-settings-check"><input type="checkbox" data-manu-quick="${id}" ${p.quickActions.includes(id)?'checked':''}><span>${label}</span></label>`).join('')}
   </div>
+  <div class="manu-quick-order" aria-live="polite">${quickActionOrderMarkup()}</div>
   <div class="manu-personalization-subtitle">Widoczność sekcji na ekranie Start</div>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-command" ${p.showCommand?'checked':''}><span>Centrum dowodzenia</span></label>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-recent" ${p.showRecent?'checked':''}><span>Ostatnie projekty</span></label>
@@ -2088,7 +2104,21 @@ case 'list-more':{
  event.prompt();
  event.userChoice.finally(()=>refreshPwaPanel());
 }break;
-case 'ui-prefs-reset':{
+case 'ui-quick-move':{
+  const current=uiPreferences.quickActions;
+  const from=current.indexOf(id);
+  const to=b.dataset.direction==='up'?from-1:b.dataset.direction==='down'?from+1:-1;
+  if(from<0||to<0||to>=current.length)break;
+  const next=[...current];
+  [next[from],next[to]]=[next[to],next[from]];
+  if(updateUiPreferences({quickActions:next})){
+   const order=$('.manu-quick-order');
+   if(order)order.innerHTML=quickActionOrderMarkup();
+   toast('Zmieniono kolejność szybkich działań');
+  }else toast('Nie udało się zapisać kolejności skrótów');
+  break;
+ }
+ case 'ui-prefs-reset':{
   if(updateUiPreferences(DEFAULT_UI_PREFS)){
    const panel=$('.manu-personalization');
    if(panel)panel.outerHTML=personalizationMarkup();
@@ -2278,7 +2308,11 @@ function events(){
    toast('Możesz wybrać maksymalnie trzy szybkie działania.');
    return;
   }
-  if(updateUiPreferences({quickActions:requested}))toast('Zapisano szybkie działania MANU');
+  if(updateUiPreferences({quickActions:requested})){
+   const order=$('.manu-quick-order');
+   if(order)order.innerHTML=quickActionOrderMarkup();
+   toast('Zapisano szybkie działania MANU');
+  }
   else{
    e.target.checked=current.includes(id);
    toast('Nie udało się zapisać szybkich działań.');
