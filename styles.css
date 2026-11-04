@@ -1787,6 +1787,68 @@ body{background:#08090b;color:var(--text)}
  .quote-doc-notes{break-inside:avoid}
 }
 
+
+/* MANU 3.21.0 — etap 15.2: konfiguracja i profesjonalne dokumenty klientów */
+.quote-document-options{
+ margin:14px 0 17px;
+ border:1px solid #d5b393;border-radius:12px;overflow:hidden;
+ background:linear-gradient(145deg,#f7ecdc,#ead8c2);color:#573b29
+}
+.quote-document-options>summary{
+ display:flex;align-items:center;gap:9px;
+ padding:14px;cursor:pointer;list-style:none;
+ font-size:13px;font-weight:750
+}
+.quote-document-options>summary::-webkit-details-marker{display:none}
+.quote-document-options>summary::marker{content:""}
+.quote-document-options>summary .ico{width:18px;height:18px;color:#9e6547;flex:none}
+.quote-document-options>summary span{margin-left:auto;font-weight:600;font-size:10px;color:#987a68}
+.quote-document-options>summary:focus-visible{outline:2px solid #a56c49;outline-offset:-3px}
+.quote-document-options[open]>summary{border-bottom:1px solid #d5b393}
+.quote-document-options-body{padding:12px 14px 15px}
+.quote-document-options-body .field{min-width:0}
+.quote-document-options-body textarea,.quote-document-options-body select{width:100%;max-width:100%;min-width:0}
+.quote-document-options-body p{line-height:1.5;margin:3px 0 0}
+.quote-doc-intro{margin:10px 0 18px;padding:12px 15px;border-left:3px solid #b88765;background:#faf5ee}
+.quote-doc-intro h3,.quote-doc-term h3{
+ margin:0 0 6px;color:#8b6548;font:700 9px Arial,sans-serif;
+ letter-spacing:.12em;text-transform:uppercase
+}
+.quote-doc-intro p,.quote-doc-term p{
+ margin:0;white-space:pre-wrap;overflow-wrap:anywhere;
+ color:#4c4039;line-height:1.5;font-size:10.5px
+}
+.quote-doc-terms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0 19px}
+.quote-doc-term{padding:13px 14px;border:1px solid #dfcfbd;border-radius:3px;background:#faf7f2;break-inside:avoid}
+.quote-doc-term h3{margin-bottom:8px}
+.quote-document--minimal .quote-doc-header{border-bottom-color:#424242}
+.quote-document--minimal .quote-doc-brand strong,.quote-document--minimal .quote-doc-identity>span,
+.quote-document--minimal h2,.quote-document--minimal .quote-doc-grand,
+.quote-document--minimal .quote-doc-totals .quote-doc-grand{color:#282828}
+.quote-document--minimal .quote-doc-parties>div{
+ border-left:2px solid #777;background:#f7f7f7
+}
+.quote-document--minimal .quote-doc-table th{background:#eaeaea;color:#222;border-bottom:2px solid #444}
+.quote-document--minimal .quote-doc-totals .quote-doc-grand{border-top-color:#444}
+.quote-document--minimal .quote-doc-intro{background:#f7f7f7;border-left-color:#888}
+.quote-document--minimal .quote-doc-term{background:#fff;border-color:#ddd}
+.quote-document--minimal .quote-doc-intro h3,.quote-document--minimal .quote-doc-term h3,
+.quote-document--minimal .quote-doc-meta small,.quote-document--minimal .quote-doc-parties small{color:#555}
+@media(max-width:690px){
+ .quote-document-options-body .form-cols{grid-template-columns:minmax(0,1fr)}
+ .quote-doc-terms{grid-template-columns:1fr}
+}
+@media print{
+ #quote-print-root .quote-doc-intro,
+ #quote-print-root .quote-doc-term{break-inside:avoid;page-break-inside:avoid}
+ #quote-print-root .quote-doc-terms{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #quote-print-root .quote-doc-intro p,
+ #quote-print-root .quote-doc-term p{font-size:9.2pt}
+ #quote-print-root .quote-document--minimal .quote-doc-table th{
+  background:#eee!important;color:#222!important
+ }
+}
+
 /* MANU 3.1.3 · Widoczny X na górze strony Wyceny */
 .open-notebook-content .quote-close-row{
  display:flex;
