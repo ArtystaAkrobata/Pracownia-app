@@ -65,7 +65,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     'globalThis.__MANU_TEST = {',
     ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
-    ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
+    ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
     ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot,',
     ' renderProjectGrid, renderClientList, renderTaskList, filteredProjects, filteredClients, filteredTasks, liveTimerRefresh,',
@@ -647,4 +647,79 @@ test('Etap 15.2: zmiana rodzaju dokumentu dostosowuje tylko domyślne tytuły', 
  assert.equal(api.quoteTitleForDocumentType('Oferta cenowa','quote'),'Nowa wycena');
  assert.equal(api.quoteTitleForDocumentType('Oferta — Lustro','quote'),'Wycena — Lustro');
  assert.equal(api.quoteTitleForDocumentType('Mój indywidualny tytuł','offer'),'Mój indywidualny tytuł');
+});
+
+
+test('Etap 15.3: termin i status zaległości uwzględniają daty oraz nie obejmują anulowanych', () => {
+ const {api}=boot({version:18,tasks:[],projects:[
+  job('late',{price:400,paid:100,paymentDue:'2026-11-03',payments:[{date:'2026-11-01',kind:'zaliczka',amount:50}]}),
+  job('today',{price:200,paid:0,paymentDue:'2026-11-04'}),
+  job('soon',{price:120,paid:0,paymentDue:'2026-11-10'}),
+  job('later',{price:150,paid:0,paymentDue:'2026-11-17'}),
+  job('undated',{price:80,paid:0}),
+  job('paid',{price:100,paid:100,paymentDue:'2026-11-01'}),
+  job('cancelled',{price:999,paid:0,status:'Anulowane',paymentDue:'2026-11-01'})
+ ]});
+ const d=api.paymentControlData('2026-11-04');
+ assert.equal(d.rows.length,5);
+ assert.equal(d.rows.map(x=>x.status).join(','),'late,today,soon,later,none');
+ assert.equal(d.rows[0].unpaid,250);
+ assert.equal(d.overdue,250);
+ assert.equal(d.advance,50);
+ assert.equal(d.remaining,770);
+ assert.equal(d.received,300);
+ assert.doesNotMatch(api.paymentControlRows('late'),/Lustro cancelled/);
+});
+
+test('Etap 15.3: zaliczki warsztatu pochodzą tylko od potwierdzonych uczestników', () => {
+ const {api}=boot({version:18,tasks:[],projects:[{
+  id:'w',title:'Warsztaty gotyku',type:'Warsztat',financeMode:'participants',
+  paymentDue:'2026-11-06',status:'Planowane',price:1000,paid:900,
+  payments:[{amount:700,kind:'zaliczka',date:'2026-11-01'}],
+  participants:[
+   {id:'a',name:'Anna',fee:300,paidAmount:50,bookingStatus:'confirmed',
+    payments:[{amount:100,kind:'zaliczka',date:'2026-11-02'}]},
+   {id:'b',name:'Bartek',fee:200,paidAmount:0,bookingStatus:'confirmed',
+    payments:[{amount:60,kind:'wplata',date:'2026-11-02'}]},
+   {id:'c',name:'Rezerwa',fee:999,paidAmount:0,bookingStatus:'waitlist',
+    payments:[{amount:900,kind:'zaliczka',date:'2026-11-02'}]}
+  ]}]});
+ const d=api.paymentControlData('2026-11-04');
+ assert.equal(d.rows.length,1);
+ assert.equal(d.rows[0].participantsMode,true);
+ assert.equal(d.rows[0].paid,210);
+ assert.equal(d.rows[0].unpaid,290);
+ assert.equal(d.advance,100);
+ assert.equal(d.rows[0].status,'soon');
+ const markup=api.paymentControlRows();
+ assert.match(markup,/Uczestnicy i wpłaty/);
+ assert.doesNotMatch(markup,/Dodaj wpłatę/);
+});
+
+test('Etap 15.3: filtrowanie listy nie przewija strony ani nie zmienia danych', () => {
+ const {api,callbacks,nodes,context}=boot({version:18,tasks:[],projects:[
+  job('late',{paymentDue:'2026-11-03'}),
+  job('nodat',{price:240})
+ ]});
+ let html='';
+ nodes['#payment-control-results']={set innerHTML(next){html=next;}};
+ context.window.scrollTo=()=>{throw Error('Lista nie może przewijać ekranu na górę')};
+ api.events();
+ const before=JSON.stringify(api.getState());
+ callbacks.change[0].fn({target:{id:'payment-control-filter',value:'late'}});
+ assert.match(html,/Pokaż kolejne|Nie ma należności|Po terminie/);
+ assert.equal(JSON.stringify(api.getState()),before);
+ assert.match(api.paymentControlPanel(),/Należności i zaliczki/);
+});
+
+test('Etap 15.3: panel koduje niebezpieczne nazwy i otwiera rozliczenie projektu', () => {
+ const {api,context}=boot({version:18,tasks:[],projects:[
+  job('x',{title:'<img src=x onerror=alert(1)>',paymentDue:'2026-11-01',price:50})
+ ]});
+ const markup=api.paymentControlRows('all');
+ assert.match(markup,/&lt;img/);
+ assert.doesNotMatch(markup,/<img src=x/);
+ api.handleAction({dataset:{action:'payment-control-open',id:'x'}});
+ assert.equal(api.opened('x','finance'),true);
+ assert.match(context.__lastModal.body,/Finanse i koszty/);
 });
