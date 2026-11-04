@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, validateBackup, metrics, expenses, projectIncome, projectPaid,',
+    ' normalize, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -473,4 +473,36 @@ test('Mobile: zmiana filtra typu projektów nie przebudowuje całego notesu', ()
   assert.match(html,/Hobbit tylko warsztat/);
   assert.doesNotMatch(html,/Lustro tylko zlecenie/);
   assert.equal(api.getListVisible().projects,40);
+});
+
+
+test('Personalizacja: skróty są filtrowane, unikalne i ograniczone do trzech', () => {
+  const {api}=boot();
+  const prefs=api.normalizeUiPreferences({
+    quickActions:['new-project','new-project','invalid','new-task','quote-new','client-new']
+  });
+  assert.equal(JSON.stringify(prefs.quickActions),JSON.stringify(['new-project','new-task','quote-new']));
+  assert.match(api.quickActionOrderMarkup(),/Nowe zadanie/);
+});
+
+test('Personalizacja: przesuwanie skrótu zmienia kolejność bez przewijania strony', () => {
+  const {api,context,nodes,persisted}=boot();
+  let markup='';
+  nodes['.manu-quick-order']={set innerHTML(value){markup=value;}};
+  context.window.scrollTo=()=>{throw Error('Nie wolno przewijać strony');};
+  api.handleAction({dataset:{action:'ui-quick-move',id:'quote-new',direction:'up'}});
+  assert.equal(JSON.stringify(api.getUiPreferences().quickActions),JSON.stringify(['quote-new','new-task']));
+  assert.match(markup,/Nowa wycena/);
+  const first=api.quickAccessMarkup();
+  assert.ok(first.indexOf('Nowa wycena')<first.indexOf('Nowe zadanie'));
+  assert.equal(JSON.parse(persisted.get('manu-ui-preferences-v1')).quickActions[0],'quote-new');
+  api.handleAction({dataset:{action:'ui-quick-move',id:'quote-new',direction:'up'}});
+  assert.equal(JSON.stringify(api.getUiPreferences().quickActions),JSON.stringify(['quote-new','new-task']));
+});
+
+test('Personalizacja: ukrycie wszystkich skrótów ukrywa pasek Start', () => {
+  const {api}=boot();
+  assert.equal(api.updateUiPreferences({quickActions:[]}),true);
+  assert.equal(api.quickAccessMarkup(),'');
+  assert.match(api.quickActionOrderMarkup(),/Zaznacz przynajmniej jeden skrót/);
 });
