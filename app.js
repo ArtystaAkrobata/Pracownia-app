@@ -2167,7 +2167,7 @@ function demoSnapshot(){
    notes:'Przykład bez danych osobowych.',createdAt:now()}
  ];
  draft.tasks=[{id:'demo-zadanie',title:'Przygotować projekt graweru (demo)',due:future(3),done:false,projectId:'demo-zlecenie',createdAt:now()}];
- draft.quotes=[{id:'demo-wycena',number:'MANU-2026-001',title:'Wycena — lustro (demo)',
+ draft.quotes=[{id:'demo-wycena',number:'MANU-'+day.slice(0,4)+'-001',title:'Wycena — lustro (demo)',
   client:'Pracownia Przykład',projectId:'demo-zlecenie',issued:day,documentType:'quote',
   items:[{id:'demo-pozycja',description:'Lustro z grawerem',quantity:1,unit:'szt.',unitPrice:550}],
   discount:0,createdAt:now()}];
@@ -2178,7 +2178,7 @@ async function beginDemo(){
  if(storageBlocked){alert('Zapis lokalny jest wstrzymany. Najpierw zabezpiecz swoje dane w Ustawieniach.');return;}
  if($('.modal')||quoteSubmissionPending){toast('Zamknij bieżący formularz przed rozpoczęciem demo.');return;}
  await writeQueue;
- if(storageBlocked||$('.modal')){toast('Sprawdź stan zapisu i zamknij formularze przed demo.');return;}
+ if(storageBlocked||$('.modal')||window.MANUCloud?.isBusy?.()){toast('Zakończ zapisy lub kontrolę chmury przed uruchomieniem demo.');return;}
  window.MANUCloud?.pauseForDemo?.();
  demoSession={realState:state,realView:view,realScrollX:window.scrollX,realScrollY:window.scrollY,
   homeReturnContext,projectReturnContext,projectToolsExpanded,history:[...manuPageHistory]};
@@ -2934,8 +2934,10 @@ function startIntro(){
  window.setTimeout(dismissIntro,1760);
 }
 async function applyCloudSnapshot(data,expectedLastSaved=null){
+ if(demoSession)return false;
  const incoming=validateBackup(data);
  await writeQueue;
+ if(demoSession)return false;
  // Nie wolno zastąpić danych, gdy lokalny zapis wciąż trwa lub zmienił się podczas pobierania.
  if(storageBlocked||pendingWrites>0||document.querySelector('.modal'))return false;
  if(expectedLastSaved!==null&&state.lastSaved!==expectedLastSaved)return false;
@@ -2977,9 +2979,10 @@ async function init(){
  initManuBackGuard();
  void window.MANUCloud?.init?.({
   getState:()=>state,
+  isDemo:()=>!!demoSession,
   waitForWrites:()=>writeQueue,
   isStorageBlocked:()=>storageBlocked,
-  canReplace:()=>!storageBlocked&&!document.querySelector('.modal, .cloud-password-details[open], #cloud-reset-password-form'),
+  canReplace:()=>!demoSession&&!storageBlocked&&!document.querySelector('.modal, .cloud-password-details[open], #cloud-reset-password-form'),
   refresh:()=>{if(view==='settings')render();},
   refreshHome:()=>{if(view==='home')render();},
   openSettings:()=>{view='settings';render();window.scrollTo(0,0);},
