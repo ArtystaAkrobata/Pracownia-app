@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.23.2';
+const APP_VERSION='3.24.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -730,6 +730,7 @@ function quoteLastIssuer(){
 /* MANU 3.23.2 — krok wstecz: podgląd → edycja/kopia → ten sam podgląd.
    Dotyczy tylko dokumentów; historia kart i rozliczenia pozostają nienaruszone. */
 let quoteModalReturn=null;
+let quoteSubmissionPending=false;
 function rememberQuotePreview(id){
  const actions=$('.quote-preview-actions'),current=$('.modal');
  quoteModalReturn=actions?.dataset?.quotePreview===id&&current
@@ -2462,7 +2463,9 @@ case 'pwa-reload':{
  break;
 }}}
 async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');clientDetail(client.id);break;}case 'quote-form':{
+ if(quoteSubmissionPending)return;
  const quoteId=String(form.dataset.quote||''),existing=(state.quotes||[]).find(q=>q.id===quoteId);
+ if(quoteId&&!existing){alert('Ta wycena nie istnieje już w pamięci MANU. Skopiuj treść formularza przed zamknięciem.');return;}
  const title=String(data.get('title')||'').trim().slice(0,140),issued=validDate(data.get('issued')),rawValidity=String(data.get('validUntil')||''),validUntil=validDate(rawValidity);
  const projectId=String(data.get('projectId')||''),items=quoteFormItems(form);
  const discountRaw=Number(data.get('discount')||0);
@@ -2479,11 +2482,30 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  deliveryTerms:String(data.get('deliveryTerms')||'').trim().slice(0,360),
  paymentTerms:String(data.get('paymentTerms')||'').trim().slice(0,360),
  notes:String(data.get('notes')||'').trim().slice(0,900)};
+ const previousQuotes=structuredClone(state.quotes);
+ const previousCounters={...state.quoteCounters};
  let quote;
  if(existing){Object.assign(existing,update);quote=existing}
  else{if(state.quotes.length>=3000){alert('Osiągnięto limit 3000 wycen.');return}quote={...update,id:uid(),number:quoteNewNumber(),createdAt:now()};state.quotes.push(quote);const quoteYear=quote.number.slice(5,9);state.quoteCounters=state.quoteCounters||{};state.quoteCounters[quoteYear]=Number(quote.number.slice(10))}
+ // Nie potwierdzaj zapisu i nie zamykaj formularza, zanim baza go zatwierdzi.
+ // Jeśli zapis się nie uda, przywróć poprzedni rejestr i zachowaj otwarty formularz.
+ const submitButton=form.querySelector('button[type="submit"]');
+ quoteSubmissionPending=true;
+ if(submitButton)submitButton.disabled=true;
+ let saved=false;
+ try{saved=await save();}
+ finally{
+  quoteSubmissionPending=false;
+  if(submitButton)submitButton.disabled=false;
+ }
+ if(!saved){
+  state.quotes=previousQuotes;
+  state.quoteCounters=previousCounters;
+  alert('Nie zapisano wyceny. Formularz pozostał otwarty — sprawdź pamięć w Ustawieniach i zrób kopię danych przed zamknięciem MANU.');
+  return;
+ }
  const scrollY=window.scrollY;
- closeModal();view='quotes';save();render();window.scrollTo(0,scrollY);
+ closeModal();view='quotes';render();window.scrollTo(0,scrollY);
  quotePreview(quote.id);toast(existing?'Zapisano zmiany wyceny':'Zapisano nową wycenę');
  break;
 }case 'project-form':{const templateId=String(form.dataset.template||'');const selectedTemplate=templateId?window.MANUTemplates?.findTemplate?.(templateId):null;const title=String(data.get('title')||'').trim();if(!title){alert('Podaj nazwę projektu');return;}const existing=state.projects.find(p=>p.id===id);const previousStatus=existing?.status;
