@@ -67,7 +67,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
-    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot, onManuBack,',
+    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot, onManuBack, initManuBackGuard, rememberManuPage, getView:()=>view, getPageHistory:()=>[...manuPageHistory],',
     ' setBackGuardReady: value => {manuBackGuardReady=!!value;},',
     ' renderProjectGrid, renderClientList, renderTaskList, filteredProjects, filteredClients, filteredTasks, liveTimerRefresh,',
     ' getListVisible: () => ({...listVisible}),',
@@ -1281,4 +1281,80 @@ test('Etap 16.3: przykład dla twórców zawiera warsztat, zlecenie, zadanie i w
  assert.equal(sample.clients.length,2);
  assert.equal(sample.projects.find(p=>p.type==='Warsztat').participants.length,2);
  assert.match(api.settingsPage(),/Uruchom bezpieczny tryb demo/);
+});
+
+
+/* MANU 3.26.1 — rzeczywista sekwencja pushState / popstate na Androidzie */
+function fakeAndroidHistory(context,initial={manuBackGuard:1}){
+ const listeners={};
+ const entries=[{state:initial}];
+ let cursor=0,exits=0;
+ context.window.addEventListener=(name,fn)=>{listeners[name]=fn;};
+ const history={
+  state:entries[cursor].state,
+  pushState(state){
+   entries.splice(cursor+1);
+   entries.push({state});
+   cursor=entries.length-1;
+   this.state=state;
+  },
+  replaceState(state){
+   entries[cursor]={state};
+   this.state=state;
+  },
+  back(){
+   if(cursor<=0){exits++;return;}
+   cursor--;
+   this.state=entries[cursor].state;
+   listeners.popstate?.({state:this.state});
+  }
+ };
+ context.window.history=history;
+ return {history,entries,get cursor(){return cursor;},get exits(){return exits;}};
+}
+test('MANU 3.26.1: odtworzony stary guard nie zastępuje nowego wpisu historii Androida',()=>{
+ const {api,context}=boot({version:18,projects:[],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ assert.equal(android.entries.length,2);
+ assert.equal(android.entries[0].state.manuBackRoot,1);
+ assert.equal(android.entries[0].state.manuBackGuard,undefined);
+ assert.equal(android.entries[1].state.manuBackGuard,1);
+});
+test('MANU 3.26.1: film — Start → Projekty → Test → Wstecz → Wstecz wraca do Startu',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[job('test',{title:'Test'})],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ assert.equal(api.getView(),'home');
+ api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
+ assert.equal(api.getView(),'projects');
+ assert.equal(api.getPageHistory().length,1);
+ nodes['.modal']={scrollTop:0};
+ android.history.back(); // Wstecz z widoku szczegółów projektu
+ delete nodes['.modal']; // W prawdziwym DOM closeModal usuwa modal; harness ma stub.
+ assert.equal(api.getView(),'projects');
+ assert.equal(api.getPageHistory().length,1);
+ android.history.back(); // Wstecz z rejestru projektów
+ assert.equal(api.getView(),'home');
+ assert.equal(api.getPageHistory().length,0);
+ assert.equal(android.exits,0,'Nie wolno zamknąć MANU po drugim cofnięciu');
+});
+test('MANU 3.26.1: cofnięcie ze Startu nie wywołuje kaskadowego history.back()',()=>{
+ const {api,context}=boot({version:18,projects:[],tasks:[]});
+ const android=fakeAndroidHistory(context,null);
+ api.initManuBackGuard();
+ assert.equal(android.entries.length,2);
+ android.history.back();
+ assert.equal(android.exits,0,'Pojedynczy gest nie może spowodować dwóch cofnięć');
+ assert.equal(api.getView(),'home');
+});
+test('MANU 3.26.1: niespodziewany stan null przy zamykaniu okna odbudowuje guard',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[],tasks:[]});
+ const android=fakeAndroidHistory(context,{});
+ api.initManuBackGuard();
+ nodes['.modal']={scrollTop:0};
+ const count=android.entries.length;
+ api.onManuBack({state:null});
+ assert.equal(android.entries.length,count+1);
+ assert.equal(android.entries.at(-1).state.manuBackGuard,1);
 });
