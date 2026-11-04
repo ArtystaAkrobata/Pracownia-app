@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -560,4 +560,82 @@ test('Etap 15.1: podpowiedź kosztu jest bezpiecznie kodowana i nie zmienia wyce
   assert.match(doc,/a@example.test/);
   assert.match(doc,/Adres 5/);
   assert.match(doc,/200/);
+});
+
+
+test('Etap 15.2: wcześniejsza wycena zachowuje format i dotychczasowe pola', () => {
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ const old=api.normalizeQuotes([{
+  id:'legacy',number:'MANU-2026-002',issued:'2026-10-20',title:'Lustro',
+  items:[{description:'Matowienie',quantity:1,unit:'szt.',unitPrice:450}]
+ }])[0];
+ assert.equal(old.documentType,'quote');
+ assert.equal(old.documentStyle,'classic');
+ assert.equal(old.introduction,'');
+ assert.equal(old.deliveryTerms,'');
+ assert.equal(old.paymentTerms,'');
+ const html=api.quoteDocument(old);
+ assert.match(html,/WARTOŚĆ WYCENY/);
+ assert.match(html,/class="quote-document quote-document--classic"/);
+ assert.doesNotMatch(html,/quote-doc-terms/);
+ assert.doesNotMatch(html,/quote-doc-intro/);
+});
+
+test('Etap 15.2: oferta cenowa ma sekcje warunków i wariant minimalistyczny', () => {
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ const raw={
+  id:'offer',number:'MANU-2026-003',issued:'2026-11-04',title:'Oferta dla studia',
+  documentType:'offer',documentStyle:'minimal',
+  introduction:'Projekt i przygotowanie lustra.',
+  deliveryTerms:'Do 14 dni po akceptacji',paymentTerms:'Przelew po odbiorze',
+  items:[{description:'Lustro Ø50',quantity:2,unit:'szt.',unitPrice:250}]
+ };
+ const q=api.normalizeQuotes([raw])[0];
+ assert.equal(api.quoteDocumentLabel(q),'OFERTA CENOWA');
+ assert.equal(api.quoteDocumentStyle(q),'minimal');
+ const html=api.quoteDocument(q);
+ assert.match(html,/quote-document--minimal/);
+ assert.match(html,/OFERTA CENOWA/);
+ assert.match(html,/WARTOŚĆ OFERTY/);
+ assert.match(html,/Opis propozycji/);
+ assert.match(html,/Termin realizacji/);
+ assert.match(html,/Warunki płatności/);
+ assert.match(html,/Do 14 dni po akceptacji/);
+ assert.match(html,/Przelew po odbiorze/);
+ assert.match(html,/500/);
+ assert.doesNotMatch(html,/WARTOŚĆ WYCENY/);
+});
+
+test('Etap 15.2: treść dokumentu nie pozwala wstrzyknąć HTML', () => {
+ const {api,context}=boot({version:18,projects:[],tasks:[]});
+ const q=api.normalizeQuotes([{
+  id:'x',number:'MANU-2026-004',issued:'2026-11-04',title:'Test',
+  documentType:'offer',documentStyle:'minimal',
+  introduction:'<img src=x onerror=alert(1)>',
+  paymentTerms:'<script>bad()</script>',
+  items:[{description:'Usługa',quantity:1,unit:'szt.',unitPrice:100}]
+ }])[0];
+ const html=api.quoteDocument(q);
+ assert.doesNotMatch(html,/<img src=x/);
+ assert.doesNotMatch(html,/<script>/);
+ assert.match(html,/&lt;img/);
+ assert.match(html,/&lt;script&gt;/);
+ api.getState().quotes=[q];
+ api.quoteForm('',q.id);
+ assert.match(context.__lastModal.body,/name="documentType"/);
+ assert.match(context.__lastModal.body,/name="documentStyle"/);
+ assert.match(context.__lastModal.body,/name="introduction"/);
+ assert.match(context.__lastModal.body,/name="deliveryTerms"/);
+ assert.match(context.__lastModal.body,/name="paymentTerms"/);
+});
+
+test('Etap 15.2: błędne typy i style dokumentów przywracają wartości bezpieczne', () => {
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ const q=api.normalizeQuotes([{documentType:'other',documentStyle:'other',
+  introduction:'A'.repeat(1200),deliveryTerms:'B'.repeat(400),paymentTerms:'C'.repeat(500)}])[0];
+ assert.equal(q.documentType,'quote');
+ assert.equal(q.documentStyle,'classic');
+ assert.equal(q.introduction.length,1000);
+ assert.equal(q.deliveryTerms.length,360);
+ assert.equal(q.paymentTerms.length,360);
 });
