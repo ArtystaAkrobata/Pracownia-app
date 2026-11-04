@@ -62,12 +62,13 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     }
   };
   const expose = [
+    'const __MANU_REAL_MODAL = modal, __MANU_REAL_CLOSE = closeModal;',
     'globalThis.__MANU_TEST = {',
     ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
-    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot, onManuBack, initManuBackGuard, rememberManuPage, getView:()=>view, getPageHistory:()=>[...manuPageHistory],',
+    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot, onManuBack, initManuBackGuard, rememberManuPage, armManuProjectModalHistory, releaseManuProjectModalHistory, getProjectModalGuard:()=>manuProjectModalHistoryActive, useRealModalEffects:()=>{modal=__MANU_REAL_MODAL;closeModal=__MANU_REAL_CLOSE;}, getView:()=>view, getPageHistory:()=>[...manuPageHistory],',
     ' setBackGuardReady: value => {manuBackGuardReady=!!value;},',
     ' renderProjectGrid, renderClientList, renderTaskList, filteredProjects, filteredClients, filteredTasks, liveTimerRefresh,',
     ' getListVisible: () => ({...listVisible}),',
@@ -1357,4 +1358,78 @@ test('MANU 3.26.1: niespodziewany stan null przy zamykaniu okna odbudowuje guard
  api.onManuBack({state:null});
  assert.equal(android.entries.length,count+1);
  assert.equal(android.entries.at(-1).state.manuBackGuard,1);
+});
+
+
+test('MANU 3.26.2: prawdziwy projekt dostaje własny wpis historii przy otwieraniu',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[job('test',{title:'Test'})],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ api.useRealModalEffects();
+ nodes['#modal-root']={innerHTML:''};
+ nodes['#quote-print-root']={innerHTML:''};
+ api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
+ assert.equal(android.entries.length,3);
+ api.projectDetail('test');
+ assert.equal(android.entries.length,4);
+ assert.equal(android.entries.at(-1).state.manuProjectModal,1);
+ assert.equal(api.getProjectModalGuard(),true);
+ assert.match(nodes['#modal-root'].innerHTML,/MANU · KARTA REALIZACJI/);
+});
+test('MANU 3.26.2: dwa systemowe Wstecz — projekt → Projekty → Start, bez zamknięcia PWA',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[job('test',{title:'Test'})],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ api.useRealModalEffects();
+ nodes['#modal-root']={innerHTML:''};
+ nodes['#quote-print-root']={innerHTML:''};
+ api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
+ api.projectDetail('test');
+ nodes['.modal']={scrollTop:0,classList:{contains:()=>true}};
+ const entriesBefore=android.entries.length;
+ android.history.back();
+ delete nodes['.modal'];
+ assert.equal(api.getView(),'projects');
+ assert.equal(nodes['#modal-root'].innerHTML,'');
+ assert.equal(api.getProjectModalGuard(),false);
+ assert.equal(android.entries.length,entriesBefore,'Systemowy Wstecz nie tworzy nowego wpisu podczas popstate');
+ assert.equal(android.cursor,2);
+ android.history.back();
+ assert.equal(api.getView(),'home');
+ assert.equal(android.exits,0);
+});
+test('MANU 3.26.2: X z projektu i Wstecz prowadzi do Startu bez dodatkowego zamykania',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[job('test',{title:'Test'})],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ api.useRealModalEffects();
+ nodes['#modal-root']={innerHTML:''};
+ nodes['#quote-print-root']={innerHTML:''};
+ api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
+ api.projectDetail('test');
+ nodes['.modal']={scrollTop:0,classList:{contains:()=>true}};
+ api.handleAction({dataset:{action:'close'}});
+ delete nodes['.modal'];
+ assert.equal(nodes['#modal-root'].innerHTML,'');
+ assert.equal(api.getProjectModalGuard(),false);
+ assert.equal(android.history.state.manuBackGuard,1);
+ assert.equal(android.history.state.manuProjectModal,undefined);
+ android.history.back();
+ assert.equal(api.getView(),'home');
+ assert.equal(android.exits,0);
+});
+test('MANU 3.26.2: odświeżenie otwartej karty projektu nie dopisuje kolejnych pozycji historii',()=>{
+ const {api,context,nodes}=boot({version:18,projects:[job('test',{title:'Test'})],tasks:[]});
+ const android=fakeAndroidHistory(context,{manuBackGuard:1});
+ api.initManuBackGuard();
+ api.useRealModalEffects();
+ nodes['#modal-root']={innerHTML:''};
+ nodes['#quote-print-root']={innerHTML:''};
+ api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
+ api.projectDetail('test');
+ const count=android.entries.length;
+ nodes['.modal']={scrollTop:0,classList:{contains:()=>true}};
+ api.projectDetail('test');
+ assert.equal(android.entries.length,count,'Ponowne wyświetlenie projektu nie może tworzyć nowego wpisu');
+ assert.equal(api.getProjectModalGuard(),true);
 });
