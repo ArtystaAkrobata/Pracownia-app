@@ -1123,7 +1123,7 @@ function bootCloudComparison(){
   navigator:{onLine:true},
   location:{hash:'',search:''},
   localStorage:{getItem:()=>null,setItem:()=>{}},
-  URLSearchParams,
+  URLSearchParams:class{constructor(){}get(){return null;}},
   console
  };
  vm.runInNewContext(injected,sandbox,{filename:'cloud.js',timeout:3000});
