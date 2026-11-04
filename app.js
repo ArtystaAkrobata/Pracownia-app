@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.26.2';
+const APP_VERSION='3.27.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1588,7 +1588,7 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
  <p class="muted small">Aplikacja może działać bez sieci po wcześniejszym wczytaniu zasobów. Offline nie oznacza synchronizacji ani tworzenia kopii w chmurze.</p>
  <p id="manu-offline-check-status" class="manu-offline-check-status" role="status" aria-live="polite">${htmlEscape(offlineAuditMessage)}</p>
  <div class="settings-actions"><button type="button" class="btn secondary" data-action="offline-check">${icon('check')} Sprawdź gotowość offline</button><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
- <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Chcesz poznać funkcje bez wpisywania własnych danych? Uruchom oddzielny tryb demonstracyjny na fikcyjnych realizacjach. Nic z tej sesji nie trafi do Twojej bazy ani do chmury.</p><div class="settings-actions"><button class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button><button class="btn danger" data-action="clear">${icon('trash')} Usuń wszystkie dane</button></div></div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Konta i chmura wymagają konfiguracji Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
+ <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Chcesz poznać funkcje bez wpisywania własnych danych? Uruchom oddzielny tryb demonstracyjny na fikcyjnych realizacjach. Nic z tej sesji nie trafi do Twojej bazy ani do chmury.</p><div class="settings-actions"><button class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button><button class="btn danger" data-action="clear">${icon('trash')} Usuń wszystkie dane</button></div>${testerGuideMarkup()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Konta i chmura wymagają konfiguracji Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
 function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
@@ -2214,11 +2214,79 @@ function demoSettingsPage(){
   +'<div class="surface settings-group"><h3>Bezpieczne testowanie MANU</h3>'
   +'<p>Możesz tworzyć projekty, zadania, warsztaty i oferty na fikcyjnych danych. Żadne zmiany nie są zapisywane do prawdziwej bazy ani wysyłane do chmury.</p>'
   +'<p class="form-note">Wyjście lub ponowne uruchomienie MANU usuwa zmiany demonstracyjne. Konta, synchronizacja, galeria chmurowa i kopie JSON są w tym trybie niedostępne.</p>'
-  +'<button type="button" class="btn" data-action="demo-exit">Zakończ demo i wróć do swoich danych</button></div>';
+  +'<button type="button" class="btn" data-action="demo-exit">Zakończ demo i wróć do swoich danych</button>'+testerGuideMarkup()+'</div>';
 }
 function demoBanner(){
  return demoSession?'<div class="manu-demo-banner" role="status"><span><strong>TRYB DEMO</strong><small>Dane fikcyjne · bez zapisu i chmury</small></span>'
   +'<button type="button" data-action="demo-exit" class="btn sm">Zakończ demo</button></div>':'';
+}
+
+
+/* MANU 16.4 — instrukcja testów zewnętrznych, bez odczytu danych użytkownika. */
+function testerGuideMarkup(){
+ return `<details class="smart-settings manu-tester-guide">
+  <summary>${icon('checks')} Plan pierwszego testu · 10 minut</summary>
+  <div class="smart-settings-content">
+   <p class="small">Przetestuj MANU na <strong>własnym telefonie</strong>. Nie używaj konta ani telefonu osoby zapraszającej.</p>
+   <ol class="manu-tester-steps">
+    <li>Otwórz link do MANU na swoim telefonie. Opcjonalnie zainstaluj aplikację na ekranie głównym.</li>
+    <li>Wejdź w <strong>Ustawienia → Testowanie aplikacji</strong> i uruchom <strong>bezpieczny tryb demo</strong>.</li>
+    <li>Otwórz przykładowe zlecenie i dodaj fikcyjny koszt lub zmień status.</li>
+    <li>Otwórz przykładowy warsztat, sprawdź uczestników i rozliczenia.</li>
+    <li>Otwórz wycenę, sprawdź podgląd, przycisk zamknięcia oraz systemowy Wstecz.</li>
+    <li>Zakończ demo i sprawdź, czy próbne zmiany zniknęły.</li>
+   </ol>
+   <p class="muted tiny">Wpisuj tylko fikcyjne dane. W demo nie testujemy kont, chmury ani prawdziwych płatności. Opinia nie jest wysyłana automatycznie.</p>
+   <div class="settings-actions manu-tester-actions">
+    <button type="button" class="btn secondary" data-action="tester-invite">${icon('copy')} Udostępnij zaproszenie</button>
+    <button type="button" class="btn secondary" data-action="tester-report">${icon('checks')} Przygotuj opinię</button>
+   </div>
+  </div>
+ </details>`;
+}
+function manuTesterInvite(){
+ return [
+  'Zapraszam do przetestowania MANU — Organizera twórcy.',
+  'Link: https://artystaakrobata.github.io/Pracownia-app/',
+  'Na własnym telefonie otwórz Ustawienia → Testowanie aplikacji, uruchom bezpieczny tryb demo i rozwiń „Plan pierwszego testu”.',
+  'Sprawdź fikcyjne zlecenie, warsztat, wycenę i nawigację. Nie wpisuj prawdziwych danych klientów.',
+  'Na koniec wybierz „Przygotuj opinię” i odeślij wynik osobie, która Cię zaprosiła.'
+ ].join(String.fromCharCode(10));
+}
+function manuTesterReport(){
+ return [
+  'OPINIA Z TESTU MANU v'+APP_VERSION,
+  'Telefon / system: [wpisz]',
+  'Przeglądarka lub PWA: [wpisz]',
+  'Start i uruchomienie demo: [OK / PROBLEM]',
+  'Edycja fikcyjnego zlecenia: [OK / PROBLEM]',
+  'Warsztat i rozliczenia: [OK / PROBLEM]',
+  'Wycena i podgląd: [OK / PROBLEM]',
+  'Przycisk X i systemowy Wstecz: [OK / PROBLEM]',
+  'Zakończenie demo: [OK / PROBLEM]',
+  'Co było niejasne: [wpisz]',
+  'Jak odtworzyć problem: [kroki]',
+  'Propozycja usprawnienia: [wpisz]',
+  'Nie dołączaj prywatnych danych ani niezredagowanych zrzutów ekranu.'
+ ].join(String.fromCharCode(10));
+}
+async function shareManuTesterText(kind){
+ const invite=kind==='invite',message=invite?manuTesterInvite():manuTesterReport();
+ const title=invite?'MANU — zaproszenie do testów':'MANU — opinia po teście';
+ if(typeof navigator.share==='function'){
+  try{
+   await navigator.share({title,text:message});
+   return;
+  }catch(e){if(e?.name==='AbortError')return;}
+ }
+ try{
+  if(!navigator.clipboard?.writeText)throw Error('Schowek niedostępny');
+  await navigator.clipboard.writeText(message);
+  toast(invite?'Skopiowano zaproszenie. Wyślij je testerowi.':'Skopiowano wzór opinii. Uzupełnij go i wyślij osobie prowadzącej test.');
+ }catch(e){
+  if(typeof window.prompt==='function')window.prompt('Skopiuj poniższy tekst:',message);
+  else toast('Nie udało się udostępnić tekstu na tym urządzeniu.');
+ }
 }
 
 function validateBackup(raw){
@@ -2467,7 +2535,7 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;
   toast('Ta funkcja jest niedostępna w DEMO. Wybierz „Zakończ demo”, aby wrócić do swoich danych.');
   return;
  }
- switch(action){case 'template-back':case 'template-new':case 'template-edit':case 'template-save-from-project':case 'template-cancel':case 'template-add-cost':case 'template-remove-cost':case 'template-use':case 'template-delete':{window.MANUTemplates?.handleAction?.(b);break;}case 'gallery-add':case 'gallery-edit':case 'gallery-preview':case 'gallery-delete':case 'gallery-return':case 'gallery-open-project':case 'gallery-close':{window.MANUGallery?.handleAction?.(b);break;}case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':case 'cloud-forgot':case 'cloud-send-reset':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
+ switch(action){case 'tester-invite':void shareManuTesterText('invite');break;case 'tester-report':void shareManuTesterText('report');break;case 'template-back':case 'template-new':case 'template-edit':case 'template-save-from-project':case 'template-cancel':case 'template-add-cost':case 'template-remove-cost':case 'template-use':case 'template-delete':{window.MANUTemplates?.handleAction?.(b);break;}case 'gallery-add':case 'gallery-edit':case 'gallery-preview':case 'gallery-delete':case 'gallery-return':case 'gallery-open-project':case 'gallery-close':{window.MANUGallery?.handleAction?.(b);break;}case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':case 'cloud-forgot':case 'cloud-send-reset':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
  if(b.dataset.view==='add'){projectForm();return;}
  const previous=view,next=b.dataset.view;
  // Powrót tylko po użyciu skrótu na Start; zwykłe zakładki nie pokazują dodatkowego przycisku.
