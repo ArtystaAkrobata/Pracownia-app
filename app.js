@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.21.0';
+const APP_VERSION='3.21.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -332,6 +332,17 @@ function normalizeQuotes(records){
  id:String(i.id||uid()),description:String(i.description||'').slice(0,180),quantity:Math.min(100000,Math.max(0,Number(i.quantity)||0)),unit:String(i.unit||'szt.').slice(0,24),unitPrice:money(i.unitPrice)
  }))
  }));
+}
+function quoteTitleForDocumentType(current,type){
+ const title=String(current||'');
+ if(type==='offer'){
+  if(title==='Nowa wycena')return 'Oferta cenowa';
+  if(title.startsWith('Wycena — '))return 'Oferta — '+title.slice('Wycena — '.length);
+ }else{
+  if(title==='Oferta cenowa')return 'Nowa wycena';
+  if(title.startsWith('Oferta — '))return 'Wycena — '+title.slice('Oferta — '.length);
+ }
+ return title;
 }
 function quoteDocumentLabel(q){return q?.documentType==='offer'?'OFERTA CENOWA':'WYCENA'}
 function quoteDocumentStyle(q){return q?.documentStyle==='minimal'?'minimal':'classic'}
@@ -2435,6 +2446,11 @@ function events(){
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(e.target.id==='quote-document-type'){
+  const title=$('#quote-form input[name="title"]');
+  if(title)title.value=quoteTitleForDocumentType(title.value,e.target.value);
+  return;
+ }
  if(e.target.id==='quote-form-project'){
   const p=state.projects.find(x=>x.id===e.target.value);
   const hints=$('#quote-project-hints');if(hints)hints.innerHTML=quoteProjectHintsMarkup(p);
