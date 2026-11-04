@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.24.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.25.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.25.0 — Etap 16.1: kontrola bezpieczeństwa danych
+- Rozpoczęto etap 16 — bezpieczeństwo i przygotowanie do testów przez innych twórców. W **Ustawienia i dane → Zabezpieczenia i kopie danych** dodano kompaktową **Kontrolę bezpieczeństwa danych** z przyciskiem **Sprawdź**.
+- Kontrola wykonuje tylko operacje **odczytu**: sprawdza bieżący zapis lokalny, czytelność poprzedniego zapisu awaryjnego i uprawnienie przeglądarki do trwałego przechowywania (`navigator.storage.persisted()`, jeśli dostępne).
+- Bieżący zapis jest walidowany z użyciem istniejącego `validateBackup`, a liczby projektów, klientów, wycen i innych zapisów oraz data ostatniego zapisu porównywane z aktualnie widocznym stanem. Błędy odczytu i nieczytelne dane zgłaszane są jako problem, brak pierwszej kopii awaryjnej — jako informacja ostrzegawcza.
+- Ochrona pamięci jest wykazywana jako **Przyznana**, **Nieprzyznana** albo **Nieznana**. Stan „Nieznana” nie jest interpretowany jako gwarancja bezpieczeństwa. Do próby przyznania ochrony służy istniejący przycisk „Zwiększ trwałość lokalnej pamięci”.
+- Panel jest **w istniejącej sekcji Ustawień** i aktualizuje jedynie wynik, bez przewijania strony czy przebudowy całej kartki. Nie wysyła danych do chmury, nie zmienia danych ani synchronizacji. Wynik nie jest zapisywany do danych użytkownika.
+- Raport przypomina, że **sprawny zapis na telefonie nie zastępuje zewnętrznego pliku JSON** ani osobnego potwierdzenia synchronizacji. Status rzeczywistej synchronizacji pozostaje w istniejącej sekcji Konto i synchronizacja; MANU nie deklaruje chmury bez weryfikacji.
+- Brak zmian schematu danych `version:18`, bazy `pracownia_db_v1`, finansów, dokumentów i nawigacji. Wersja PWA: `manu-app-v3.25.0`. Backup kodu: `backup-manu-v3-24-0-before-security-audit`.
+
+### Test etapu 16.1 na telefonie
+1. Otwórz **Ustawienia → Zabezpieczenia i kopie danych**.
+2. W ramce **Kontrola bezpieczeństwa danych** naciśnij **Sprawdź**.
+3. Sprawdź trzy wyniki: **Bieżący zapis**, **Poprzedni zapis** i **Ochrona pamięci**. „Brak poprzedniego zapisu” jest możliwy przy świeżej instalacji.
+4. Jeżeli ochrona jest nieprzyznana, możesz użyć niżej istniejącego przycisku **Zwiększ trwałość lokalnej pamięci**, a następnie powtórzyć kontrolę.
+5. Pobierz **kopię JSON** i zachowaj ją poza telefonem. Jeśli używasz konta, osobno sprawdź status w **Konto i synchronizacja**.
 
 ## MANU 3.24.0 — Etap 15.5: przegląd końcowy dokumentów i płatności
 - Przeprowadzono przegląd całego etapu 15: inteligentne podpowiedzi wycen (15.1), profesjonalne dokumenty PDF (15.2), podsumowanie należności i zaliczek (15.3), powielanie dokumentów i autouzupełnianie danych pracowni (15.4), nawigacja podglądów oraz integralność zapisów (15.5).
