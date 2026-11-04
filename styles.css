@@ -3029,3 +3029,75 @@ body.gallery-lightbox-open{overflow:hidden}
  line-height:1.55;
 }
 .notebook-page #project-form .workshop-potential[hidden]{display:none!important}
+
+/* MANU 3.16.0 · etap 12.4: czytelność pulpitu i list na telefonie */
+/* Zachowaj całe nazwy realizacji bez poziomego przesuwania ekranu. */
+.home-recent .project-row-info b{
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  overflow-wrap:anywhere;
+  line-height:1.45;
+}
+.home-recent .project-row-info span{
+  overflow-wrap:anywhere;
+  line-height:1.5;
+}
+.home-recent .right-stats{
+  min-width:0;
+  max-width:38%;
+  flex:0 1 auto;
+}
+.home-recent .right-stats b{overflow-wrap:anywhere}
+.open-notebook .project-card h3{
+  overflow-wrap:anywhere;
+  line-height:1.4;
+}
+/* Ułatw odczytanie terminów, opisów i nagłówków w Centrum dowodzenia. */
+.command-item-main small{
+  font-size:11px;
+  line-height:1.55;
+}
+.command-date{
+  font-size:10px;
+  flex-shrink:0;
+}
+.command-panel-heading h3{flex:1;min-width:0;overflow-wrap:anywhere}
+.command-small-link{
+  min-height:40px;
+  padding:7px 2px;
+  font-size:11px;
+  flex-shrink:0;
+  touch-action:manipulation;
+}
+.command-pulse-item span{font-size:11px;line-height:1.45}
+.command-item-line strong{line-height:1.5}
+@media(max-width:520px){
+  .home-recent .project-row{align-items:flex-start;gap:9px}
+  .home-recent .project-row .proj-icon{
+    width:37px;height:37px;flex-basis:37px;
+  }
+  .home-recent .right-stats{max-width:35%}
+  .command-panel-heading{align-items:center;gap:7px}
+  .command-pulse-item{min-height:80px}
+  .command-small-link{font-size:11px}
+}
+@media(max-width:370px){
+  .home-recent .project-row{
+    display:grid;
+    grid-template-columns:37px minmax(0,1fr);
+    align-items:start;
+    column-gap:9px;
+    row-gap:4px;
+  }
+  .home-recent .project-row-info{grid-column:2}
+  .home-recent .right-stats{
+    grid-column:2;max-width:none;
+    text-align:left;
+  }
+  .home-recent .right-stats b{display:inline}
+  .home-recent .right-stats small{display:inline;margin-left:7px}
+  .command-item-line{flex-wrap:wrap}
+  .command-small-link{font-size:11px}
+  .command-date{font-size:10px}
+}
