@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.1';
+const APP_VERSION='3.19.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1112,12 +1112,13 @@ function pwaSettingsMarkup(){
    ?'MANU jest otwarte w przeglądarce. Możesz teraz zainstalować je na ekranie głównym.'
    :'MANU jest teraz otwarte w przeglądarce. W Chrome na Androidzie wybierz menu ⋮, a następnie „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”.';
  return `<p class="small manu-pwa-status" role="status" aria-live="polite">${htmlEscape(installStatus)}</p>
+ <p class="muted small">Uruchomiona wersja: <strong>${APP_VERSION}</strong></p>
  <p class="muted small">Po instalacji otwieraj MANU z jego ikony. Nie odinstalowuj aplikacji ani nie czyść jej danych bez sprawdzonej kopii JSON.</p>
  ${pwaUpdateReady?'<p class="manu-pwa-update" role="status">Nowa wersja MANU jest gotowa. Zakończ edycję, a następnie odśwież aplikację przyciskiem poniżej.</p>':'<p class="muted small">Aktualizacje sprawdzisz ręcznie. MANU nie przeładuje samodzielnie otwartego formularza.</p>'}
  <div class="settings-actions manu-pwa-actions">
  ${!standalone&&installEvent?`<button type="button" class="btn" data-action="install">${icon('plus')} Zainstaluj MANU</button>`:''}
  <button type="button" class="btn secondary" data-action="pwa-check-update">${icon('info')} Sprawdź aktualizacje</button>
- ${pwaUpdateReady?`<button type="button" class="btn" data-action="pwa-reload">${icon('check')} Odśwież MANU</button>`:''}
+ <button type="button" class="btn" data-action="pwa-reload" ${navigator.onLine===false?'disabled':''}>${icon('check')} Wczytaj aktualną wersję</button>
  </div>`;
 }
 function refreshPwaPanel(){
@@ -1144,7 +1145,7 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.13.3',
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.18.2',
   './gallery.js?v=3.13.0','./templates.js?v=3.14.1'
  ];
  try{
@@ -2069,6 +2070,7 @@ case 'ui-prefs-reset':{
  case 'pwa-check-update':void checkPwaUpdate();break;
 case 'offline-check':void checkOfflineReadiness();break;
 case 'pwa-reload':{
+ if(navigator.onLine===false){toast('Włącz internet, aby wczytać aktualną wersję MANU.');break;}
  if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
   alert('Zamknij aktywny formularz, aby nie stracić niezapisanych zmian.');
   break;
