@@ -1,10 +1,21 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.2';
+const APP_VERSION='3.19.3';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
-const DEFAULT_UI_PREFS=Object.freeze({startView:'home',showCommand:true,showRecent:true,accent:'copper',textSize:'standard'});
+const UI_QUICK_ACTIONS=Object.freeze([
+ ['new-task','Nowe zadanie','checks'],
+ ['quote-new','Nowa wycena','brief'],
+ ['reminder-add','Przypomnienie','calendar'],
+ ['client-new','Nowy klient','users'],
+ ['new-project','Nowy projekt','plus']
+]);
+const UI_QUICK_ACTION_IDS=UI_QUICK_ACTIONS.map(action=>action[0]);
+const DEFAULT_UI_PREFS=Object.freeze({
+ startView:'home',showCommand:true,showRecent:true,
+ accent:'copper',textSize:'standard',quickActions:['new-task','quote-new']
+});
 const UI_START_VIEWS=['home','projects','tasks','finance','calendar'];
 const UI_ACCENTS=['copper','gold','steel'];
 const UI_TEXT_SIZES=['standard','large'];
@@ -15,7 +26,10 @@ function normalizeUiPreferences(raw){
   showCommand:value.showCommand!==false,
   showRecent:value.showRecent!==false,
   accent:UI_ACCENTS.includes(value.accent)?value.accent:'copper',
-  textSize:UI_TEXT_SIZES.includes(value.textSize)?value.textSize:'standard'
+  textSize:UI_TEXT_SIZES.includes(value.textSize)?value.textSize:'standard',
+  quickActions:(Array.isArray(value.quickActions)?value.quickActions:DEFAULT_UI_PREFS.quickActions)
+   .filter((id,i,items)=>typeof id==='string'&&UI_QUICK_ACTION_IDS.includes(id)&&items.indexOf(id)===i)
+   .slice(0,3)
  };
 }
 function loadUiPreferences(){
@@ -38,6 +52,16 @@ function updateUiPreferences(change){
   applyUiAppearance();
   return true;
  }catch(e){console.warn('MANU: nie udało się zapisać preferencji',e);return false}
+}
+function quickAccessMarkup(){
+ const selected=uiPreferences.quickActions;
+ if(!selected.length)return '';
+ const actions=selected.map(id=>UI_QUICK_ACTIONS.find(item=>item[0]===id)).filter(Boolean);
+ if(!actions.length)return '';
+ return `<section class="manu-quick-access" aria-label="Szybkie działania">
+  <span class="manu-quick-label">SZYBKIE DZIAŁANIA</span>
+  <div class="manu-quick-buttons">${actions.map(([id,label,ic])=>`<button type="button" class="manu-quick-button" data-action="${id}">${icon(ic)}<span>${label}</span></button>`).join('')}</div>
+ </section>`;
 }
 function personalizationMarkup(){
  const p=uiPreferences;
@@ -65,11 +89,16 @@ function personalizationMarkup(){
     <option value="large" ${p.textSize==='large'?'selected':''}>Większa — wygodniejsze czytanie</option>
    </select>
   </label>
+  <div class="manu-personalization-subtitle">Szybkie działania na Start</div>
+  <p class="muted tiny">Wybierz do 3 skrótów. Odznaczenie wszystkich usuwa pasek z pulpitu.</p>
+  <div class="manu-quick-preferences">
+   ${UI_QUICK_ACTIONS.map(([id,label])=>`<label class="smart-settings-check"><input type="checkbox" data-manu-quick="${id}" ${p.quickActions.includes(id)?'checked':''}><span>${label}</span></label>`).join('')}
+  </div>
   <div class="manu-personalization-subtitle">Widoczność sekcji na ekranie Start</div>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-command" ${p.showCommand?'checked':''}><span>Centrum dowodzenia</span></label>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-recent" ${p.showRecent?'checked':''}><span>Ostatnie projekty</span></label>
   <div class="manu-personalization-footer">
-   <p class="muted tiny">Kolory i tekst zmieniają się od razu. Widoczność sekcji sprawdzisz przy następnym wejściu na Start. Ustawienia są zapisane tylko na tym urządzeniu.</p>
+   <p class="muted tiny">Kolory i tekst zmieniają się od razu. Zmiany skrótów i widoczności sekcji zobaczysz przy następnym wejściu na Start. Ustawienia są zapisane tylko na tym urządzeniu.</p>
    <button class="btn ghost sm" type="button" data-action="ui-prefs-reset">Przywróć domyślne</button>
   </div>
  </div>
@@ -554,7 +583,7 @@ function commandCenter(){
    '<button type="button" class="btn secondary sm" data-action="new-project">'+icon('plus')+' Projekt</button></div>'+
   '</section>';
 }
-function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section>${uiPreferences.showCommand?commandCenter():''}<section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section>${uiPreferences.showRecent?`<section class="home-recent"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div></section>`:''}`}
+function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section>${quickAccessMarkup()}${uiPreferences.showCommand?commandCenter():''}<section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section>${uiPreferences.showRecent?`<section class="home-recent"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div></section>`:''}`}
 function projectRow(p){return `<div class="project-row" role="button" tabindex="0" data-action="open-project" data-id="${htmlEscape(p.id)}">${projectTypeIcon(p)}<div class="project-row-info"><b>${htmlEscape(p.title)}</b><span>${htmlEscape(p.type)} · ${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</span></div><div class="right-stats"><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b><small>po kosztach</small></div></div>`;}
 function quoteItemRow(item={}){
  return `<div class="quote-line" data-quote-row>
@@ -2239,7 +2268,24 @@ function events(){
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
- if(e.target.closest?.('#project-form'))scheduleProjectDraft();
+ if(e.target.matches?.('input[data-manu-quick]')){
+  const id=e.target.dataset.manuQuick;
+  if(!UI_QUICK_ACTION_IDS.includes(id))return;
+  const current=uiPreferences.quickActions;
+  const requested=e.target.checked?[...current,id]:current.filter(item=>item!==id);
+  if(requested.length>3){
+   e.target.checked=false;
+   toast('Możesz wybrać maksymalnie trzy szybkie działania.');
+   return;
+  }
+  if(updateUiPreferences({quickActions:requested}))toast('Zapisano szybkie działania MANU');
+  else{
+   e.target.checked=current.includes(id);
+   toast('Nie udało się zapisać szybkich działań.');
+  }
+  return;
+ }
+  if(e.target.closest?.('#project-form'))scheduleProjectDraft();
  if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
  if(['manu-start-view','manu-show-command','manu-show-recent','manu-accent','manu-text-size'].includes(e.target.id)){
   const id=e.target.id;
