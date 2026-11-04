@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, normalizeQuotes, quoteForm, quotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -823,4 +823,59 @@ test('MANU 3.23.1: przy czterech przyciskach podglądu Zamknij jest wyśrodkowan
  const body=context.__lastModal.body;
  assert.equal((body.match(/class="btn(?: secondary| ghost)?"/g)||[]).length,4);
  assert.ok(body.indexOf('Powiel dokument')<body.indexOf('Zamknij'));
+});
+
+
+test('MANU 3.23.2: z podglądu w Edytuj i Anuluj wracamy do tego samego podglądu bez utraty danych', () => {
+ const {api,context,nodes}=boot({version:18,projects:[],tasks:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Oferta — lustro',client:'Klient',
+  issued:'2026-11-04',items:[{description:'Lustro',quantity:1,unit:'szt.',unitPrice:450}]
+ }]});
+ const original=JSON.stringify(api.getState());
+ const previousModal={scrollTop:160};
+ nodes['.modal']=previousModal;
+ nodes['.quote-preview-actions']={dataset:{quotePreview:'q1'}};
+ api.quotePreview('q1');
+ api.handleAction({dataset:{action:'quote-edit',id:'q1'}});
+ assert.match(context.__lastModal.title,/Edytuj wycenę/);
+ assert.match(context.__lastModal.body,/Wróć do podglądu/);
+ nodes['#quote-form']={};
+ nodes['.modal']={scrollTop:0};
+ delete nodes['.quote-preview-actions'];
+ api.handleAction({dataset:{action:'quote-cancel',project:''}});
+ assert.match(context.__lastModal.title,/Wycena MANU-2026-001/);
+ assert.match(context.__lastModal.body,/Podgląd|Drukuj \/ zapisz PDF/);
+ assert.equal(nodes['.modal'].scrollTop,160);
+ assert.equal(JSON.stringify(api.getState()),original);
+});
+
+test('MANU 3.23.2: Powiel otwiera szkic, a X wraca do oryginału zamiast zapisać kopię', () => {
+ const {api,context,nodes}=boot({version:18,projects:[],tasks:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Oferta cenowa',documentType:'offer',
+  issued:'2026-11-04',items:[{description:'Grawer',quantity:2,unit:'szt.',unitPrice:220}]
+ }]});
+ const original=JSON.stringify(api.getState());
+ nodes['.modal']={scrollTop:74};
+ nodes['.quote-preview-actions']={dataset:{quotePreview:'q1'}};
+ api.handleAction({dataset:{action:'quote-clone',id:'q1'}});
+ assert.match(context.__lastModal.body,/Wróć do podglądu/);
+ assert.match(context.__lastModal.body,/data-quote=""/);
+ nodes['#quote-form']={};
+ nodes['.modal']={scrollTop:0};
+ delete nodes['.quote-preview-actions'];
+ api.handleAction({dataset:{action:'close'}});
+ assert.match(context.__lastModal.title,/Oferta cenowa MANU-2026-001/);
+ assert.equal(nodes['.modal'].scrollTop,74);
+ assert.equal(JSON.stringify(api.getState()),original);
+});
+
+test('MANU 3.23.2: zamykanie podglądu bez formularza nie powoduje ponownego otwarcia oferty', () => {
+ const {api,context,nodes}=boot({version:18,projects:[],tasks:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Wycena',issued:'2026-11-04',
+  items:[{description:'Usługa',quantity:1,unit:'szt.',unitPrice:200}]
+ }]});
+ api.quotePreview('q1');
+ assert.match(context.__lastModal.body,/data-quote-preview="q1"/);
+ assert.equal(api.returnToQuotePreview(),false);
+ assert.equal(api.getState().quotes.length,1);
 });
