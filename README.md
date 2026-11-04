@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.19.5 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.20.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.20.0 — Etap 15.1: inteligentne przygotowanie wycen
+- Zapisane wyceny oraz formularz zyskały **zwijany Asystent wyceny**, domyślnie zamknięty, aby nie przeciążyć interfejsu na telefonie.
+- Po wyborze projektu można świadomie użyć **Wstaw dane wybranego projektu**: pobranie tytułu, powiązanego klienta (lub samej nazwy), wartości sprzedaży i ilości. Wymaga potwierdzenia, bo zastępuje pozycje i rabat w bieżącym formularzu. **Nie zmienia** projektu, kwoty, kosztów, stanu wpłat ani dat.
+- Zapisane karty klientów można wybrać w asystencie i nacisnąć **Uzupełnij dane klienta**. Kopiowana jest nazwa firmy / kontaktu, e-mail, telefon i adres. Dane pozostają edytowalne; wybranie klienta samo w sobie nic nie zmienia.
+- Dodano do wyceny pola **Kontakt klienta** i **Adres klienta**; oba są opcjonalne, zapisywane w JSON/chmurze razem z wyceną oraz pokazywane w podglądzie i PDF. Dawne wyceny odczytują puste pola — bez migracji bazy, numeracji ani zmiany schematu `version:18`. Upewnij się, że masz podstawę do przetwarzania danych klienta.
+- Asystent oferuje zwijane **Materiały i koszty — podpowiedzi pozycji** na podstawie list przygotowań warsztatu i faktycznie wpisanych wydatków. Można wkleić opis i ilość do nowej pozycji, lecz cena wynosi domyślnie **0 zł**. To celowe: **koszt własny nie jest ceną dla klienta**, a pozycję trzeba wycenić i sprawdzić ręcznie. Projektowa wycena główna pozostaje nietknięta, więc przy rozbijaniu oferty sprawdź, czy sumy się nie dublują.
+- Zmiana projektu w formularzu aktualizuje tylko podpowiedzi, bez utraty wpisanego tekstu ani przewinięcia. Nie dodano serwera, płatności ani automatycznej wysyłki PDF.
+- Wersja PWA `manu-app-v3.20.0`. Kopia bezpieczeństwa kodu: `backup-manu-v3-19-5-before-quote-assistant`.
+
+### Test na telefonie
+1. Otwórz **Projekty → Więcej narzędzi → Wyceny → Nowa wycena**; wybierz istniejący projekt.
+2. Rozwiń **Asystent wyceny**, użyj **Wstaw dane wybranego projektu**, potwierdź. Sprawdź ilość, cenę, klienta.
+3. Wybierz istniejący kontakt i użyj **Uzupełnij dane klienta**. Sprawdź e-mail i adres.
+4. Rozwiń **Materiały i koszty** i użyj **Wstaw opis** dla próbnego kosztu. Sprawdź, że cena nowej pozycji wynosi 0 zł, następnie wpisz właściwą cenę oferty.
+5. Zapisz wycenę, sprawdź PDF, oryginalną cenę projektu, koszty i wpłaty. Wykonaj kopię JSON i sprawdź liczbę wycen.
 
 ## MANU 3.19.5 — Wyśrodkowany trzeci skrót
 - Na telefonie, jeśli wybrane są dokładnie 3 szybkie działania, trzeci przycisk wyświetla się pośrodku drugiego rzędu, zachowując szerokość górnych.
