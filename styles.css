@@ -3003,3 +3003,15 @@ body.gallery-lightbox-open{overflow:hidden}
   min-width:44px;
   min-height:44px;
 }
+
+/* MANU 3.15.0 · Formularze: czytelny błąd pola (12.3) */
+.notebook-page .field input.manu-form-invalid,
+.notebook-page .field select.manu-form-invalid,
+.notebook-page .field textarea.manu-form-invalid,
+.modal .field input.manu-form-invalid,
+.modal .field select.manu-form-invalid,
+.modal .field textarea.manu-form-invalid {
+  border-color:#b6533e;
+  box-shadow:0 0 0 2px #b6533e33;
+}
+.quote-line {scroll-margin-block:12px}
