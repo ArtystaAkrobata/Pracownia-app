@@ -1,6 +1,11 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.23.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.23.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.23.1 — Drobna poprawka podglądu wycen
+- Na ekranach do 440 px, gdy podgląd ma 4 akcje: **Drukuj / zapisz PDF** jest w pierwszym rzędzie, **Edytuj** i **Powiel dokument** obok siebie w kolejnym, a **Zamknij** jest wyśrodkowany w ostatnim rzędzie i ma szerokość jednego górnego przycisku.
+- Tylko poprawka wyglądu. Bez ingerencji w dokumenty, wyceny, zapisane dane, historię projektów i logikę akcji.
+- Nowa wersja PWA `manu-app-v3.23.1`. Backup kodu: `backup-manu-v3-23-0-before-center-close-button`.
 
 ## MANU 3.23.0 — Etap 15.4: automatyzacja powtarzalnych czynności
 - W podglądzie zapisanej wyceny lub oferty cenowej dodano przycisk **Powiel dokument**. Otwiera on **nowy, niezapisany formularz**, bazujący na zapisanym dokumencie: przejmuje tytuł, wystawcę i klienta, pozycje z ilościami i cenami, rabat, opis, styl oraz warunki. Nie aktualizuje ani nie nadpisuje oryginału.
