@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.23.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.23.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.23.2 — Nawigacja wstecz w podglądzie dokumentu
+- Po wybraniu **Edytuj** albo **Powiel dokument** z podglądu MANU zapamiętuje, z którego dokumentu otwarto formularz oraz pozycję przewinięcia.
+- **Wróć do podglądu**, krzyżyk w nagłówku formularza, kliknięcie tła i systemowy **Wstecz** na Androidzie wracają do podglądu **tego samego dokumentu**. Formularz kopii nie tworzy nowego rekordu, dopóki nie zostanie zapisany.
+- Przycisk **Zamknij** w samym podglądzie zamyka podgląd i odsłania **rejestr wycen**, zachowując jego pozycję.
+- Dodano delikatną animację odwrotnego obrotu kartki przy powrocie z formularza. Ustawienie systemowe „ogranicz ruch” nadal wyłącza animacje.
+- Gdy formularz otwarto bezpośrednio z listy, anulowanie nadal zamyka formularz. Zapis nowej lub edytowanej wyceny nadal pokazuje właściwy podgląd po zapisie.
+- Nie zmieniono danych, cen, rabatów, wpłat, numeracji ani schematu bazy. Wersja PWA `manu-app-v3.23.2`. Kopia kodu przed naprawą: `backup-manu-v3-23-1-before-quote-back-flow`.
+
+### Test na telefonie
+1. Otwórz **Projekty → Więcej narzędzi → Wyceny**, następnie **Podgląd / PDF** dowolnego dokumentu.
+2. Naciśnij **Edytuj** i **Wróć do podglądu**: powinien wrócić podgląd tego samego dokumentu, a nie kolejna kartka.
+3. Naciśnij **Powiel dokument**, potem Androidowy **Wstecz**: powinien wrócić oryginalny podgląd bez zapisywania kopii.
+4. Na podglądzie wybierz **Zamknij**: powinien pozostać rejestr wycen, nie strona innego projektu.
+5. Sprawdź, czy zapis edytowanej lub powielonej wyceny nadal działa.
 
 ## MANU 3.23.1 — Drobna poprawka podglądu wycen
 - Na ekranach do 440 px, gdy podgląd ma 4 akcje: **Drukuj / zapisz PDF** jest w pierwszym rzędzie, **Edytuj** i **Powiel dokument** obok siebie w kolejnym, a **Zamknij** jest wyśrodkowany w ostatnim rzędzie i ma szerokość jednego górnego przycisku.
