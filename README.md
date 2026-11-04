@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.26.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.0 — Etap 16.4: pierwsze testy zewnętrzne
+- W **Ustawienia → Testowanie aplikacji** dodano zwijany **Plan pierwszego testu · 10 minut**, obejmujący zlecenie, warsztat, wycenę, cofanie i wyjście z demo. Ten sam plan jest dostępny wewnątrz demo.
+- Przycisk **Udostępnij zaproszenie** otwiera systemowe udostępnianie telefonu (np. komunikator). Jeśli nie jest dostępne, kopiuje gotowy tekst z publicznym linkiem; przy niedostępnym schowku pokazuje tekst do ręcznego skopiowania.
+- Przycisk **Przygotuj opinię** daje szablon zgłoszenia obejmujący wersję MANU, urządzenie, sześć obszarów testowych, opis problemu i sugestię. Nie podłącza serwera opinii ani nie wysyła żadnego zgłoszenia automatycznie.
+- Tekst zaproszenia i wzór opinii są **statyczne**, nie odczytują ani nie wstawiają prawdziwych danych klientów, projektów czy uczestników. Tester korzysta z własnego telefonu i fikcyjnego trybu demo. Przed udostępnieniem zrzutów ekranu należy usunąć dane osobowe.
+- Nie dodano pola do zapisu opinii, kont testerów ani nowych elementów na pulpicie. Lista jest schowana, by nie przeciążyć interfejsu.
+- Bez zmian bazy `version:18`, zapisów, chmury, kwot, płatności, dokumentów i mechanizmu Android Wstecz. Cache PWA: `manu-app-v3.27.0`. Backup kodu: `backup-manu-v3-26-2-before-external-tests`.
+
+### Test 16.4 na telefonie
+1. Otwórz **Ustawienia → Testowanie aplikacji → Plan pierwszego testu**.
+2. Dotknij **Udostępnij zaproszenie** — powinno otworzyć się menu udostępniania albo tekst powinien trafić do schowka.
+3. Dotknij **Przygotuj opinię** — sprawdź, czy pojawia się tekst z wersją 3.27.0, polami do wypełnienia i bez Twoich danych.
+4. Uruchom **bezpieczny tryb demo**. W demonstracyjnych Ustawieniach plan powinien nadal być dostępny.
+5. Przeprowadź próbny scenariusz, zakończ demo i potwierdź, że Twoje rzeczywiste projekty i wyceny nie zostały zmienione.
 
 ## MANU 3.26.2 — Poprawka systemowego Wstecz z karty projektu
 - Naprawiono konkretną różnicę odnotowaną na Androidzie: **X na karcie projektu → rejestr → Wstecz → Start** działało, ale **systemowy Wstecz na karcie → rejestr → Wstecz** zamykało zainstalowane MANU.
