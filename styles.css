@@ -3015,3 +3015,17 @@ body.gallery-lightbox-open{overflow:hidden}
   box-shadow:0 0 0 2px #b6533e33;
 }
 .quote-line {scroll-margin-block:12px}
+
+/* MANU 3.15.1 — przewidywana wartość warsztatu */
+.notebook-page #project-form .workshop-potential{
+ margin:8px 0 0;
+ padding:10px 12px;
+ border:1px solid #d6bea2;
+ border-radius:10px;
+ background:#f3e8da;
+ color:#795239;
+ font-size:11px;
+ font-weight:650;
+ line-height:1.55;
+}
+.notebook-page #project-form .workshop-potential[hidden]{display:none!important}
