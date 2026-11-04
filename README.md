@@ -1,6 +1,10 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.21.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.21.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.21.1 — Dopasowanie tytułu do rodzaju dokumentu
+- Przy zmianie **Wycena → Oferta cenowa** MANU aktualizuje wyłącznie domyślny tytuł, np. „Wycena — Lustro” → „Oferta — Lustro”. Nie nadpisuje samodzielnie wpisanego tytułu.
+- Przy powrocie do wyceny analogicznie przywracany jest domyślny opis. Aktualizacja PWA wczytuje nowe zachowanie.
 
 ## MANU 3.21.0 — Etap 15.2: profesjonalne dokumenty dla klientów
 - Dotychczasowa sekcja **Wyceny** obsługuje teraz dwa warianty dokumentu: **Wycena** oraz **Oferta cenowa**. Numeracja `MANU-RRRR-NNN`, lista dokumentów, powiązanie z projektem i podgląd PDF pozostają wspólne. Nowy dokument domyślnie jest wyceną.
