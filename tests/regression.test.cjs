@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1181,4 +1181,104 @@ test('Etap 16.2: komunikat porównania nie wypisuje nazw i kontaktów klientów'
  const msg=cloud.cloudReplacePrompt('download',personal,personal,1);
  assert.doesNotMatch(msg,/Klient Sekret|sekret@example\.test|Jan Sekret|Pani Sekret|Sekretne zlecenie/);
  assert.match(msg,/projekty|Projekty/);
+});
+
+
+test('Etap 16.3: tryb demo odłącza prawdziwy notes i nie zapisuje testowych projektów',async()=>{
+ const {api,persisted,context}=boot({version:18,projects:[job('prawdziwy',{title:'Moja własna realizacja'})],tasks:[],
+  quotes:[{id:'real-q',number:'MANU-2026-001',title:'Wycena użytkownika',issued:'2026-11-04',
+   items:[{description:'Lustro',quantity:1,unit:'szt.',unitPrice:200}]}]});
+ api.useLocalStorage();assert.equal(await api.save(),true);
+ const before=JSON.stringify(api.getState()),persistent=persisted.get('snapshot');
+ let pauses=0,resumes=0;
+ context.window.MANUCloud={pauseForDemo:()=>{pauses++},resumeAfterDemo:()=>{resumes++},isBusy:()=>false};
+ await api.beginDemo();
+ assert.equal(api.getDemoStatus(),true);
+ assert.match(api.demoBanner(),/TRYB DEMO/);
+ assert.equal(api.getState().projects.length,2);
+ assert.equal(api.getState().quotes.length,1);
+ assert.doesNotMatch(JSON.stringify(api.getState()),/Moja własna realizacja|Wycena użytkownika/);
+ api.getState().projects.push(job('demo-new',{title:'Przykładowa trzecia realizacja'}));
+ assert.equal(await api.save(),true);
+ assert.equal(persisted.get('snapshot'),persistent);
+ api.endDemo();
+ assert.equal(api.getDemoStatus(),false);
+ assert.equal(api.demoBanner(),'');
+ assert.equal(JSON.stringify(api.getState()),before);
+ assert.equal(persisted.get('snapshot'),persistent);
+ assert.equal(pauses,1);
+ assert.equal(resumes,1);
+});
+
+test('Etap 16.3: działanie chmurowe i import danych są zablokowane w demo',async()=>{
+ const {api,context,persisted}=boot({version:18,projects:[job('real')],tasks:[]});
+ api.useLocalStorage();await api.save();
+ const before=persisted.get('snapshot');
+ const actions=[];
+ context.window.MANUCloud={pauseForDemo:()=>{},resumeAfterDemo:()=>{},isBusy:()=>false,
+  action:name=>actions.push(name)};
+ await api.beginDemo();
+ for(const name of ['cloud-upload','cloud-download','cloud-backup','export','import','backup-apply','clear','gallery-add']){
+  api.handleAction({dataset:{action:name}});
+ }
+ assert.equal(actions.length,0);
+ assert.equal(persisted.get('snapshot'),before);
+ assert.equal(api.getState().projects.length,2);
+ const html=api.demoSettingsPage();
+ assert.doesNotMatch(html,/Konto i synchronizacja|Usuń wszystkie dane|Zastąp obecne dane/);
+ assert.match(html,/Zakończ demo/);
+ api.endDemo();
+ assert.equal(api.getState().projects[0].id,'real');
+});
+
+test('Etap 16.3: szkic prawdziwego projektu nie jest czytany ani usuwany przez demo',async()=>{
+ const {api,context,persisted}=boot({version:18,projects:[],tasks:[]});
+ api.useLocalStorage();await api.save();
+ const key='manu-new-project-draft-v1',raw=JSON.stringify({version:1,savedAt:Date.now(),fields:[],opened:[]});
+ persisted.set(key,raw);
+ assert.ok(api.readProjectDraft());
+ context.window.MANUCloud={pauseForDemo:()=>{},resumeAfterDemo:()=>{},isBusy:()=>false};
+ await api.beginDemo();
+ assert.equal(api.readProjectDraft(),null);
+ api.clearProjectDraft();
+ assert.equal(persisted.get(key),raw);
+ api.endDemo();
+ assert.ok(api.readProjectDraft());
+});
+
+test('Etap 16.3: sesja demo nie uruchamia się podczas aktywnej operacji chmury',async()=>{
+ const {api,context,persisted}=boot({version:18,projects:[job('real')],tasks:[]});
+ api.useLocalStorage();await api.save();
+ let paused=false;
+ context.window.MANUCloud={isBusy:()=>true,pauseForDemo:()=>{paused=true}};
+ await api.beginDemo();
+ assert.equal(api.getDemoStatus(),false);
+ assert.equal(paused,false);
+ assert.equal(api.getState().projects[0].id,'real');
+});
+
+test('Etap 16.3: chmura nie może nadpisać próbnego stanu w trybie demo',async()=>{
+ const {api,context,persisted}=boot({version:18,projects:[job('real')],tasks:[]});
+ api.useLocalStorage();await api.save();
+ const backup=persisted.get('snapshot');
+ context.window.MANUCloud={pauseForDemo:()=>{},resumeAfterDemo:()=>{},isBusy:()=>false};
+ await api.beginDemo();
+ const ids=api.getState().projects.map(p=>p.id);
+ assert.equal(await api.applyCloudSnapshot({version:18,projects:[job('remote')],tasks:[]}),false);
+ assert.equal(api.getState().projects.map(p=>p.id).join(','),ids.join(','));
+ api.endDemo();
+ assert.equal(persisted.get('snapshot'),backup);
+});
+
+test('Etap 16.3: przykład dla twórców zawiera warsztat, zlecenie, zadanie i wycenę',()=>{
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ const sample=api.demoSnapshot();
+ assert.equal(sample.projects.length,2);
+ assert.equal(sample.projects.some(p=>p.type==='Warsztat'),true);
+ assert.equal(sample.projects.some(p=>p.type==='Zlecenie'),true);
+ assert.equal(sample.tasks.length,1);
+ assert.equal(sample.quotes.length,1);
+ assert.equal(sample.clients.length,2);
+ assert.equal(sample.projects.find(p=>p.type==='Warsztat').participants.length,2);
+ assert.match(api.settingsPage(),/Uruchom bezpieczny tryb demo/);
 });
