@@ -1140,6 +1140,47 @@ body{background:#08090b;color:var(--text)}
 }
 
 
+
+/* MANU 3.25.0 — etap 16.1: kompaktowa, niewymuszająca przewinięcia kontrola kopii */
+.manu-security-audit{
+ margin:16px 0 18px;padding:14px;
+ border:1px solid #d3b79c;border-radius:12px;
+ background:linear-gradient(160deg,#f8efe4,#eadac7);
+ color:#543b30;
+}
+.manu-security-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.manu-security-heading>strong{font:600 17px/1.3 Georgia,serif;color:#5e402c}
+.manu-security-heading .btn{min-height:38px;white-space:normal}
+#manu-security-audit{margin-top:12px}
+#manu-security-audit>.muted{margin:0;font-size:12px;line-height:1.55;color:#735d4e}
+.manu-security-summary{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 12px;margin-bottom:9px}
+.manu-security-summary strong{font-size:13px;color:#66432d}
+.manu-security-summary small{font-size:10px;color:#816c5c}
+.manu-security-results{display:grid;gap:8px}
+.manu-security-row{
+ display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+ padding:11px 12px;border:1px solid #ddc7ae;border-left:4px solid #ab9270;border-radius:9px;background:#fff8ef;
+}
+.manu-security-row--ok{border-left-color:#648674}
+.manu-security-row--warn{border-left-color:#b18245}
+.manu-security-row--error{border-left-color:#b25345}
+.manu-security-row>span{display:grid;gap:4px;min-width:0}
+.manu-security-row b{color:#523a2c;font-size:12px}
+.manu-security-row small{color:#785f4d;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.manu-security-row>strong{font-size:11px;white-space:nowrap;color:#654a3b}
+.manu-security-row--error>strong{color:#a34336}
+.manu-security-row--ok>strong{color:#4d745b}
+#manu-security-audit>.tiny{margin:12px 0 0;font-size:10.5px;line-height:1.6;color:#7a6655}
+@media(max-width:420px){
+ .manu-security-audit{padding:11px}
+ .manu-security-heading{align-items:stretch}
+ .manu-security-heading .btn{font-size:11px}
+ .manu-security-row{flex-direction:column;gap:5px}
+ .manu-security-row>strong{align-self:flex-start}
+}
+
 /* Ostrzeżenie, jeśli telefon odmówi zapisu lub odczytu danych */
 .save-state-line.is-error{
  color:#8e2f2e;background:#fae2db;border-color:#cb7771;
