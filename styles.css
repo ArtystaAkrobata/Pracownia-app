@@ -3304,3 +3304,38 @@ body.gallery-lightbox-open{overflow:hidden}
 @media(max-width:390px){
  .manu-offline-indicator{padding:5px 7px;font-size:10px}
 }
+
+/* MANU 3.18.4 · etap 13.5: przywrócony szkic nowego projektu */
+.notebook-page .manu-draft-note{
+ display:flex;
+ flex-wrap:wrap;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ padding:12px 14px;
+ margin:0 0 17px;
+ border:1px solid #c99e7d;
+ border-left:3px solid #ac6e4a;
+ border-radius:11px;
+ background:#eee0ce;
+ color:#533b30;
+ font-size:12px;
+ line-height:1.5;
+}
+.notebook-page .manu-draft-note span{flex:1 1 190px;min-width:0}
+.notebook-page .manu-draft-note .btn{
+ flex:0 0 auto;
+ min-height:38px;
+ color:#754b36;
+ border-color:#b48a69;
+ background:#f4e8d7;
+ white-space:normal;
+}
+@media(max-width:520px){
+ .notebook-page .manu-draft-note{
+  align-items:stretch;
+  flex-direction:column;
+  gap:9px;
+ }
+ .notebook-page .manu-draft-note .btn{width:100%;text-align:center}
+}
