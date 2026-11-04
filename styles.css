@@ -3244,16 +3244,16 @@ body.gallery-lightbox-open{overflow:hidden}
 /* MANU 3.18.0 · etap 13.1: instalacja i aktualizacje PWA */
 #manu-pwa-panel .manu-pwa-status{
  font-weight:700;
- color:#6f4735;
+ color:#f0c6a8;
  line-height:1.65;
 }
 #manu-pwa-panel .manu-pwa-update{
  padding:12px 13px;
- border:1px solid #cba780;
- border-left:3px solid #ac704a;
+ border:1px solid #8d634b;
+ border-left:3px solid #d49a70;
  border-radius:9px;
- background:#f3e6d6;
- color:#65432f;
+ background:#352823;
+ color:#f2d7c0;
  font-weight:700;
  line-height:1.6;
 }
