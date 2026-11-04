@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.4';
+const APP_VERSION='3.18.5';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1790,6 +1790,77 @@ function afterDataChange(msg,detailId){
  }
  if(msg)toast(msg);
 }
+
+/* MANU 13.6 — gest Wstecz na Androidzie, bez przeładowania SPA i bez zmian bazy. */
+const manuPageHistory=[];
+let manuBackGuardReady=false;
+function rememberManuPage(){
+ if(!manuBackGuardReady)return;
+ manuPageHistory.push({
+  view,top:window.scrollY,
+  home:homeReturnContext?{...homeReturnContext}:null,
+  project:projectReturnContext?{...projectReturnContext}:null,
+  tools:projectToolsExpanded
+ });
+ if(manuPageHistory.length>30)manuPageHistory.shift();
+}
+function consumeManuReturn(page){
+ if(manuBackGuardReady&&manuPageHistory.at(-1)?.view===page)manuPageHistory.pop();
+}
+function armManuBackGuard(){
+ try{
+  window.history.pushState({manuBackGuard:1},'');
+  return true;
+ }catch(e){
+  console.warn('MANU: historia wstecz niedostępna',e);
+  return false;
+ }
+}
+function onManuBack(event){
+ if(!manuBackGuardReady||!event.state?.manuBackRoot)return;
+ // Pierwszy gest zamyka podgląd lub aktualnie otwartą kartę/formularz.
+ if(window.MANUGallery?.isPreviewOpen?.()){
+  window.MANUGallery.closePreview();
+ }else if($('.modal')){
+  closeModal();
+ }else if(manuPageHistory.length){
+  const previous=manuPageHistory.pop();
+  view=previous.view;
+  homeReturnContext=previous.home;
+  projectReturnContext=previous.project;
+  projectToolsExpanded=previous.tools;
+  notebookTurn='';
+  render();
+  window.scrollTo({left:0,top:previous.top,behavior:'instant'});
+ }else if(view!=='home'){
+  view='home';
+  homeReturnContext=null;
+  projectReturnContext=null;
+  notebookTurn='';
+  render();
+  window.scrollTo({left:0,top:0,behavior:'instant'});
+ }else{
+  // Na pulpicie drugi krok powinien pozwolić opuścić aplikację.
+  window.history.back();
+  return;
+ }
+ if(!armManuBackGuard())manuBackGuardReady=false;
+}
+function initManuBackGuard(){
+ if(!window.history?.pushState||!window.history?.replaceState)return;
+ try{
+  if(window.history.state?.manuBackGuard!==1){
+   const existing=window.history.state&&typeof window.history.state==='object'?window.history.state:{};
+   window.history.replaceState({...existing,manuBackRoot:1},'');
+   if(!armManuBackGuard())return;
+  }
+  manuBackGuardReady=true;
+  window.addEventListener('popstate',onManuBack);
+ }catch(e){
+  console.warn('MANU: nie można obsłużyć systemowego Wstecz',e);
+ }
+}
+
 function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(action){case 'template-back':case 'template-new':case 'template-edit':case 'template-save-from-project':case 'template-cancel':case 'template-add-cost':case 'template-remove-cost':case 'template-use':case 'template-delete':{window.MANUTemplates?.handleAction?.(b);break;}case 'gallery-add':case 'gallery-edit':case 'gallery-preview':case 'gallery-delete':case 'gallery-return':case 'gallery-open-project':case 'gallery-close':{window.MANUGallery?.handleAction?.(b);break;}case 'cloud-upload':case 'cloud-download':case 'cloud-check':case 'cloud-backup':case 'cloud-signout':case 'cloud-forgot':case 'cloud-send-reset':{void window.MANUCloud?.action?.(action);break;}case 'nav':{
  if(b.dataset.view==='add'){projectForm();return;}
  const previous=view,next=b.dataset.view;
@@ -1797,6 +1868,7 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  const fromHomeShortcut=previous==='home'&&['projects','tasks','finance','calendar'].includes(next)&&!!b.closest('.command-center, .home-recent');
  const fromProject=previous==='projects'&&['clients','quotes','gallery','templates'].includes(next);
  if(fromProject)projectToolsExpanded=!!document.querySelector('details.project-tools-more')?.open;
+ if(previous!==next)rememberManuPage();
  projectReturnContext=fromProject?{page:next,top:window.scrollY}:null;
  // Zachowaj ścieżkę Start → Projekty → podstrona, aby działały oba powroty.
  if(!(fromProject&&homeReturnContext?.page==='projects'))homeReturnContext=fromHomeShortcut?{page:next,top:window.scrollY}:null;
@@ -1811,6 +1883,7 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
 }case 'return-projects':{
  if(!['clients','quotes','gallery','templates'].includes(view))break;
  const top=projectReturnContext?.page===view?projectReturnContext.top:0;
+ consumeManuReturn('projects');
  projectReturnContext=null;
  notebookTurn='';view='projects';
  render();
@@ -1819,6 +1892,7 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
 }case 'return-home':{
   if(!homeReturnContext||view!==homeReturnContext.page)break;
   const top=homeReturnContext.top;
+  consumeManuReturn('home');
   homeReturnContext=null;
   notebookTurn='';view='home';
   render();
@@ -1853,7 +1927,7 @@ case 'quote-remove-line':{
 }
 case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
-case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);view='calendar';render();break;}case 'smart-snooze':{
+case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':closeModal();break;case 'close-overlay':closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
  const ev=calendarEvents().find(x=>x.key===b.dataset.event&&x.date===b.dataset.date&&!x.done);
  if(!ev||!state.smartAlerts?.enabled)break;
  const until=plusDaysDate(localDay(),1),snoozed=state.smartAlerts.snoozed||{};
@@ -2153,6 +2227,7 @@ async function init(){
  await load();
  calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);lastVisibleDay=calendarSelected;
  render();
+ initManuBackGuard();
  void window.MANUCloud?.init?.({
   getState:()=>state,
   waitForWrites:()=>writeQueue,
