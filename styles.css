@@ -3483,6 +3483,49 @@ html[data-manu-text="large"] .notebook-page select{
  line-height:1.45;
 }
 
+
+/* MANU 3.20.0 · etap 15.1: zwijany, oszczędny asystent wycen */
+.quote-assistant{
+ margin:13px 0 16px;border:1px solid #cfad8d;border-radius:12px;
+ background:linear-gradient(145deg,#f6ead8,#ecddc9);color:#503a2d;overflow:hidden;
+}
+.quote-assistant>summary{
+ display:flex;align-items:center;gap:9px;list-style:none;cursor:pointer;
+ padding:13px 14px;font-size:13px;font-weight:750;
+}
+.quote-assistant>summary::-webkit-details-marker,.quote-cost-helper>summary::-webkit-details-marker{display:none}
+.quote-assistant>summary::marker,.quote-cost-helper>summary::marker{content:""}
+.quote-assistant>summary .ico{width:18px;height:18px;color:#a66b48;flex:none}
+.quote-assistant>summary span{margin-left:auto;font-size:10px;color:#947c6b;font-weight:600}
+.quote-assistant[open]>summary{border-bottom:1px solid #d7bda4}
+.quote-assistant-body{padding:13px 14px 16px;display:grid;gap:12px}
+.quote-assistant-body>p{margin:0;font-size:12px;line-height:1.5;color:#735b4b}
+.quote-assistant-body>.btn{width:fit-content;max-width:100%;white-space:normal;text-align:center}
+.quote-assistant-body>.field{margin:0}
+.quote-assistant-body>.field select{width:100%;max-width:100%;min-width:0}
+.quote-cost-helper{border:1px solid #d8bd9f;border-radius:9px;overflow:hidden;background:#f9f0e5}
+.quote-cost-helper>summary{padding:12px;cursor:pointer;font-size:12px;font-weight:700;color:#74513c}
+.quote-cost-helper[open]>summary{border-bottom:1px solid #e0c8b1}
+#quote-project-hints{padding:12px;display:grid;gap:10px}
+#quote-project-hints p{margin:0;line-height:1.55;font-size:12px;color:#725948;overflow-wrap:anywhere}
+#quote-project-hints .quote-helper-value{font-size:12px;color:#573d30}
+.quote-helper-hints{display:grid;gap:8px;max-height:250px;overflow-y:auto}
+.quote-helper-hint{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;min-width:0;
+ padding:9px;border:1px solid #e1ccb4;border-radius:8px;background:#fff7ed;
+}
+.quote-helper-hint>span{display:grid;min-width:0;gap:3px;overflow-wrap:anywhere}
+.quote-helper-hint b{font-size:12px;color:#503b2e}
+.quote-helper-hint small{font-size:10px;color:#816a58}
+.quote-helper-hint .btn{flex:none;white-space:normal;font-size:11px}
+.quote-assistant summary:focus-visible,.quote-cost-helper summary:focus-visible,
+.quote-helper-hint button:focus-visible{outline:2px solid #a96c49;outline-offset:-2px}
+.quote-doc-parties p{white-space:pre-line;overflow-wrap:anywhere}
+@media(max-width:400px){
+ .quote-helper-hint{align-items:flex-start;flex-wrap:wrap}
+ .quote-helper-hint .btn{width:100%}
+}
+
 /* MANU 3.19.3 · etap 14.3: dyskretny pasek szybkich działań */
 .manu-quick-access{
  display:flex;
