@@ -15,7 +15,8 @@ const recoveryFromUrl=(()=>{
   return hash.get('type')==='recovery'||query.get('type')==='recovery';
  }catch(e){return false;}
 })();
-let timer=null,activeUserId=null;
+let timer=null,activeUserId=null,demoPaused=false;
+const demoStopped=()=>demoPaused||!!bridge?.isDemo?.();
 
 const escape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
 function readBinding(){
@@ -149,6 +150,7 @@ async function fetchRemote(){
  return data;
 }
 async function applyRecord(row){
+ if(demoStopped())throw Error('W trybie DEMO synchronizacja jest wyłączona.');
  if(!row||!bridge)throw Error('Brak kopii danych w chmurze.');
  if(!bridge.canReplace())throw Error('Najpierw zamknij otwarty formularz, aby nie stracić niezapisanych zmian.');
  applying=true;
@@ -163,7 +165,7 @@ async function applyRecord(row){
  }finally{applying=false;}
 }
 async function inspect(){
- if(!client||!user||busy)return;
+ if(demoStopped()||!client||!user||busy)return;
  if(navigator.onLine===false){
   notice='Brak internetu. Dane pozostają lokalne. Sprawdzenie chmury nastąpi po powrocie połączenia.';
   renderIfSettings();
@@ -173,6 +175,7 @@ async function inspect(){
  try{
   binding=readBinding();
   const row=await fetchRemote();
+  if(demoStopped())return;
   // Po odpowiedzi serwera odczekaj na lokalne zapisy, zanim zdecydujesz o pobraniu nowszej wersji.
   await bridge.waitForWrites();
   if(bridge.isStorageBlocked())throw Error('Lokalny zapis jest wstrzymany. Nie zmieniono danych z chmury.');
@@ -196,12 +199,12 @@ async function inspect(){
  finally{busy=false;renderIfSettings();}
 }
 function schedulePush(){
- if(!ready||conflict||!user||applying)return;
+ if(demoStopped()||!ready||conflict||!user||applying)return;
  clearTimeout(timer);
  timer=setTimeout(()=>{timer=null;void push(false)},1800);
 }
 async function push(manual){
- if(!client||!user||busy)return;
+ if(demoStopped()||!client||!user||busy)return;
  if(!manual && (!ready||conflict||binding?.userId!==user.id))return;
  if(navigator.onLine===false){notice='Brak sieci. Dane pozostają lokalnie do ponowienia synchronizacji.';renderIfSettings();return;}
  busy=true;
@@ -209,12 +212,14 @@ async function push(manual){
   await bridge.waitForWrites();
   if(bridge.isStorageBlocked())throw Error('Lokalny zapis jest wstrzymany. Nie wysłano danych do chmury.');
   const row=await fetchRemote();
+  if(demoStopped())return;
   binding=readBinding();
   if(!manual && ((row?.revision||0)!==(binding?.revision||0)||binding?.userId!==user.id)){
    conflict=true;ready=false;
    throw Error('Chmura została zmieniona na innym urządzeniu. Najpierw wybierz, którą wersję zachować.');
   }
   if(manual && !window.confirm(cloudReplacePrompt('upload',bridge.getState(),row?.payload||null,row?.revision)))return;
+  if(demoStopped())return;
   const snapshot=structuredClone(bridge.getState()),stamp=snapshot.lastSaved;
   let response;
   if(row){
@@ -248,12 +253,13 @@ async function push(manual){
  }finally{busy=false;renderIfSettings();}
 }
 async function download(){
- if(!client||!user||busy)return;
+ if(demoStopped()||!client||!user||busy)return;
  busy=true;
  try{
   await bridge.waitForWrites();
   if(bridge.isStorageBlocked())throw Error('Zapis lokalny jest wstrzymany. Nie pobrano chmury i nie zmieniono bazy.');
   const row=await fetchRemote();
+  if(demoStopped())return;
   if(!row){emit('Na koncie nie ma jeszcze danych do pobrania.');return;}
   const local=bridge.getState();
   if(!bridge.canReplace())throw Error('Zamknij otwarte formularze przed pobieraniem chmury.');
@@ -264,7 +270,7 @@ async function download(){
  finally{busy=false;renderIfSettings();}
 }
 async function cloudBackup(){
- if(!client||!user||busy)return;
+ if(demoStopped()||!client||!user||busy)return;
  busy=true;
  try{
   const row=await fetchRemote();
@@ -507,9 +513,12 @@ async function galleryRemove(path){
 }
 window.MANUCloud={
  init,markup:statusMarkup,
+ isBusy:()=>busy,
+ pauseForDemo:()=>{demoPaused=true;clearTimeout(timer);timer=null;},
+ resumeAfterDemo:()=>{demoPaused=false;if(user&&!recoveryMode)void inspect();},
  galleryConnected,galleryUpload,galleryUrls,galleryRemove,
  displayName:()=>String(user?.user_metadata?.display_name||'').trim().slice(0,48),
- localSaved:()=>{if(!applying)schedulePush()},
+ localSaved:()=>{if(!applying&&!demoStopped())schedulePush()},
  async action(name){
   if(name==='cloud-upload')await push(true);
   else if(name==='cloud-download')await download();
