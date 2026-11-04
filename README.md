@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.22.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.23.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.23.0 — Etap 15.4: automatyzacja powtarzalnych czynności
+- W podglądzie zapisanej wyceny lub oferty cenowej dodano przycisk **Powiel dokument**. Otwiera on **nowy, niezapisany formularz**, bazujący na zapisanym dokumencie: przejmuje tytuł, wystawcę i klienta, pozycje z ilościami i cenami, rabat, opis, styl oraz warunki. Nie aktualizuje ani nie nadpisuje oryginału.
+- Kopia otrzymuje proponowany **nowy numer** z istniejącego licznika (ostateczny numer jest przydzielany przy zapisie), **dzisiejszą datę wystawienia** i **pustą datę ważności**. Przed zapisem trzeba sprawdzić bieżące ceny, klienta, terminy i warunki. Jeśli przypisany do oryginału projekt został usunięty, powiązanie nie jest kopiowane.
+- Numeracja, historia projektów, fakt wpłaty i rozliczenia pozostają bez zmian; kopia trafi na listę dopiero po zatwierdzeniu **Zapisz wycenę**. Zrezygnowanie z formularza nie tworzy żadnego rekordu.
+- W zwijanym **Asystencie wyceny** znajduje się też nowy przycisk **Wstaw dane wystawiającego z ostatniego dokumentu**, pobierający ostatnio zapisaną nazwę pracowni i kontakt. Nie zmienia odbiorcy, pozycji, cen ani rabatu. Przy istniejącej innej nazwie lub kontakcie wymaga potwierdzenia.
+- Przycisk jest niedostępny, gdy w bazie nie ma żadnego dokumentu z danymi wystawiającego. Nie zapisujemy dodatkowego profilu ani ustawień, tylko odczytujemy już istniejące wyceny.
+- Poprawiono mobilny układ przycisków w podglądzie; dodatkowe działania nadal są **w podglądzie**, aby nie zagęszczać rejestru dokumentów.
+- Bez zmian schematu JSON `version:18`, nazwy bazy `pracownia_db_v1`, historii wpłat, cen projektów i formatów wydruku. Cache PWA `manu-app-v3.23.0`. Backup kodu: `backup-manu-v3-22-0-before-repeat-workflows`.
+
+### Test etapu 15.4 na telefonie
+1. Wejdź w **Projekty → Więcej narzędzi → Wyceny**, wybierz zapisaną wycenę i otwórz **Podgląd / PDF**.
+2. Naciśnij **Powiel dokument**. Sprawdź, że numer jest nowy, data wystawienia dzisiejsza, data „Ważna do” pusta, a pozycje, klient i warunki są skopiowane.
+3. Zmień cenę lub tytuł i **Zapisz wycenę**. Sprawdź, że nowy dokument powstał obok starego oraz że stary nie został zmieniony.
+4. Otwórz kolejny nowy formularz, rozwiń **Asystent wyceny** i naciśnij **Wstaw dane wystawiającego z ostatniego dokumentu**. Sprawdź kontakt pracowni; klient i pozycje powinny pozostać bez zmian.
+5. Otwórz kolejną kopię i wybierz **Anuluj**. Rejestr nie powinien zawierać niezapisanej kopii.
 
 ## MANU 3.22.0 — Etap 15.3: kontrola należności i zaliczek
 - Na kartce **Finanse** dodano zwijany panel **Należności i zaliczki**. Zawiera podsumowanie: **Otrzymano łącznie**, **Zaliczki w historii**, **Do otrzymania** oraz **Po terminie**.
