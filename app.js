@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.14.0';
+const APP_VERSION='3.14.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -29,6 +29,7 @@ function nextListButton(kind,shown,total){
 let notebookTurn='';
 // Etap 12.1: jeden kontekst powrotu dla skrótów na stronie Start.
 let homeReturnContext=null;
+let projectReturnContext=null;
 let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
@@ -323,9 +324,10 @@ function openNotebook(content,page,turn=''){
   </div>
  </section>`;
 }
-function render(){if(homeReturnContext&&homeReturnContext.page!==view)homeReturnContext=null;const m=(view==='home'||view==='finance')?metrics():null;const turn=notebookTurn;notebookTurn='';const inside=['projects','clients','quotes','gallery','templates','finance','tasks','calendar'].includes(view);const pageContent=view==='home'?homePage(m):view==='projects'?projectsPage():view==='clients'?clientsPage():view==='gallery'?galleryPage():view==='templates'?templatesPage():view==='quotes'?quotesPage():view==='finance'?financePage(m):view==='tasks'?tasksPage():view==='calendar'?calendarPage():settingsPage();$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brandmark"><img class="brand-symbol" src="manu48-mark.svg" alt="" width="40" height="40"></div><div><h2>MANU</h2><p>Organizer twórcy</p></div></div><nav class="nav-list" aria-label="Nawigacja">${navBtn('home','home','Pulpit')}${navBtn('projects','folder','Projekty i warsztaty')}${navBtn('clients','users','Klienci')}${navBtn('gallery','folder','Galeria')}${navBtn('templates','copy','Szablony')}${navBtn('quotes','brief','Wyceny')}${navBtn('finance','wallet','Finanse')}${navBtn('tasks','checks','Zadania')}${navBtn('calendar','calendar','Kalendarz')}${navBtn('settings','settings','Ustawienia')}</nav><div class="sidebar-end">${icon('shield')}<strong>Twoja przestrzeń</strong><p>Wersja testowa · Dane przechowywane na tym urządzeniu. Regularnie eksportuj kopię.</p></div></aside><main class="main-area ${view==='home'?'manu-cover-home':inside?'manu-open-workspace':''}">${view==='home'?'<div class="cover-stitch" aria-hidden="true"></div><button type="button" class="cover-strap" data-action="new-project" aria-label="Otwórz notes i dodaj nowe zlecenie" title="Otwórz notes"><span class="cover-strap-button">M</span></button>':''}<header class="topbar"><div class="eyebrow">MANU · ORGANIZER TWÓRCY</div><div class="mobile-brand"><img src="manu48-mark.svg" alt="" width="34" height="34"><div><strong>MANU</strong><small>ORGANIZER TWÓRCY</small></div></div><div class="topbar-right"><div class="date-chip">${new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date())}</div><button class="avatar" data-action="nav" data-view="settings" aria-label="Ustawienia" title="Ustawienia">${icon('settings')}</button></div></header>${inside?openNotebook(pageContent,view,turn):pageContent}</main><nav class="mobile-nav" aria-label="Nawigacja mobilna">${mobileBtn('home','home','Start')}${mobileBtn('projects','folder','Projekty')}${mobileBtn('add','plus','Dodaj')}${mobileBtn('finance','wallet','Finanse')}${mobileBtn('tasks','checks','Zadania')}${mobileBtn('calendar','calendar','Terminy')}</nav></div>`;void window.MANUGallery?.hydrate?.($('#app'));}
+function render(){if(homeReturnContext&&homeReturnContext.page!==view&&!(homeReturnContext.page==='projects'&&projectReturnContext?.page===view))homeReturnContext=null;const m=(view==='home'||view==='finance')?metrics():null;const turn=notebookTurn;notebookTurn='';const inside=['projects','clients','quotes','gallery','templates','finance','tasks','calendar'].includes(view);const pageContent=view==='home'?homePage(m):view==='projects'?projectsPage():view==='clients'?clientsPage():view==='gallery'?galleryPage():view==='templates'?templatesPage():view==='quotes'?quotesPage():view==='finance'?financePage(m):view==='tasks'?tasksPage():view==='calendar'?calendarPage():settingsPage();$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brandmark"><img class="brand-symbol" src="manu48-mark.svg" alt="" width="40" height="40"></div><div><h2>MANU</h2><p>Organizer twórcy</p></div></div><nav class="nav-list" aria-label="Nawigacja">${navBtn('home','home','Pulpit')}${navBtn('projects','folder','Projekty i warsztaty')}${navBtn('clients','users','Klienci')}${navBtn('gallery','folder','Galeria')}${navBtn('templates','copy','Szablony')}${navBtn('quotes','brief','Wyceny')}${navBtn('finance','wallet','Finanse')}${navBtn('tasks','checks','Zadania')}${navBtn('calendar','calendar','Kalendarz')}${navBtn('settings','settings','Ustawienia')}</nav><div class="sidebar-end">${icon('shield')}<strong>Twoja przestrzeń</strong><p>Wersja testowa · Dane przechowywane na tym urządzeniu. Regularnie eksportuj kopię.</p></div></aside><main class="main-area ${view==='home'?'manu-cover-home':inside?'manu-open-workspace':''}">${view==='home'?'<div class="cover-stitch" aria-hidden="true"></div><button type="button" class="cover-strap" data-action="new-project" aria-label="Otwórz notes i dodaj nowe zlecenie" title="Otwórz notes"><span class="cover-strap-button">M</span></button>':''}<header class="topbar"><div class="eyebrow">MANU · ORGANIZER TWÓRCY</div><div class="mobile-brand"><img src="manu48-mark.svg" alt="" width="34" height="34"><div><strong>MANU</strong><small>ORGANIZER TWÓRCY</small></div></div><div class="topbar-right"><div class="date-chip">${new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date())}</div><button class="avatar" data-action="nav" data-view="settings" aria-label="Ustawienia" title="Ustawienia">${icon('settings')}</button></div></header>${inside?openNotebook(pageContent,view,turn):pageContent}</main><nav class="mobile-nav" aria-label="Nawigacja mobilna">${mobileBtn('home','home','Start')}${mobileBtn('projects','folder','Projekty')}${mobileBtn('add','plus','Dodaj')}${mobileBtn('finance','wallet','Finanse')}${mobileBtn('tasks','checks','Zadania')}${mobileBtn('calendar','calendar','Terminy')}</nav></div>`;void window.MANUGallery?.hydrate?.($('#app'));}
 function pageHeading(title,desc,btn=''){return `<div class="page-heading"><div><h1 class="page-title">${title}</h1><p class="page-lede">${desc}</p></div>${btn}</div>`}
 function returnToHomeButton(page){return homeReturnContext?.page===page?'<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="return-home" aria-label="Wróć do poprzedniego miejsca na ekranie Start" title="Wróć do Startu"><span aria-hidden="true">×</span> Wróć</button></div>':'';}
+function returnToProjectsButton(){return '<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="return-projects" aria-label="Wróć do projektów" title="Wróć do projektów"><span aria-hidden="true">×</span> Wróć</button></div>';}
 function statsCard(label,number,note,ic,cls=''){return `<div class="stat"><div class="stat-top"><span>${label}</span><div class="stat-icon">${icon(ic)}</div></div><strong class="${cls}">${number}</strong><small>${note}</small></div>`}
 /* Etap 9.1 — Centrum dowodzenia: wyłącznie odczyt istniejących zadań, terminów i wpłat. */
 function commandCenterData(today=localDay()){
@@ -522,7 +524,7 @@ function quotesPage(){
   const p=state.projects.find(p=>p.id===q.projectId);
   return `<article class="surface quote-list-card"><div><small>${htmlEscape(q.number)} · ${htmlEscape(q.issued)}</small><h3>${htmlEscape(q.title)}</h3><p>${htmlEscape(q.client||'Klient niepodany')}${p?' · '+htmlEscape(p.title):''}</p></div><div class="quote-list-aside"><strong>${fMoney(quoteTotal(q))}</strong><div><button type="button" class="btn secondary sm" data-action="quote-preview" data-id="${htmlEscape(q.id)}">Podgląd / PDF</button><button type="button" class="btn ghost sm" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost sm" data-action="quote-delete" data-id="${htmlEscape(q.id)}" aria-label="Usuń wycenę">${icon('trash')}</button></div></div></article>`;
  }).join('');
- return `<div class="quote-close-row"><button type="button" class="quote-exit" data-action="nav" data-view="projects" aria-label="Zamknij wyceny i wróć do projektów" title="Wróć do projektów"><span aria-hidden="true">×</span></button></div>${pageHeading('Wyceny dla klientów','Przygotuj wycenę i zapisz ją jako PDF.',`<button class="btn" data-action="quote-new">${icon('plus')} Nowa wycena</button>`)}
+ return `${returnToProjectsButton()}${pageHeading('Wyceny dla klientów','Przygotuj wycenę i zapisz ją jako PDF.',`<button class="btn" data-action="quote-new">${icon('plus')} Nowa wycena</button>`)}
  <div class="quote-list">${rows||'<div class="surface quote-empty"><h3>Nie masz jeszcze wycen</h3><p>Dodaj pierwszą wycenę albo rozpocznij ją ze zlecenia.</p><button class="btn" data-action="quote-new">Przygotuj wycenę</button></div>'}</div><p class="muted tiny">Wyceny są przechowywane lokalnie. Zapisuj kopie JSON w Ustawieniach. Wycena nie jest fakturą.</p>`;
 }
 function quoteDocument(q){
@@ -560,8 +562,8 @@ function clientsPage(){
  const count=state.clients.length;
  const linkedClientIds=new Set(state.clients.map(c=>c.id));
  const legacy=state.projects.filter(p=>!p.clientId&&String(p.client||'').trim()).length;
- return pageHeading('Baza klientów','Kontakty, historia współpracy oraz rozliczenia w jednym miejscu.',
-   '<div class="crm-page-actions"><button type="button" class="btn ghost crm-close" data-action="nav" data-view="projects" title="Wróć do projektów" aria-label="Wróć do projektów">×</button>'+
+ return returnToProjectsButton()+pageHeading('Baza klientów','Kontakty, historia współpracy oraz rozliczenia w jednym miejscu.',
+   '<div class="crm-page-actions">'+
    '<button type="button" class="btn" data-action="client-new">'+icon('plus')+' Nowy klient</button></div>')+
    '<div class="crm-summary">'+
     '<div><small>Karty klientów</small><strong>'+count+'</strong></div>'+
@@ -688,11 +690,10 @@ function importLegacyClients(){
  afterDataChange('Dodano '+made+' kart klientów i powiązano '+linked+' projektów.');
 }
 function templatesPage(){
- return window.MANUTemplates?.page?.()||'<p>Moduł szablonów nie jest dostępny. Odśwież aplikację.</p>';
+ return returnToProjectsButton()+(window.MANUTemplates?.page?.()||'<p>Moduł szablonów nie jest dostępny. Odśwież aplikację.</p>');
 }
 function galleryPage(){
- return pageHeading('Galeria realizacji','Fotografie Twoich projektów: przed, po i gotowe prace.',
-  '<button type="button" class="btn secondary" data-action="nav" data-view="projects">Wróć do projektów</button>')+
+ return returnToProjectsButton()+pageHeading('Galeria realizacji','Fotografie Twoich projektów: przed, po i gotowe prace.')+
   (window.MANUGallery?.overview?.(state.projects)||'');
 }
 function filteredProjects(){
@@ -1047,7 +1048,7 @@ function modal(title,body,options={}){
  }
  const paperBinding=paper?'<div class="paper-binding" aria-hidden="true"><span class="paper-binding-edge"></span><span class="paper-binding-stitches"></span><span class="paper-binding-pages"></span></div>':'';
  const pageLabel=detail?'MANU · KARTA REALIZACJI':'MANU · KARTA PRACY';
- $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''} ${detail?'notebook-detail-page':''} ${right?'notebook-page--right':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paper&&!right?paperBinding:''}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">'+pageLabel+'</small>':''}<h2>${htmlEscape(title)}</h2></div><button class="close" data-action="close" aria-label="Zamknij">×</button></div><div class="modal-body">${body}</div></div>${paper&&right?paperBinding:''}</div></div>`;
+ $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''} ${detail?'notebook-detail-page':''} ${right?'notebook-page--right':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paper&&!right?paperBinding:''}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">'+pageLabel+'</small>':''}<h2>${htmlEscape(title)}</h2></div><button type="button" class="close" data-action="close" aria-label="Zamknij okno">×</button></div><div class="modal-body">${body}</div></div>${paper&&right?paperBinding:''}</div></div>`;
  const next=$('.modal');
  if(detail&&detailReturnScroll?.projectId===options.projectId&&next){
   next.classList.add('notebook-refresh');
@@ -1624,13 +1625,24 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  const previous=view,next=b.dataset.view;
  // Powrót tylko po użyciu skrótu na Start; zwykłe zakładki nie pokazują dodatkowego przycisku.
  const fromHomeShortcut=previous==='home'&&['projects','tasks','finance','calendar'].includes(next)&&!!b.closest('.command-center, .home-recent');
- homeReturnContext=fromHomeShortcut?{page:next,top:window.scrollY}:null;
+ const fromProject=previous==='projects'&&['clients','quotes','gallery','templates'].includes(next);
+ projectReturnContext=fromProject?{page:next,top:window.scrollY}:null;
+ // Zachowaj ścieżkę Start → Projekty → podstrona, aby działały oba powroty.
+ if(!(fromProject&&homeReturnContext?.page==='projects'))homeReturnContext=fromHomeShortcut?{page:next,top:window.scrollY}:null;
  const notebookOrder={home:0,projects:1,clients:2,gallery:3,templates:4,quotes:5,finance:6,tasks:7,calendar:8};
  notebookTurn=Object.hasOwn(notebookOrder,previous)&&Object.hasOwn(notebookOrder,next)&&previous!==next
    ?notebookOrder[next]>notebookOrder[previous]?'next':'prev':'';
  view=next;
  window.scrollTo(0,0);
  render();
+ break;
+}case 'return-projects':{
+ if(!['clients','quotes','gallery','templates'].includes(view))break;
+ const top=projectReturnContext?.page===view?projectReturnContext.top:0;
+ projectReturnContext=null;
+ notebookTurn='';view='projects';
+ render();
+ window.scrollTo({left:0,top,behavior:'instant'});
  break;
 }case 'return-home':{
   if(!homeReturnContext||view!==homeReturnContext.page)break;
