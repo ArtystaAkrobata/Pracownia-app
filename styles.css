@@ -3640,6 +3640,13 @@ html[data-manu-text="large"] .notebook-page select{
  .quote-preview-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  .quote-preview-actions .btn{min-width:0;padding:10px 8px}
  .quote-preview-actions .btn:first-child{grid-column:1/-1}
+ /* Cztery przyciski: Zamknij wyśrodkowany, o szerokości jednej kolumny. */
+ .quote-preview-actions .btn:nth-child(4):last-child{
+  grid-column:1/-1;
+  justify-self:center;
+  width:calc((100% - 8px)/2);
+  box-sizing:border-box;
+ }
 }
 
 /* MANU 3.20.0 · etap 15.1: zwijany, oszczędny asystent wycen */
