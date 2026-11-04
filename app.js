@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.5';
+const APP_VERSION='3.20.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -320,6 +320,7 @@ function normalizeQuotes(records){
  id:String(q.id||uid()),number:String(q.number||'').slice(0,55),projectId:String(q.projectId||''),
  title:String(q.title||'Wycena').slice(0,140),issuer:String(q.issuer||'').slice(0,180),
  issuerContact:String(q.issuerContact||'').slice(0,350),client:String(q.client||'').slice(0,180),
+ clientContact:String(q.clientContact||'').slice(0,350),clientAddress:String(q.clientAddress||'').slice(0,280),
  issued:validDate(q.issued)||localDay(),validUntil:validDate(q.validUntil),notes:String(q.notes||'').slice(0,900),
  discount:money(q.discount),createdAt:validTime(q.createdAt)||now(),
  items:(Array.isArray(q.items)?q.items:[]).slice(0,80).filter(i=>i&&typeof i==='object'&&!Array.isArray(i)).map(i=>({
@@ -610,6 +611,64 @@ function quoteItemRow(item={}){
   <button type="button" class="btn ghost sm quote-remove-line" data-action="quote-remove-line" aria-label="Usuń pozycję">${icon('trash')}</button>
  </div>`;
 }
+
+/* Etap 15.1 — opcjonalne podpowiedzi w wycenach. Koszty nie są cenami sprzedaży. */
+function quoteProjectItem(p){
+ const qty=Math.max(1,Math.floor(Number(p?.quantity)||1));
+ return {description:String(p?.title||'').slice(0,180),quantity:qty,
+  unit:p?.type==='Warsztat'?'usł.':'szt.',unitPrice:money(projectIncome(p)/qty)};
+}
+function quoteClientFields(c){
+ return {client:String((c.company?c.company+' — ':'')+c.name).slice(0,180),
+  clientContact:[c.email,c.phone].filter(Boolean).join(' · ').slice(0,350),
+  clientAddress:String(c.address||'').slice(0,280)};
+}
+function quoteCostHints(p){
+ if(!p)return [];
+ const hints=[];
+ for(const m of (p.workshopMaterials||[])){
+  if(!String(m.title||'').trim())continue;
+  hints.push({description:String(m.title).trim().slice(0,180),
+   quantity:Math.max(1,Math.min(100000,Math.floor(Number(m.quantity)||1))),
+   kind:'Materiał',cost:null});
+ }
+ for(const e of (p.expenses||[])){
+  if(!String(e.title||'').trim())continue;
+  hints.push({description:String(e.title).trim().slice(0,180),
+   quantity:1,kind:expenseCategoryName(e.category),cost:money(e.amount)});
+ }
+ return hints.slice(0,24);
+}
+function quoteProjectHintsMarkup(p){
+ if(!p)return '<p class="muted small">Wybierz projekt wyżej, aby zobaczyć podpowiedzi materiałów i kosztów.</p>';
+ const hints=quoteCostHints(p);
+ return '<p class="quote-helper-value">Wartość projektu: <strong>'+fMoney(projectIncome(p))+'</strong> · '
+  +'Plan materiałów: '+fMoney(p.estimatedMaterials||0)+' · Wpisane wydatki: '+fMoney(enteredExpenses(p))+'</p>'
+  +'<p class="muted tiny">Koszt nie jest ceną dla klienta. Wstawiamy tylko opis i ilość; cenę sprzedaży ustawiasz samodzielnie.</p>'
+  +(hints.length?'<div class="quote-helper-hints">'+hints.map((h,i)=>
+   '<div class="quote-helper-hint"><span><b>'+htmlEscape(h.description)+'</b><small>'
+   +htmlEscape(h.kind)+(h.cost!=null?' · koszt: '+fMoney(h.cost):' · '+h.quantity+' szt.')
+   +'</small></span><button type="button" class="btn secondary sm" data-action="quote-add-hint" data-index="'+i+'">Wstaw opis</button></div>'
+  ).join('')+'</div>'
+  :'<p class="muted small">Brak zapisanych pozycji kosztów lub listy materiałów w tym projekcie.</p>');
+}
+function quoteAssistantMarkup(q,p){
+ const matched=state.clients.find(c=>c.id===p?.clientId)||state.clients.find(c=>c.name===q.client);
+ const options=state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(c=>
+  '<option value="'+htmlEscape(c.id)+'" '+(c.id===matched?.id?'selected':'')+'>'
+  +htmlEscape(c.company?c.company+' — '+c.name:c.name)+'</option>').join('');
+ return '<details class="quote-assistant"><summary>'+icon('spark')+' Asystent wyceny <span>opcjonalnie</span></summary>'
+  +'<div class="quote-assistant-body"><p>Przenieś dane świadomie jednym dotknięciem. Rozliczenia projektu pozostaną bez zmian.</p>'
+  +'<button type="button" class="btn secondary sm" id="quote-fill-project" data-action="quote-fill-project" '+(!p?'disabled':'')+'>'
+  +icon('copy')+' Wstaw dane wybranego projektu</button>'
+  +'<div class="field"><label for="quote-client-source">Klient z bazy</label><select id="quote-client-source">'
+  +'<option value="">Wybierz zapisany kontakt</option>'+options+'</select></div>'
+  +'<button type="button" class="btn secondary sm" data-action="quote-fill-client" '+(!state.clients.length?'disabled':'')+'>'
+  +icon('users')+' Uzupełnij dane klienta</button>'
+  +'<details class="quote-cost-helper"><summary>Materiały i koszty — podpowiedzi pozycji</summary>'
+  +'<div id="quote-project-hints">'+quoteProjectHintsMarkup(p)+'</div></details></div></details>';
+}
+
 function quoteForm(projectId='',quoteId=''){
  const existing=(state.quotes||[]).find(q=>q.id===quoteId);
  const p=state.projects.find(p=>p.id===(existing?.projectId||projectId));
