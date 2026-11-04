@@ -1108,3 +1108,77 @@ test('Etap 16.1: raport zabezpiecza treść przed wstrzyknięciem HTML', () => {
  assert.doesNotMatch(markup,/<script/);
  assert.match(api.settingsPage(),/data-action="security-audit"/);
 });
+
+
+/* Etap 16.2 — testy bezpieczeństwa porównania lokalnej kopii i chmury. */
+function bootCloudComparison(){
+ const source=fs.readFileSync(path.join(ROOT,'cloud.js'),'utf8');
+ const final=/\}\)\(\);\s*$/;
+ assert.match(source,final);
+ const injected=source.replace(final,
+  'globalThis.__MANU_CLOUD_TEST={cloudDataSummary,cloudReplacePrompt};\n})();');
+ const sandbox={
+  window:{MANU_CLOUD_CONFIG:{}},
+  document:{addEventListener:()=>{}},
+  navigator:{onLine:true},
+  location:{hash:'',search:''},
+  localStorage:{getItem:()=>null,setItem:()=>{}},
+  URLSearchParams,
+  console
+ };
+ vm.runInNewContext(injected,sandbox,{filename:'cloud.js',timeout:3000});
+ return sandbox.__MANU_CLOUD_TEST;
+}
+test('Etap 16.2: porównanie kopii uwzględnia klientów, projekty, wyceny i uczestników',()=>{
+ const cloud=bootCloudComparison();
+ const data={projects:[{title:'Warsztat',participants:[{name:'A'},{name:'B'}]}],
+  clients:[{name:'D'},{name:'E'}],quotes:[{title:'Oferta'}],tasks:[{title:'Zadanie'}],
+  lastSaved:'2026-11-04T16:00:00.000Z'};
+ const sum=cloud.cloudDataSummary(data);
+ assert.equal(sum.projects,1);
+ assert.equal(sum.participants,2);
+ assert.equal(sum.clients,2);
+ assert.equal(sum.quotes,1);
+ assert.equal(sum.tasks,1);
+ assert.match(sum.lastSaved,/2026/);
+});
+test('Etap 16.2: ręczne pobranie chmury ostrzega o zastąpieniu lokalnej bazy',()=>{
+ const cloud=bootCloudComparison();
+ const local={projects:[{},{}],clients:[{}],quotes:[{},{}],tasks:[]};
+ const remote={projects:[{}],clients:[],quotes:[],tasks:[{}]};
+ const msg=cloud.cloudReplacePrompt('download',local,remote,7);
+ assert.match(msg,/POBIERANIE Z CHMURY/);
+ assert.match(msg,/Projekty: 2, klienci: 1, wyceny: 2/);
+ assert.match(msg,/Projekty: 1, klienci: 0, wyceny: 0/);
+ assert.match(msg,/ZASTĄPIĄ obecną bazę na telefonie/);
+ assert.match(msg,/Wersja w chmurze: 7/);
+ assert.match(msg,/Anuluj/);
+});
+test('Etap 16.2: wysłanie do chmury pokazuje oba zbiory i ostrzeżenie o zastąpieniu',()=>{
+ const cloud=bootCloudComparison();
+ const msg=cloud.cloudReplacePrompt('upload',{projects:[{}],quotes:[{}]},
+  {projects:[{},{}],quotes:[{},{}]},12);
+ assert.match(msg,/WYSYŁANIE DO CHMURY/);
+ assert.match(msg,/ZASTĄPI dane w chmurze/);
+ assert.match(msg,/Wersja w chmurze: 12/);
+ assert.match(msg,/POZA telefonem/);
+});
+test('Etap 16.2: pierwsze wysłanie i pusty stan nie powodują fikcyjnych danych',()=>{
+ const cloud=bootCloudComparison();
+ const msg=cloud.cloudReplacePrompt('upload',{projects:[],clients:[],quotes:[],tasks:[]},null,null);
+ assert.match(msg,/Brak zapisanej kopii/);
+ assert.match(msg,/Wersja w chmurze: brak/);
+ const sum=cloud.cloudDataSummary({projects:null,clients:'złe',quotes:[],lastSaved:'nie-data'});
+ assert.equal(sum.projects,0);
+ assert.equal(sum.clients,0);
+ assert.equal(sum.participants,0);
+ assert.equal(sum.lastSaved,'Brak potwierdzonej daty');
+});
+test('Etap 16.2: komunikat porównania nie wypisuje nazw i kontaktów klientów',()=>{
+ const cloud=bootCloudComparison();
+ const personal={projects:[{title:'Sekretne zlecenie',participants:[{name:'Jan Sekret'}]}],
+  clients:[{name:'Klient Sekret',email:'sekret@example.test'}],quotes:[{client:'Pani Sekret'}],tasks:[]};
+ const msg=cloud.cloudReplacePrompt('download',personal,personal,1);
+ assert.doesNotMatch(msg,/Klient Sekret|sekret@example\.test|Jan Sekret|Pani Sekret|Sekretne zlecenie/);
+ assert.match(msg,/projekty|Projekty/);
+});
