@@ -2494,6 +2494,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(submitButton)submitButton.disabled=true;
  let saved=false;
  try{saved=await save();}
+ catch(e){console.error('MANU: wyjątek podczas zapisu wyceny',e);saved=false;}
  finally{
   quoteSubmissionPending=false;
   if(submitButton)submitButton.disabled=false;
