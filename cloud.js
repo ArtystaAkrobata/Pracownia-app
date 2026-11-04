@@ -70,11 +70,15 @@ function statusMarkup(){
   '<p class="muted tiny">Po zapisaniu hasła wrócisz do profilu. Nie wysyłaj swojego hasła ani linku resetującego nikomu.</p>';
  }else{
   const connected=ready && !conflict && binding?.userId===user.id;
+  const offline=navigator.onLine===false;
+  // Po pracy bez sieci nie nazywaj lokalnych zmian "zsynchronizowanymi".
+  const pendingLocal=!!(binding?.userId===user.id && bridge?.getState?.().lastSaved!==binding.lastSaved);
   const current=remote?('W chmurze: wersja '+remote.revision):'Brak zapisanej kopii w chmurze';
   body='<p><b>Konto:</b> '+escape(user.email||'Zalogowano')+'</p>'+
-  '<p class="cloud-status '+(conflict?'cloud-status-warning':'')+'">'+
+  '<p class="cloud-status '+(conflict||offline||pendingLocal?'cloud-status-warning':'')+'">'+
   (conflict?'⚠ Wersje danych różnią się. Synchronizacja zatrzymana.':
-   connected?'✓ Automatyczna synchronizacja włączona.':
+   offline?(pendingLocal?'⏳ Brak internetu. Nowe zmiany są zapisane lokalnie i czekają na sprawdzenie synchronizacji.':'Offline: dane pozostają lokalne. Po odzyskaniu sieci MANU sprawdzi chmurę.'):
+   connected?(pendingLocal?'⏳ Zmiany zapisane lokalnie. MANU sprawdzi wersję w chmurze przed wysłaniem.':'✓ Lokalna kopia jest zsynchronizowana z chmurą.'):
    'Synchronizacja nieaktywna. Najpierw wybierz, którą kopię zachować.')+'</p>'+
   '<p class="muted small">'+escape(current)+'</p>'+
   '<div class="settings-actions">'+
@@ -127,6 +131,11 @@ async function applyRecord(row){
 }
 async function inspect(){
  if(!client||!user||busy)return;
+ if(navigator.onLine===false){
+  notice='Brak internetu. Dane pozostają lokalne. Sprawdzenie chmury nastąpi po powrocie połączenia.';
+  renderIfSettings();
+  return;
+ }
  busy=true;
  try{
   binding=readBinding();
@@ -196,8 +205,18 @@ async function push(manual){
   if(manual)emit('Dane zapisano w chmurze. Włączono automatyczną synchronizację.');
   if(bridge.getState().lastSaved!==stamp)schedulePush();
  }catch(e){
-  ready=false;conflict=true;errorText=textError(e);
-  if(manual)window.alert('Nie udało się zapisać w chmurze: '+errorText);
+  // Utrata sieci nie oznacza rozbieżności wersji. Lokalny zapis zostaje bez zmian.
+  const networkError=navigator.onLine===false||/Failed to fetch|NetworkError|fetch failed|Load failed|Network request failed/i.test(String(e?.message||e));
+  ready=false;
+  if(networkError){
+   conflict=false;
+   errorText='';
+   notice='Połączenie z chmurą przerwane. Zmiany są zachowane lokalnie; po powrocie internetu MANU sprawdzi wersje przed wysłaniem.';
+  }else{
+   conflict=true;
+   errorText=textError(e);
+  }
+  if(manual)window.alert('Nie udało się zapisać w chmurze: '+(errorText||notice));
  }finally{busy=false;renderIfSettings();}
 }
 async function download(){
@@ -384,7 +403,8 @@ async function init(callbacks){
    bridge?.openSettings?.();
   }
   if(user&&!recoveryMode)void inspect();
-  window.addEventListener('online',()=>{if(user)void inspect()});
+  // Najpierw odczytaj stan chmury; nie wysyłaj w ciemno zmian wykonanych offline.
+  window.addEventListener('online',()=>{if(user&&!recoveryMode)void inspect()});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&user)void inspect()});
   setInterval(()=>{if(user&&document.visibilityState==='visible')void inspect()},90000);
  }catch(e){errorText=textError(e);renderIfSettings();}
