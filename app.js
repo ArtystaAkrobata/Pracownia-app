@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.24.0';
+const APP_VERSION='3.25.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1479,9 +1479,102 @@ async function checkPwaUpdate(){
   refreshPwaPanel();
  }catch(e){console.warn('Sprawdzanie aktualizacji MANU:',e);toast('Nie udało się sprawdzić aktualizacji. Spróbuj ponownie przy połączeniu z internetem.');}
 }
+
+/* Etap 16.1: wyłącznie odczytowa kontrola zapisów; bez tworzenia ani nadpisywania danych. */
+let securityAuditReport=null,securityAuditBusy=false;
+function securityAuditSnapshot(raw){
+ if(raw==null)return {status:'missing',lastSaved:'',summary:null};
+ try{
+  const parsed=typeof raw==='string'?JSON.parse(raw):raw;
+  const safe=validateBackup(parsed);
+  return {status:'ok',lastSaved:String(safe.lastSaved||''),summary:backupSummary(safe)};
+ }catch(e){return {status:'invalid',lastSaved:'',summary:null};}
+}
+function securityAuditMarkup(){
+ const report=securityAuditReport;
+ if(!report)return '<p class="muted small">Jeszcze nie sprawdzano pamięci na tym urządzeniu. Kontrola niczego nie zmienia i nie wysyła danych do internetu.</p>';
+ return '<div class="manu-security-summary"><strong>'+htmlEscape(report.title)+'</strong>'
+ +'<small>'+htmlEscape(report.checkedAt)+'</small></div>'
+ +'<div class="manu-security-results">'+report.rows.map(row=>
+  '<div class="manu-security-row manu-security-row--'+htmlEscape(row.status)+'">'
+  +'<span><b>'+htmlEscape(row.title)+'</b><small>'+htmlEscape(row.info)+'</small></span>'
+  +'<strong>'+htmlEscape(row.label)+'</strong></div>').join('')+'</div>'
+ +'<p class="muted tiny">Kontrola dotyczy tylko zapisów na tym urządzeniu. Nie potwierdza posiadania pobranego pliku JSON ani synchronizacji z chmurą. Kopię JSON przechowuj poza telefonem; osobno sprawdź Konto i synchronizacja.</p>';
+}
+async function runSecurityAudit(){
+ if(securityAuditBusy)return;
+ securityAuditBusy=true;
+ const panel=$('#manu-security-audit'),button=$('#manu-security-check');
+ if(button)button.disabled=true;
+ if(panel)panel.innerHTML='<p class="muted small" role="status">Sprawdzam lokalne dane bez ich zmieniania…</p>';
+ const rows=[];
+ try{
+  // Czekamy na już rozpoczęte operacje zapisu, niczego nowego nie zapisujemy.
+  await writeQueue;
+  let current=null,previous=null,currentError=false,previousError=false;
+  try{
+   current=dbAvailable?await idbGet(DATA_KEY):null;
+   if(current==null)current=localStorage.getItem(DATA_KEY);
+  }catch(e){currentError=true;console.warn('MANU: odczyt bieżącej kopii',e);}
+  try{
+   previous=dbAvailable?await idbGet(RECOVERY_KEY):localStorage.getItem(RECOVERY_KEY);
+  }catch(e){previousError=true;console.warn('MANU: odczyt poprzedniej kopii',e);}
+  const currentCheck=currentError?{status:'invalid'}:securityAuditSnapshot(current);
+  const previousCheck=previousError?{status:'invalid'}:securityAuditSnapshot(previous);
+  const expected=backupSummary(state);
+  const matching=currentCheck.status==='ok'
+   &&JSON.stringify(currentCheck.summary)===JSON.stringify(expected)
+   &&currentCheck.lastSaved===state.lastSaved;
+  const currentFailed=storageBlocked||saveStatus==='error'||currentCheck.status==='invalid';
+  rows.push({
+   title:'Bieżący zapis',status:currentFailed?'error':matching?'ok':'warn',
+   label:currentFailed?'Błąd':matching?'Zgodny':'Do sprawdzenia',
+   info:currentFailed?'Wystąpił problem z pamięcią lub odczytem. Nie usuwaj danych aplikacji.'
+    :currentCheck.status==='missing'?'Nie znaleziono zapisu na urządzeniu. Jeśli masz dane, pobierz kopię JSON.'
+    :matching?'Zapis jest czytelny i liczba rekordów oraz data zgadzają się z otwartym MANU.'
+    :'Zapis i aktualnie widoczny stan różnią się. Sprawdź status zapisu i pobierz kopię.'
+  });
+  rows.push({
+   title:'Poprzedni zapis',status:previousCheck.status==='ok'?'ok':previousCheck.status==='invalid'?'error':'warn',
+   label:previousCheck.status==='ok'?'Czytelny':previousCheck.status==='invalid'?'Błąd':'Brak',
+   info:previousCheck.status==='ok'
+    ?'Lokalny punkt odzyskiwania: '+previousCheck.summary.projects+' projektów, '+previousCheck.summary.quotes+' wycen, '+previousCheck.summary.clients+' klientów.'
+    :previousCheck.status==='invalid'?'Lokalna kopia awaryjna jest nieczytelna. Sprawdź zewnętrzny plik JSON.'
+    :'Nie ma jeszcze poprzedniego zapisu. Powstaje po kolejnym poprawnym zapisie.'
+  });
+  let persistent=null;
+  try{if(typeof navigator.storage?.persisted==='function')persistent=!!(await navigator.storage.persisted());}
+  catch(e){console.warn('MANU: trwałość pamięci',e);}
+  rows.push({
+   title:'Ochrona pamięci',status:persistent===true?'ok':'warn',
+   label:persistent===true?'Przyznana':persistent===false?'Nieprzyznana':'Nieznana',
+   info:persistent===true?'Przeglądarka potwierdziła trwałą pamięć. Nadal rób kopie poza telefonem.'
+    :persistent===false?'Przeglądarka nie przyznała ochrony. Możesz użyć przycisku „Zwiększ trwałość lokalnej pamięci” poniżej.'
+    :'Przeglądarka nie udostępnia wiarygodnego odczytu tego uprawnienia. Kopia JSON pozostaje konieczna.'
+  });
+  const errors=rows.some(row=>row.status==='error');
+  securityAuditReport={
+   title:errors?'Wykryto problem wymagający uwagi':rows.every(row=>row.status==='ok')
+    ?'Kontrola lokalna bez problemów':'Kontrola zakończona — sprawdź uwagi',
+   checkedAt:new Intl.DateTimeFormat('pl-PL',{dateStyle:'short',timeStyle:'short'}).format(new Date()),
+   rows
+  };
+ }catch(e){
+  console.error('MANU: kontrola bezpieczeństwa',e);
+  securityAuditReport={title:'Kontrola nie powiodła się',
+   checkedAt:new Intl.DateTimeFormat('pl-PL',{dateStyle:'short',timeStyle:'short'}).format(new Date()),
+   rows:[{title:'Odczyt danych',status:'error',label:'Błąd',info:'Nie udało się ukończyć kontroli. Nie usuwaj danych; pobierz kopię JSON.'}]};
+ }finally{
+  securityAuditBusy=false;
+  if(panel)panel.innerHTML=securityAuditMarkup();
+  if(button)button.disabled=false;
+ }
+}
+
 function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack">${window.MANUCloud?.markup?.()||''}${personalizationMarkup()}<details class="smart-settings" ${smartSettingsExpanded?'open':''}><summary>${icon('calendar')} Inteligentne przypomnienia</summary><div class="smart-settings-content"><p>MANU wykrywa ważne terminy i pokazuje je na ekranie Start. Nie tworzy nowych, zduplikowanych wpisów.</p><label class="smart-settings-check"><input id="smart-alert-enabled" type="checkbox" ${state.smartAlerts?.enabled!==false?'checked':''}><span>Włącz inteligentne przypomnienia</span></label><label class="smart-settings-lead">Przypominaj o zleceniach i płatnościach<select id="smart-alert-lead" ${state.smartAlerts?.enabled===false?'disabled':''}><option value="1" ${state.smartAlerts?.leadDays===1?'selected':''}>1 dzień wcześniej</option><option value="3" ${state.smartAlerts?.leadDays!==1&&state.smartAlerts?.leadDays!==7?'selected':''}>3 dni wcześniej</option><option value="7" ${state.smartAlerts?.leadDays===7?'selected':''}>7 dni wcześniej</option></select></label><p class="muted tiny">Warsztaty: 7 dni wcześniej. Zadania: dzień wcześniej. Własne przypomnienia: w dniu terminu. „Jutro” odkłada pojedynczą wskazówkę. To funkcja wewnątrz MANU — aplikacja nie wysyła powiadomień, gdy jest całkowicie zamknięta.</p></div></details><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
  <p id="manu-save-status" class="save-state-line ${storageBlocked?'is-error':''}" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
  <p class="small">MANU zapisuje dane na tym urządzeniu po każdej zmianie. Zostawia też jeden poprzedni lokalny stan, który możesz przywrócić. Nie chroni to przed utratą telefonu ani usunięciem danych przeglądarki.</p>
+ <div class="manu-security-audit"><div class="manu-security-heading"><strong>Kontrola bezpieczeństwa danych</strong><button type="button" id="manu-security-check" class="btn secondary sm" data-action="security-audit">${icon('shield')} Sprawdź</button></div><div id="manu-security-audit" role="status" aria-live="polite">${securityAuditMarkup()}</div></div>
  <div class="settings-actions"><button class="btn" data-action="export">${icon('download')} Pobierz kopię JSON</button>
  <button class="btn secondary" data-action="backup-check">${icon('shield')} Sprawdź plik kopii</button>
  <button class="btn secondary" data-action="import">${icon('upload')} Przywróć z pliku</button>
@@ -2448,7 +2541,7 @@ case 'ui-quick-move':{
   break;
  }
  case 'pwa-check-update':void checkPwaUpdate();break;
-case 'offline-check':void checkOfflineReadiness();break;
+case 'offline-check':void checkOfflineReadiness();break;case 'security-audit':void runSecurityAudit();break;
 case 'pwa-reload':{
  if(navigator.onLine===false){toast('Włącz internet, aby wczytać aktualną wersję MANU.');break;}
  if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
