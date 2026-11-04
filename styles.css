@@ -3240,3 +3240,37 @@ body.gallery-lightbox-open{overflow:hidden}
     row-gap:5px;
   }
 }
+
+/* MANU 3.18.0 · etap 13.1: instalacja i aktualizacje PWA */
+#manu-pwa-panel .manu-pwa-status{
+ font-weight:700;
+ color:#6f4735;
+ line-height:1.65;
+}
+#manu-pwa-panel .manu-pwa-update{
+ padding:12px 13px;
+ border:1px solid #cba780;
+ border-left:3px solid #ac704a;
+ border-radius:9px;
+ background:#f3e6d6;
+ color:#65432f;
+ font-weight:700;
+ line-height:1.6;
+}
+#manu-pwa-panel .manu-pwa-actions{
+ gap:10px;
+ align-items:center;
+}
+#manu-pwa-panel .manu-pwa-actions .btn{
+ min-height:44px;
+ white-space:normal;
+ text-align:center;
+}
+@media(max-width:520px){
+ #manu-pwa-panel .manu-pwa-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+ }
+ #manu-pwa-panel .manu-pwa-actions .btn{width:100%}
+}
