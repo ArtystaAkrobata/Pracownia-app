@@ -1624,6 +1624,7 @@ const PROJECT_DRAFT_KEY='manu-new-project-draft-v1';
 const PROJECT_DRAFT_MAX_AGE=14*24*60*60*1000;
 let projectDraftTimer=null;
 function readProjectDraft(){
+ if(demoSession)return null;
  try{
   const raw=localStorage.getItem(PROJECT_DRAFT_KEY);
   if(!raw)return null;
@@ -1635,10 +1636,12 @@ function readProjectDraft(){
  }catch(e){return null}
 }
 function clearProjectDraft(){
+ if(demoSession)return;
  if(projectDraftTimer!==null){clearTimeout(projectDraftTimer);projectDraftTimer=null}
  try{localStorage.removeItem(PROJECT_DRAFT_KEY)}catch(e){console.warn('MANU: nie udało się usunąć szkicu',e)}
 }
 function writeProjectDraft(){
+ if(demoSession)return;
  if(projectDraftTimer!==null){clearTimeout(projectDraftTimer);projectDraftTimer=null}
  const form=$('#project-form');
  if(!form||form.dataset.draftEligible!=='yes')return;
@@ -1653,6 +1656,7 @@ function writeProjectDraft(){
  catch(e){console.warn('MANU: brak miejsca na szkic formularza',e)}
 }
 function scheduleProjectDraft(){
+ if(demoSession)return;
  if(!$('#project-form[data-draft-eligible="yes"]'))return;
  if(projectDraftTimer!==null)clearTimeout(projectDraftTimer);
  projectDraftTimer=setTimeout(writeProjectDraft,500);
