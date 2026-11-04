@@ -672,13 +672,12 @@ function quoteAssistantMarkup(q,p){
 function quoteForm(projectId='',quoteId=''){
  const existing=(state.quotes||[]).find(q=>q.id===quoteId);
  const p=state.projects.find(p=>p.id===(existing?.projectId||projectId));
- const qty=Math.max(1,Math.floor(p?.quantity||1));
  const itemDefault=p?quoteProjectItem(p):{description:'',quantity:1,unit:'szt.',unitPrice:0};
  const q=existing||{number:quoteNewNumber(),projectId:p?.id||'',title:p?.title?'Wycena — '+p.title:'Nowa wycena',client:p?.client||'',clientContact:'',clientAddress:'',issued:localDay(),validUntil:'',issuer:'',issuerContact:'',notes:'',discount:0,items:[itemDefault]};
  modal(existing?'Edytuj wycenę':'Nowa wycena',`<form id="quote-form" data-id="${htmlEscape(q.projectId)}" data-quote="${htmlEscape(existing?.id||'')}">
  <p class="form-note">Wycena nie zmienia ceny projektu, kosztów ani historii wpłat. To dokument ofertowy, nie faktura.</p>
- ${quoteAssistantMarkup(q,p)}
  <div class="form-cols"><div class="field"><label>Numer</label><input value="${htmlEscape(q.number)}" disabled></div><div class="field"><label>Data wystawienia *</label><input name="issued" type="date" required value="${htmlEscape(q.issued)}"></div><div class="field"><label>Ważna do</label><input name="validUntil" type="date" value="${htmlEscape(q.validUntil)}"></div><div class="field"><label>Projekt (opcjonalnie)</label><select id="quote-form-project" name="projectId"><option value="">Bez projektu</option>${state.projects.map(project=>`<option value="${htmlEscape(project.id)}" ${project.id===q.projectId?'selected':''}>${htmlEscape(project.title)}</option>`).join('')}</select></div></div>
+ ${quoteAssistantMarkup(q,p)}
  <div class="field"><label>Tytuł wyceny *</label><input name="title" required maxlength="140" value="${htmlEscape(q.title)}" placeholder="Np. Lustro Ø50 cm — matowienie"></div>
  <div class="form-cols"><div class="field"><label>Wystawiający / pracownia</label><input name="issuer" maxlength="180" value="${htmlEscape(q.issuer)}" placeholder="Nazwa pracowni"></div><div class="field"><label>Klient</label><input name="client" maxlength="180" value="${htmlEscape(q.client)}" placeholder="Odbiorca wyceny"></div></div>
  <div class="field"><label>Kontakt wystawiającego</label><textarea name="issuerContact" rows="2" maxlength="350" placeholder="E-mail lub telefon">${htmlEscape(q.issuerContact)}</textarea></div>
