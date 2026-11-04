@@ -67,7 +67,8 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
-    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot,',
+    ' handleAction, handleSubmit, save, applyBackup, applyCloudSnapshot, onManuBack,',
+    ' setBackGuardReady: value => {manuBackGuardReady=!!value;},',
     ' renderProjectGrid, renderClientList, renderTaskList, filteredProjects, filteredClients, filteredTasks, liveTimerRefresh,',
     ' getListVisible: () => ({...listVisible}),',
     ' setListSearch: (kind,query) => {if(kind==="projects")search=query;else if(kind==="clients")clientSearch=query;},',
@@ -878,4 +879,32 @@ test('MANU 3.23.2: zamykanie podglądu bez formularza nie powoduje ponownego otw
  assert.match(context.__lastModal.body,/data-quote-preview="q1"/);
  assert.equal(api.returnToQuotePreview(),false);
  assert.equal(api.getState().quotes.length,1);
+});
+
+
+test('MANU 3.23.2: systemowy Wstecz na Androidzie wraca z kopii do podglądu', () => {
+ const {api,context,nodes}=boot({version:18,projects:[],tasks:[],quotes:[{
+  id:'q1',number:'MANU-2026-001',title:'Oferta',issued:'2026-11-04',
+  items:[{description:'Grawer',quantity:1,unit:'szt.',unitPrice:200}]
+ }]});
+ const before=JSON.stringify(api.getState());
+ nodes['.modal']={scrollTop:49};
+ nodes['.quote-preview-actions']={dataset:{quotePreview:'q1'}};
+ api.handleAction({dataset:{action:'quote-clone',id:'q1'}});
+ nodes['#quote-form']={};
+ nodes['.modal']={scrollTop:0};
+ delete nodes['.quote-preview-actions'];
+ context.window.history={pushState:()=>{}};
+ api.setBackGuardReady(true);
+ api.onManuBack({state:{manuBackGuard:1}});
+ assert.match(context.__lastModal.title,/Wycena MANU-2026-001/);
+ assert.equal(nodes['.modal'].scrollTop,49);
+ assert.equal(JSON.stringify(api.getState()),before);
+});
+
+test('MANU 3.23.2: cofanie ma animację odwrotnego obrotu kartki', () => {
+ const css=fs.readFileSync(path.join(ROOT,'styles.css'),'utf8');
+ assert.match(css,/\.modal\.notebook-page\.quote-back-motion/);
+ assert.match(css,/@keyframes manu-quote-turn-back/);
+ assert.match(appSource,/current\?\.classList\?\.add\('quote-back-motion'\)/);
 });
