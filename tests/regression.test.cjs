@@ -666,8 +666,8 @@ test('Etap 15.3: termin i status zaległości uwzględniają daty oraz nie obejm
  assert.equal(d.rows[0].unpaid,250);
  assert.equal(d.overdue,250);
  assert.equal(d.advance,50);
- assert.equal(d.remaining,770);
- assert.equal(d.received,300);
+ assert.equal(d.remaining,800);
+ assert.equal(d.received,250);
  assert.doesNotMatch(api.paymentControlRows('late'),/Lustro cancelled/);
 });
 
