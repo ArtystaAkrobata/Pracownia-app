@@ -3381,3 +3381,104 @@ body.gallery-lightbox-open{overflow:hidden}
  }
  .manu-personalization-footer .btn{width:100%}
 }
+
+
+/* MANU 3.19.1 · etap 14.2: szlachetne akcenty i czytelność */
+/* Bez atrybutu lub przy miedzi wygląd MANU pozostaje identyczny z oryginałem. */
+html[data-manu-accent="gold"]{
+ --manu-choice:#caa66d;
+ --manu-choice-light:#f4d59f;
+ --manu-choice-dark:#8c6639;
+ --manu-choice-plate:#30261e;
+ --manu-choice-ink:#201b13;
+ --copper:#caa66d;
+ --copper-light:#f4d59f;
+}
+html[data-manu-accent="steel"]{
+ --manu-choice:#9bafbc;
+ --manu-choice-light:#e0e9ed;
+ --manu-choice-dark:#617a8d;
+ --manu-choice-plate:#252c35;
+ --manu-choice-ink:#14212a;
+ --copper:#9bafbc;
+ --copper-light:#e0e9ed;
+}
+html[data-manu-accent="gold"] .nav-link.active,
+html[data-manu-accent="steel"] .nav-link.active{
+ color:var(--manu-choice-light);
+ background:linear-gradient(105deg,var(--manu-choice-plate),#1c1c1e);
+ box-shadow:inset 3px 0 0 var(--manu-choice);
+}
+html[data-manu-accent="gold"] .mobile-tab.active,
+html[data-manu-accent="steel"] .mobile-tab.active,
+html[data-manu-accent="gold"] .brand h2,
+html[data-manu-accent="steel"] .brand h2,
+html[data-manu-accent="gold"] .eyebrow,
+html[data-manu-accent="steel"] .eyebrow{
+ color:var(--manu-choice-light);
+}
+html[data-manu-accent="gold"] .mobile-tab:nth-child(3),
+html[data-manu-accent="steel"] .mobile-tab:nth-child(3){
+ background:linear-gradient(145deg,var(--manu-choice-light),var(--manu-choice-dark));
+ color:var(--manu-choice-ink);
+ border-color:var(--manu-choice-dark);
+}
+html[data-manu-accent="gold"] .btn:not(.secondary):not(.ghost):not(.danger),
+html[data-manu-accent="steel"] .btn:not(.secondary):not(.ghost):not(.danger){
+ background:linear-gradient(145deg,var(--manu-choice),var(--manu-choice-dark));
+ color:var(--manu-choice-ink);
+ border-color:var(--manu-choice-dark);
+}
+html[data-manu-accent="gold"] .open-notebook .filter.active,
+html[data-manu-accent="steel"] .open-notebook .filter.active{
+ background:var(--manu-choice-dark);
+ border-color:var(--manu-choice-dark);
+ color:#fffdf9;
+}
+html[data-manu-accent="gold"] .smart-settings>summary .ico,
+html[data-manu-accent="steel"] .smart-settings>summary .ico,
+html[data-manu-accent="gold"] .manu-personalization-subtitle,
+html[data-manu-accent="steel"] .manu-personalization-subtitle{
+ color:var(--manu-choice-light);
+}
+html[data-manu-accent="gold"] .smart-settings-check input,
+html[data-manu-accent="steel"] .smart-settings-check input,
+html[data-manu-accent="gold"] .manu-motion-control input,
+html[data-manu-accent="steel"] .manu-motion-control input{
+ accent-color:var(--manu-choice);
+}
+html[data-manu-accent="gold"] .smart-settings-lead select:focus-visible,
+html[data-manu-accent="steel"] .smart-settings-lead select:focus-visible{
+ outline:2px solid var(--manu-choice);
+ outline-offset:2px;
+}
+/* Większa czytelność nie powiększa ornamentalnych nagłówków przy zakładce
+   ani wymiarów grzbietu notesu. */
+html[data-manu-text="large"] .open-notebook .page-lede,
+html[data-manu-text="large"] .open-notebook .surface p,
+html[data-manu-text="large"] .open-notebook .project-row-info span,
+html[data-manu-text="large"] .open-notebook .project-card p,
+html[data-manu-text="large"] .open-notebook .project-card small,
+html[data-manu-text="large"] .open-notebook .stat small{
+ font-size:14px;
+ line-height:1.65;
+}
+html[data-manu-text="large"] .open-notebook .btn,
+html[data-manu-text="large"] .open-notebook .filter,
+html[data-manu-text="large"] .smart-settings-check,
+html[data-manu-text="large"] .smart-settings-lead,
+html[data-manu-text="large"] .smart-settings-content>p,
+html[data-manu-text="large"] .settings-group p{
+ font-size:14px;
+ line-height:1.6;
+}
+html[data-manu-text="large"] .notebook-page .field label{
+ font-size:14px;
+ line-height:1.5;
+}
+html[data-manu-text="large"] .notebook-page input:not([type="checkbox"]):not([type="radio"]),
+html[data-manu-text="large"] .notebook-page textarea,
+html[data-manu-text="large"] .notebook-page select{
+ font-size:16px;
+ line-height:1.45;
+}
