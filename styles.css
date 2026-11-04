@@ -3156,3 +3156,57 @@ body.gallery-lightbox-open{overflow:hidden}
   animation:none!important;
  }
 }
+
+/* MANU 3.17.1 · formularz projektu po prawej stronie kartki */
+/* Tylko formularz otwarty z Projektów: grzbiet po prawej bez zmiany układu pól. */
+.modal.notebook-page--right:not(.notebook-detail-page){
+ border-radius:19px 15px 15px 19px;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .paper-binding{
+ order:2;left:auto;right:0;
+ background:linear-gradient(270deg,#08090b 0%,#1f1a1a 24%,#392a24 40%,#160f0e 80%,#8b5b3c 96%,#d6a67e 100%);
+ box-shadow:inset 4px 0 7px #0009,-3px 0 8px #402b224f;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .paper-binding-edge{
+ inset:0 4px 0 auto;
+ background:linear-gradient(270deg,#120f10,#54382c,#130f0e);
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .paper-binding-stitches{
+ inset:15px 13px 15px auto;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .paper-binding-pages{
+ right:auto;left:-5px;
+ border-left:1px solid #8e6c57;
+ border-right:1px solid #c59a71;
+ box-shadow:-3px 0 6px #714d3259;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .paper-sheet{
+ order:1;
+ background:
+  repeating-linear-gradient(0deg,transparent 0 5px,#76594507 6px,transparent 7px 11px),
+  radial-gradient(ellipse 65% 38% at -5% 4%,#fffefa90,transparent 75%),
+  linear-gradient(255deg,#e4d1b8 0%,#f1e7d9 7%,#f8f2e7 62%,#f0e4d3 100%);
+ box-shadow:inset -8px 0 17px #9f775126;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .modal-header{
+ background:linear-gradient(245deg,#e7d7beed,#f7efe3f6 25%,#f3e9d9f6);
+ padding-left:25px;
+ padding-right:27px;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .modal-header::after{
+ left:25px;right:27px;
+}
+.modal.notebook-page--right:not(.notebook-detail-page) .modal-body{
+ padding-left:25px;padding-right:27px;
+}
+@media(max-width:690px){
+ .modal.notebook-page--right:not(.notebook-detail-page) .modal-header{
+  padding-left:16px;padding-right:17px;
+ }
+ .modal.notebook-page--right:not(.notebook-detail-page) .modal-header::after{
+  left:16px;right:17px;
+ }
+ .modal.notebook-page--right:not(.notebook-detail-page) .modal-body{
+  padding-left:16px;padding-right:17px;
+ }
+}
