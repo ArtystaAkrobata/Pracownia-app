@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.0';
+const APP_VERSION='3.27.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -158,6 +158,9 @@ let projectToolsExpanded=false;
 let calendarMonth='',calendarSelected='';
 let lastVisibleDay='';
 let detailReturnScroll=null;
+// MANU 3.27.1: zachowaj poprzednie okno w RAM razem z jego przewinięciem.
+const modalReturnStack=[];
+const MODAL_RETURN_LIMIT=6;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
 let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='',costBreakdownExpanded=false;
@@ -1595,13 +1598,34 @@ function modal(title,body,options={}){
  const right=detail||options.rightPage===true;
  // Zachowaj pozycję otwartej kartki przed otwarciem formularza projektu.
  const previous=$('.modal');
+ const previousOverlay=$('#modal-root')?.firstElementChild;
+ const previousIsDetail=!!previous?.classList?.contains('notebook-detail-page');
+ const previousProjectId=previousIsDetail
+   ?previous?.querySelector?.('details.manu-detail-fold[data-project]')?.dataset.project||''
+   :'';
+ // Nie dopisuj starego formularza do stosu, gdy wracasz do bieżącego projektu
+ // przez Wróć lub gdy po zapisaniu aktualizujemy jego kartę.
+ if(detail&&previous&&!previousIsDetail&&modalReturnStack.length){
+  const parentIndex=modalReturnStack.findLastIndex(item=>item.projectId===options.projectId);
+  if(parentIndex>=0)modalReturnStack.splice(parentIndex);
+  else modalReturnStack.length=0;
+ }
+ // Podgląd i edycja wyceny mają osobny mechanizm powrotu.
+ const quoteOwnReturn=!!quoteModalReturn&&(
+  !!previous?.querySelector?.('[data-quote-preview]')||!!previous?.querySelector?.('#quote-form'));
+ if(!detail&&previous&&previousOverlay&&(previousIsDetail||paper)&&!quoteOwnReturn){
+  if(modalReturnStack.length>=MODAL_RETURN_LIMIT)modalReturnStack.shift();
+  modalReturnStack.push({
+   overlay:previousOverlay,scrollTop:previous.scrollTop,
+   pageX:window.scrollX,pageY:window.scrollY,projectId:previousProjectId
+  });
+ }
  // Karta projektu dostaje własny wpis historii od razu przy otwarciu.
  // Systemowy Wstecz zużyje ten wpis, nie wpis przejścia Start → Projekty.
  if(detail&&!previous)armManuProjectModalHistory();
- if(!detail&&paper&&previous?.classList?.contains('notebook-detail-page')){
-  const formProjectId=body.trimStart().match(/^<form\b[^>]*\bdata-id="([^"]+)"/i)?.[1];
-  if(formProjectId)detailReturnScroll={
-   projectId:formProjectId,top:previous.scrollTop,pageX:window.scrollX,pageY:window.scrollY
+ if(!detail&&previousIsDetail&&previousProjectId){
+  detailReturnScroll={
+   projectId:previousProjectId,top:previous.scrollTop,pageX:window.scrollX,pageY:window.scrollY
   };
  }
  const paperBinding=paper?'<div class="paper-binding" aria-hidden="true"><span class="paper-binding-edge"></span><span class="paper-binding-stitches"></span><span class="paper-binding-pages"></span></div>':'';
@@ -1619,7 +1643,28 @@ function modal(title,body,options={}){
   if(detail)detailReturnScroll=null;
  }
 }
-function closeModal(){releaseManuProjectModalHistory();quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+function restorePreviousModal(){
+ const parent=modalReturnStack.pop();
+ if(!parent)return false;
+ if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();
+ const root=$('#modal-root');
+ root.replaceChildren(parent.overlay);
+ const restored=$('.modal');
+ if(restored)restored.scrollTop=parent.scrollTop;
+ if(window.scrollX!==parent.pageX||window.scrollY!==parent.pageY)
+  window.scrollTo(parent.pageX,parent.pageY);
+ detailReturnScroll=null;
+ pendingBackup=null;
+ void window.MANUGallery?.hydrate?.(root);
+ return true;
+}
+function dismissCurrentModal(){
+ if(!$('.modal'))return;
+ if(returnToQuotePreview())return;
+ if(restorePreviousModal())return;
+ closeModal();
+}
+function closeModal(){modalReturnStack.length=0;releaseManuProjectModalHistory();quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
 
 // MANU 13.5 — jeden szkic nowego projektu, wyłącznie na tym urządzeniu.
 // Nie zapisujemy go jako projektu i nie wysyłamy do chmury.
@@ -2665,7 +2710,7 @@ case 'quote-remove-line':{
 }
 case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
-case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':if(!returnToQuotePreview())closeModal();break;case 'close-overlay':if(!returnToQuotePreview())closeModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
+case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':dismissCurrentModal();break;case 'close-overlay':dismissCurrentModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
  const ev=calendarEvents().find(x=>x.key===b.dataset.event&&x.date===b.dataset.date&&!x.done);
  if(!ev||!state.smartAlerts?.enabled)break;
  const until=plusDaysDate(localDay(),1),snoozed=state.smartAlerts.snoozed||{};
@@ -2937,7 +2982,7 @@ function events(){
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
  if(el?.matches?.('details.cost-category-panel')&&el.isConnected){costBreakdownExpanded=!!el.open;return;}
- if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape'&&!returnToQuotePreview())closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape'&&$('.modal'))dismissCurrentModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.id==='payment-control-filter'){
   paymentControlFilter=['all','late','soon','none'].includes(e.target.value)?e.target.value:'all';
   paymentControlVisible=12;
