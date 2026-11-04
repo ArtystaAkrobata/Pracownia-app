@@ -1,6 +1,20 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.26.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.26.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.26.2 — Poprawka systemowego Wstecz z karty projektu
+- Naprawiono konkretną różnicę odnotowaną na Androidzie: **X na karcie projektu → rejestr → Wstecz → Start** działało, ale **systemowy Wstecz na karcie → rejestr → Wstecz** zamykało zainstalowane MANU.
+- Przy **pierwszym otwarciu karty projektu** tworzony jest osobny wpis `manuProjectModal` w historii przeglądarki. Pierwszy gest Androida zużywa wyłącznie ten wpis, zamyka kartę i pokazuje rejestr projektów. Dopiero drugi gest zużywa wpis kartki „Projekty” i wraca do „Start”.
+- Po systemowym zamknięciu karty **nie dodajemy wpisu historii w obsłudze popstate**, ponieważ nie wszystkie wersje Androida respektują taki wpis przy następnym geście. Natomiast gdy karta jest zamknięta przez **X**, jej wpis zamieniamy w zwykły wpis MANU, zachowując działającą wcześniej ścieżkę „X → Wstecz”.
+- Przeładowanie zawartości otwartej karty projektu nie tworzy kolejnych wpisów. Wersja nie zmienia danych, projektów, wycen, płatności, trybu demo ani chmury.
+- Nowe testy odtwarzają obie ścieżki poprzez rzeczywistą funkcję okna `modal()` i symulator wpisów `history.pushState/replaceState/back`, w tym wielokrotne odświeżanie karty.
+- PWA: `manu-app-v3.26.2`. Kopia bezpieczeństwa kodu: `backup-manu-v3-26-1-before-project-modal-back-fix`.
+
+### Test poprawki na telefonie
+1. **Start → Projekty → Test**.
+2. **Systemowy Wstecz**: powinien zamknąć kartę „Test” i pokazać rejestr projektów.
+3. **Systemowy Wstecz** ponownie: powinien pokazać ekran **Start**, nie pulpit Androida.
+4. Powtórz, zamiast pierwszego gestu używając **X** na karcie „Test”: kolejny systemowy **Wstecz** również powinien pokazać **Start**.
 
 ## MANU 3.26.1 — Korekta cofania na Androidzie przy otwartym projekcie
 - Przy ponownym uruchomieniu zainstalowanego MANU system mógł przywrócić stary znacznik `manuBackGuard`, mimo że nie było już poprawnego wpisu historii. Inicjalizacja za każdym razem tworzy teraz świeże `manuBackRoot` oraz `manuBackGuard`.
