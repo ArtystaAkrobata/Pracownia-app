@@ -1,6 +1,11 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.19.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.19.5 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.19.5 — Wyśrodkowany trzeci skrót
+- Na telefonie, jeśli wybrane są dokładnie 3 szybkie działania, trzeci przycisk wyświetla się pośrodku drugiego rzędu, zachowując szerokość górnych.
+- Przy jednym i dwóch skrótach układ bez zmian; brak zmian w danych oraz logice personalizacji.
+- Wersja PWA i cache podniesiona, by pobrać poprawkę.
 
 ## MANU 3.19.4 — Etap 14.4: kolejność szybkich działań
 - W **Ustawienia → Personalizacja MANU** pod listą maksymalnie trzech szybkich działań widoczna jest teraz ich kolejność na ekranie Start. Przyciskami **↑** i **↓** zmienisz miejsce zaznaczonych skrótów bez przeciągania i bez przeskoków strony.
