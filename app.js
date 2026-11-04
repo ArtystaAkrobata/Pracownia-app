@@ -749,6 +749,7 @@ function returnToQuotePreview(){
  }
  quotePreview(previous.id);
  const current=$('.modal');
+ current?.classList?.add('quote-back-motion');
  if(current)current.scrollTop=previous.scrollTop;
  if(window.scrollX!==previous.pageX||window.scrollY!==previous.pageY)
   window.scrollTo(previous.pageX,previous.pageY);
@@ -793,6 +794,7 @@ function quoteForm(projectId='',quoteId='',sourceId=''){
  <div class="field"><label>Warunki / uwagi</label><textarea name="notes" maxlength="900" rows="3" placeholder="Np. Termin realizacji ustalany indywidualnie">${htmlEscape(q.notes)}</textarea></div>
  <div class="modal-actions"><button type="button" class="btn ghost" data-action="quote-cancel" data-project="${htmlEscape(q.projectId)}">${quoteModalReturn?'Wróć do podglądu':'Anuluj'}</button><button class="btn" type="submit">${icon('check')} Zapisz wycenę</button></div>
  </form>`);
+ if(quoteModalReturn)$('.modal')?.classList?.add('quote-back-motion');
 }
 function quoteFormItems(form){
  return [...form.querySelectorAll('[data-quote-row]')].map(line=>({
