@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.0';
+const APP_VERSION='3.18.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -20,6 +20,7 @@ const validStatus=['Planowane','W trakcie','Zakończone','Anulowane'];
 const blank=()=>({version:18,projects:[],clients:[],tasks:[],reminders:[],smartAlerts:{enabled:true,leadDays:3,snoozed:{}},quotes:[],templates:[],quoteCounters:{},lastSaved:now()});
 let state=blank(),view='home',filter='all',search='',clientSearch='',taskFilter='open',installEvent=null,isDemo=false;
 let pwaRegistration=null,pwaUpdateReady=false,pwaHadController=false;
+let offlineAuditMessage='Gotowość offline nie została jeszcze sprawdzona na tym urządzeniu.';
 // Listy pokazują po 40 rekordów; wyszukiwanie działa na pełnej bazie.
 const LIST_BATCH_SIZE=40;
 const listVisible={projects:LIST_BATCH_SIZE,clients:LIST_BATCH_SIZE,tasks:LIST_BATCH_SIZE};
@@ -327,7 +328,7 @@ function openNotebook(content,page,turn=''){
   </div>
  </section>`;
 }
-function render(){if(homeReturnContext&&homeReturnContext.page!==view&&!(homeReturnContext.page==='projects'&&projectReturnContext?.page===view))homeReturnContext=null;const m=(view==='home'||view==='finance')?metrics():null;const turn=notebookTurn;notebookTurn='';const inside=['projects','clients','quotes','gallery','templates','finance','tasks','calendar'].includes(view);const pageContent=view==='home'?homePage(m):view==='projects'?projectsPage():view==='clients'?clientsPage():view==='gallery'?galleryPage():view==='templates'?templatesPage():view==='quotes'?quotesPage():view==='finance'?financePage(m):view==='tasks'?tasksPage():view==='calendar'?calendarPage():settingsPage();$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brandmark"><img class="brand-symbol" src="manu48-mark.svg" alt="" width="40" height="40"></div><div><h2>MANU</h2><p>Organizer twórcy</p></div></div><nav class="nav-list" aria-label="Nawigacja">${navBtn('home','home','Pulpit')}${navBtn('projects','folder','Projekty i warsztaty')}${navBtn('clients','users','Klienci')}${navBtn('gallery','folder','Galeria')}${navBtn('templates','copy','Szablony')}${navBtn('quotes','brief','Wyceny')}${navBtn('finance','wallet','Finanse')}${navBtn('tasks','checks','Zadania')}${navBtn('calendar','calendar','Kalendarz')}${navBtn('settings','settings','Ustawienia')}</nav><div class="sidebar-end">${icon('shield')}<strong>Twoja przestrzeń</strong><p>Wersja testowa · Dane przechowywane na tym urządzeniu. Regularnie eksportuj kopię.</p></div></aside><main class="main-area ${view==='home'?'manu-cover-home':inside?'manu-open-workspace':''}">${view==='home'?'<div class="cover-stitch" aria-hidden="true"></div><button type="button" class="cover-strap" data-action="new-project" aria-label="Otwórz notes i dodaj nowe zlecenie" title="Otwórz notes"><span class="cover-strap-button">M</span></button>':''}<header class="topbar"><div class="eyebrow">MANU · ORGANIZER TWÓRCY</div><div class="mobile-brand"><img src="manu48-mark.svg" alt="" width="34" height="34"><div><strong>MANU</strong><small>ORGANIZER TWÓRCY</small></div></div><div class="topbar-right"><div class="date-chip">${new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date())}</div><button class="avatar" data-action="nav" data-view="settings" aria-label="Ustawienia" title="Ustawienia">${icon('settings')}</button></div></header>${inside?openNotebook(pageContent,view,turn):pageContent}</main><nav class="mobile-nav" aria-label="Nawigacja mobilna">${mobileBtn('home','home','Start')}${mobileBtn('projects','folder','Projekty')}${mobileBtn('add','plus','Dodaj')}${mobileBtn('finance','wallet','Finanse')}${mobileBtn('tasks','checks','Zadania')}${mobileBtn('calendar','calendar','Terminy')}</nav></div>`;void window.MANUGallery?.hydrate?.($('#app'));}
+function render(){if(homeReturnContext&&homeReturnContext.page!==view&&!(homeReturnContext.page==='projects'&&projectReturnContext?.page===view))homeReturnContext=null;const m=(view==='home'||view==='finance')?metrics():null;const turn=notebookTurn;notebookTurn='';const inside=['projects','clients','quotes','gallery','templates','finance','tasks','calendar'].includes(view);const pageContent=view==='home'?homePage(m):view==='projects'?projectsPage():view==='clients'?clientsPage():view==='gallery'?galleryPage():view==='templates'?templatesPage():view==='quotes'?quotesPage():view==='finance'?financePage(m):view==='tasks'?tasksPage():view==='calendar'?calendarPage():settingsPage();$('#app').innerHTML=`<div class="app-shell"><aside class="sidebar"><div class="brand"><div class="brandmark"><img class="brand-symbol" src="manu48-mark.svg" alt="" width="40" height="40"></div><div><h2>MANU</h2><p>Organizer twórcy</p></div></div><nav class="nav-list" aria-label="Nawigacja">${navBtn('home','home','Pulpit')}${navBtn('projects','folder','Projekty i warsztaty')}${navBtn('clients','users','Klienci')}${navBtn('gallery','folder','Galeria')}${navBtn('templates','copy','Szablony')}${navBtn('quotes','brief','Wyceny')}${navBtn('finance','wallet','Finanse')}${navBtn('tasks','checks','Zadania')}${navBtn('calendar','calendar','Kalendarz')}${navBtn('settings','settings','Ustawienia')}</nav><div class="sidebar-end">${icon('shield')}<strong>Twoja przestrzeń</strong><p>Wersja testowa · Dane przechowywane na tym urządzeniu. Regularnie eksportuj kopię.</p></div></aside><main class="main-area ${view==='home'?'manu-cover-home':inside?'manu-open-workspace':''}">${view==='home'?'<div class="cover-stitch" aria-hidden="true"></div><button type="button" class="cover-strap" data-action="new-project" aria-label="Otwórz notes i dodaj nowe zlecenie" title="Otwórz notes"><span class="cover-strap-button">M</span></button>':''}<header class="topbar"><div class="eyebrow">MANU · ORGANIZER TWÓRCY</div><div class="mobile-brand"><img src="manu48-mark.svg" alt="" width="34" height="34"><div><strong>MANU</strong><small>ORGANIZER TWÓRCY</small></div></div><div class="topbar-right"><span id="manu-offline-indicator" class="manu-offline-indicator" ${navigator.onLine===false?'':'hidden'}>Offline</span><div class="date-chip">${new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(new Date())}</div><button class="avatar" data-action="nav" data-view="settings" aria-label="Ustawienia" title="Ustawienia">${icon('settings')}</button></div></header>${inside?openNotebook(pageContent,view,turn):pageContent}</main><nav class="mobile-nav" aria-label="Nawigacja mobilna">${mobileBtn('home','home','Start')}${mobileBtn('projects','folder','Projekty')}${mobileBtn('add','plus','Dodaj')}${mobileBtn('finance','wallet','Finanse')}${mobileBtn('tasks','checks','Zadania')}${mobileBtn('calendar','calendar','Terminy')}</nav></div>`;void window.MANUGallery?.hydrate?.($('#app'));}
 function pageHeading(title,desc,btn=''){return `<div class="page-heading"><div><h1 class="page-title">${title}</h1><p class="page-lede">${desc}</p></div>${btn}</div>`}
 function returnToHomeButton(page){return homeReturnContext?.page===page?'<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="return-home" aria-label="Wróć do poprzedniego miejsca na ekranie Start" title="Wróć do Startu"><span aria-hidden="true">×</span> Wróć</button></div>':'';}
 function returnToProjectsButton(){return '<div class="calendar-return-toolbar"><button type="button" class="calendar-return-button" data-action="return-projects" aria-label="Wróć do projektów" title="Wróć do projektów"><span aria-hidden="true">×</span> Wróć</button></div>';}
@@ -1048,10 +1049,49 @@ function refreshPwaPanel(){
  if(panel)panel.innerHTML=pwaSettingsMarkup();
 }
 function refreshNetworkStatus(){
+ const indicator=$('#manu-offline-indicator');
+ if(indicator)indicator.hidden=navigator.onLine!==false;
  const el=$('#manu-network-status');
  if(el)el.textContent=navigator.onLine===false
   ?'Brak internetu — wpisy pozostają na tym urządzeniu. Synchronizacja z chmurą wymaga połączenia.'
   :'Połączenie internetowe jest dostępne. Dane zapisują się lokalnie, a po aktywacji konta mogą także synchronizować się z chmurą.';
+}
+async function checkOfflineReadiness(){
+ const status=$('#manu-offline-check-status');
+ const report=message=>{
+  offlineAuditMessage=message;
+  if(status)status.textContent=message;
+ };
+ if(!('caches' in window)||!('serviceWorker' in navigator)){
+  report('Nie można sprawdzić plików offline w tej przeglądarce.');
+  return;
+ }
+ const essential=[
+  './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.13.3',
+  './gallery.js?v=3.13.0','./templates.js?v=3.14.1'
+ ];
+ try{
+  const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
+  if(!registration?.active){
+   report('MANU nie ma jeszcze aktywnej obsługi offline. Uruchom aplikację przy połączeniu z internetem i spróbuj ponownie.');
+   return;
+  }
+  const key='manu-app-v'+APP_VERSION,keys=await caches.keys();
+  if(!keys.includes(key)){
+   report('Ta wersja MANU nie ma jeszcze kompletnej pamięci offline. Uruchom ją online, a następnie sprawdź ponownie.');
+   return;
+  }
+  const cache=await caches.open(key);
+  const results=await Promise.all(essential.map(path=>cache.match(new URL(path,location.href))));
+  const present=results.filter(Boolean).length;
+  report(present===essential.length
+   ?'Gotowe: '+present+'/'+essential.length+' niezbędnych plików jest zapisanych na tym urządzeniu. Możesz sprawdzić uruchamianie MANU w trybie samolotowym. Dane pozostają w lokalnej pamięci, a chmura wymaga internetu.'
+   :'Pamięć offline jest niekompletna ('+present+'/'+essential.length+' plików). Włącz internet, uruchom ponownie MANU i sprawdź jeszcze raz. Nie usuwaj danych aplikacji.');
+ }catch(e){
+  console.warn('Kontrola plików offline MANU:',e);
+  report('Nie udało się sprawdzić pamięci offline. Nie czyść danych aplikacji; spróbuj ponownie po odświeżeniu.');
+ }
 }
 async function checkPwaUpdate(){
  if(!('serviceWorker' in navigator)){toast('Ta przeglądarka nie obsługuje aktualizacji aplikacji offline.');return;}
@@ -1075,7 +1115,8 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
  </div><div class="surface settings-group"><h3>${icon('info')} Dostępność i praca offline</h3>
  <p id="manu-network-status" class="small">${navigator.onLine===false?'Brak internetu — wpisy pozostają na tym urządzeniu.':'Połączenie internetowe jest dostępne. Dane zapisują się lokalnie, a po aktywacji konta mogą także synchronizować się z chmurą.'}</p>
  <p class="muted small">Aplikacja może działać bez sieci po wcześniejszym wczytaniu zasobów. Offline nie oznacza synchronizacji ani tworzenia kopii w chmurze.</p>
- <div class="settings-actions"><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
+ <p id="manu-offline-check-status" class="manu-offline-check-status" role="status" aria-live="polite">${htmlEscape(offlineAuditMessage)}</p>
+ <div class="settings-actions"><button type="button" class="btn secondary" data-action="offline-check">${icon('check')} Sprawdź gotowość offline</button><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
  <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Chcesz poznać funkcje bez wpisywania własnych danych? Dodaj przykładowe realizacje. Możesz je potem usunąć osobno lub wyczyścić wszystko. Przykładowe dane są fikcyjne.</p><div class="settings-actions"><button class="btn secondary" data-action="demo">${icon('spark')} Wstaw dane demonstracyjne</button><button class="btn danger" data-action="clear">${icon('trash')} Usuń wszystkie dane</button></div></div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Konta i chmura wymagają konfiguracji Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
 function modal(title,body,options={}){
  const detail=options.detail===true;
@@ -1791,6 +1832,7 @@ case 'list-more':{
  event.userChoice.finally(()=>refreshPwaPanel());
 }break;
 case 'pwa-check-update':void checkPwaUpdate();break;
+case 'offline-check':void checkOfflineReadiness();break;
 case 'pwa-reload':{
  if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
   alert('Zamknij aktywny formularz, aby nie stracić niezapisanych zmian.');
