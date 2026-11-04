@@ -1,17 +1,21 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.19.0';
+const APP_VERSION='3.19.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
-const DEFAULT_UI_PREFS=Object.freeze({startView:'home',showCommand:true,showRecent:true});
+const DEFAULT_UI_PREFS=Object.freeze({startView:'home',showCommand:true,showRecent:true,accent:'copper',textSize:'standard'});
 const UI_START_VIEWS=['home','projects','tasks','finance','calendar'];
+const UI_ACCENTS=['copper','gold','steel'];
+const UI_TEXT_SIZES=['standard','large'];
 function normalizeUiPreferences(raw){
  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  return {
   startView:UI_START_VIEWS.includes(value.startView)?value.startView:'home',
   showCommand:value.showCommand!==false,
-  showRecent:value.showRecent!==false
+  showRecent:value.showRecent!==false,
+  accent:UI_ACCENTS.includes(value.accent)?value.accent:'copper',
+  textSize:UI_TEXT_SIZES.includes(value.textSize)?value.textSize:'standard'
  };
 }
 function loadUiPreferences(){
@@ -20,11 +24,18 @@ function loadUiPreferences(){
 }
 let uiPreferences=loadUiPreferences();
 let personalizationExpanded=false;
+function applyUiAppearance(){
+ const root=document.documentElement;
+ if(!root)return;
+ root.dataset.manuAccent=uiPreferences.accent;
+ root.dataset.manuText=uiPreferences.textSize;
+}
 function updateUiPreferences(change){
  const next=normalizeUiPreferences({...uiPreferences,...change});
  try{
   localStorage.setItem(UI_PREFS_KEY,JSON.stringify(next));
   uiPreferences=next;
+  applyUiAppearance();
   return true;
  }catch(e){console.warn('MANU: nie udało się zapisać preferencji',e);return false}
 }
@@ -40,11 +51,25 @@ function personalizationMarkup(){
   <p>Wybierz, co widzisz po otwarciu MANU. Nie zmienia to układu innych kartek ani zapisanych danych.</p>
   <label class="smart-settings-lead" for="manu-start-view">Ekran po uruchomieniu
   <select id="manu-start-view">${screens.map(([id,name])=>`<option value="${id}" ${p.startView===id?'selected':''}>${name}</option>`).join('')}</select></label>
+  <div class="manu-personalization-subtitle">Wygląd notesu</div>
+  <label class="smart-settings-lead" for="manu-accent">Kolor akcentów
+   <select id="manu-accent">
+    <option value="copper" ${p.accent==='copper'?'selected':''}>Klasyczna miedź</option>
+    <option value="gold" ${p.accent==='gold'?'selected':''}>Stare złoto</option>
+    <option value="steel" ${p.accent==='steel'?'selected':''}>Stal szlachetna</option>
+   </select>
+  </label>
+  <label class="smart-settings-lead" for="manu-text-size">Wielkość tekstu
+   <select id="manu-text-size">
+    <option value="standard" ${p.textSize==='standard'?'selected':''}>Standardowa</option>
+    <option value="large" ${p.textSize==='large'?'selected':''}>Większa — wygodniejsze czytanie</option>
+   </select>
+  </label>
   <div class="manu-personalization-subtitle">Widoczność sekcji na ekranie Start</div>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-command" ${p.showCommand?'checked':''}><span>Centrum dowodzenia</span></label>
   <label class="smart-settings-check"><input type="checkbox" id="manu-show-recent" ${p.showRecent?'checked':''}><span>Ostatnie projekty</span></label>
   <div class="manu-personalization-footer">
-   <p class="muted tiny">Zmiany zobaczysz przy następnym wejściu na Start. Ustawienia zapisują się lokalnie na tym urządzeniu.</p>
+   <p class="muted tiny">Kolory i tekst zmieniają się od razu. Widoczność sekcji sprawdzisz przy następnym wejściu na Start. Ustawienia są zapisane tylko na tym urządzeniu.</p>
    <button class="btn ghost sm" type="button" data-action="ui-prefs-reset">Przywróć domyślne</button>
   </div>
  </div>
@@ -2214,12 +2239,17 @@ function events(){
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.closest?.('#project-form'))scheduleProjectDraft();
  if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
- if(e.target.id==='manu-start-view'||e.target.id==='manu-show-command'||e.target.id==='manu-show-recent'){
+ if(['manu-start-view','manu-show-command','manu-show-recent','manu-accent','manu-text-size'].includes(e.target.id)){
   const id=e.target.id;
-  const change=id==='manu-start-view'?{startView:e.target.value}:id==='manu-show-command'?{showCommand:e.target.checked}:{showRecent:e.target.checked};
+  const change=id==='manu-start-view'?{startView:e.target.value}:
+   id==='manu-show-command'?{showCommand:e.target.checked}:
+   id==='manu-show-recent'?{showRecent:e.target.checked}:
+   id==='manu-accent'?{accent:e.target.value}:{textSize:e.target.value};
   if(updateUiPreferences(change))toast('Zapisano personalizację MANU');
   else{
    if(id==='manu-start-view')e.target.value=uiPreferences.startView;
+   else if(id==='manu-accent')e.target.value=uiPreferences.accent;
+   else if(id==='manu-text-size')e.target.value=uiPreferences.textSize;
    else e.target.checked=id==='manu-show-command'?uiPreferences.showCommand:uiPreferences.showRecent;
    toast('Nie udało się zapisać personalizacji na tym urządzeniu');
   }
@@ -2316,6 +2346,7 @@ async function init(){
  await load();
  // Preferencje interfejsu nie modyfikują bazy, lecz wybierają pierwszą kartkę po uruchomieniu.
  view=uiPreferences.startView;
+ applyUiAppearance();
  calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);lastVisibleDay=calendarSelected;
  render();
  initManuBackGuard();
