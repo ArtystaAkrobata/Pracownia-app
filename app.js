@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.26.1';
+const APP_VERSION='3.26.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1595,6 +1595,9 @@ function modal(title,body,options={}){
  const right=detail||options.rightPage===true;
  // Zachowaj pozycję otwartej kartki przed otwarciem formularza projektu.
  const previous=$('.modal');
+ // Karta projektu dostaje własny wpis historii od razu przy otwarciu.
+ // Systemowy Wstecz zużyje ten wpis, nie wpis przejścia Start → Projekty.
+ if(detail&&!previous)armManuProjectModalHistory();
  if(!detail&&paper&&previous?.classList?.contains('notebook-detail-page')){
   const formProjectId=body.trimStart().match(/^<form\b[^>]*\bdata-id="([^"]+)"/i)?.[1];
   if(formProjectId)detailReturnScroll={
@@ -1616,7 +1619,7 @@ function modal(title,body,options={}){
   if(detail)detailReturnScroll=null;
  }
 }
-function closeModal(){quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+function closeModal(){releaseManuProjectModalHistory();quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
 
 // MANU 13.5 — jeden szkic nowego projektu, wyłącznie na tym urządzeniu.
 // Nie zapisujemy go jako projektu i nie wysyłamy do chmury.
@@ -2341,6 +2344,31 @@ function afterDataChange(msg,detailId){
 /* MANU 13.6 — gest Wstecz na Androidzie, bez przeładowania SPA i bez zmian bazy. */
 const manuPageHistory=[];
 let manuBackGuardReady=false;
+let manuProjectModalHistoryActive=false;
+function armManuProjectModalHistory(){
+ if(!manuBackGuardReady||manuProjectModalHistoryActive)return false;
+ try{
+  window.history.pushState({manuProjectModal:1},'');
+  manuProjectModalHistoryActive=true;
+  return true;
+ }catch(e){
+  console.warn('MANU: brak wpisu historii karty projektu',e);
+  return false;
+ }
+}
+function releaseManuProjectModalHistory(){
+ if(!manuProjectModalHistoryActive)return;
+ manuProjectModalHistoryActive=false;
+ // Zamknięcie przez X nie wykonuje wstecz. Zamieniamy zajmowany wpis
+ // karty na zwykły wpis MANU: kolejne Wstecz przejdzie Projekty → Start.
+ // Gdy zamknięcie nastąpiło przez systemowy Wstecz, przeglądarka już
+ // przeszła do poprzedniego wpisu i niczego nie dodajemy ani nie zamieniamy.
+ if(window.history?.state?.manuProjectModal===1){
+  try{
+   window.history.replaceState({manuBackGuard:1},'');
+  }catch(e){console.warn('MANU: nie udało się oznaczyć zamkniętej karty',e)}
+ }
+}
 function rememberManuPage(){
  if(!manuBackGuardReady)return;
  manuPageHistory.push({
@@ -2381,8 +2409,15 @@ function onManuBack(event){
   window.MANUGallery.closePreview();
   keepCurrentPage=true;
  }else if($('.modal')){
-  if(!returnToQuotePreview())closeModal();
-  keepCurrentPage=true;
+  const consumedProjectModalEntry=manuProjectModalHistoryActive;
+  const returnedToPreview=returnToQuotePreview();
+  if(!returnedToPreview)closeModal();
+  else if(consumedProjectModalEntry)manuProjectModalHistoryActive=false;
+  // Projekt ma własny wpis historii utworzony przy otwarciu, dlatego
+  // po jego zamknięciu NIE wolno pushState() wewnątrz popstate.
+  // Na Androidzie taki wpis nie zawsze jest honorowany i kolejny Wstecz
+  // potrafi nieoczekiwanie zamknąć zainstalowaną aplikację.
+  keepCurrentPage=!consumedProjectModalEntry||returnedToPreview;
  }else if(manuPageHistory.length){
   const previous=manuPageHistory.pop();
   view=previous.view;
