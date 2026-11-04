@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.20.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.21.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.21.0 — Etap 15.2: profesjonalne dokumenty dla klientów
+- Dotychczasowa sekcja **Wyceny** obsługuje teraz dwa warianty dokumentu: **Wycena** oraz **Oferta cenowa**. Numeracja `MANU-RRRR-NNN`, lista dokumentów, powiązanie z projektem i podgląd PDF pozostają wspólne. Nowy dokument domyślnie jest wyceną.
+- W formularzu znajduje się zwijana sekcja **Wygląd i treść dokumentu**. Można wybrać wariant nagłówka oraz styl **Klasyczny MANU** (miedziany) albo **Minimalistyczny** (jasny). Rozwinięcie sekcji jest opcjonalne: nie wprowadzamy kolejnych niepotrzebnych pól do podstawowego formularza.
+- Nowe pola: **Wprowadzenie / opis propozycji**, **Termin realizacji** i **Warunki płatności**. Są opcjonalne, zapisują się z dokumentem, pojawiają się w podglądzie i w wydruku PDF, a ich treść jest kodowana przed wstawieniem do HTML. Stare wyceny mają puste pola i nadal wyświetlają napis „WARTOŚĆ WYCENY”.
+- Dla **Oferty cenowej** nagłówek i podsumowanie używają właściwych nazw: „OFERTA CENOWA”, „WARTOŚĆ OFERTY”. Wygląd minimalistyczny jest świadomym wyborem bez ciężkich kolorów. Dokument nie jest fakturą, potwierdzeniem zapłaty ani automatyczną umową.
+- Zostaje systemowy **Drukuj / zapisz PDF** Androida, bez automatycznego wysyłania dokumentów. Nie zmieniono bazy `pracownia_db_v1`, schematu `version:18`, cen, kosztów, stanu wpłat, historii ani istniejących wycen.
+- Zaktualizowano cache PWA do `manu-app-v3.21.0`. Gałąź z kopią kodu przed etapem: `backup-manu-v3-20-0-before-professional-docs`.
+
+### Test etapu 15.2 na telefonie
+1. Przejdź do **Projekty → Więcej narzędzi → Wyceny → Nowa wycena**.
+2. Otwórz **Wygląd i treść dokumentu**, wybierz **Oferta cenowa** oraz styl **Minimalistyczny**. Wpisz wprowadzenie, termin i warunki płatności.
+3. Dodaj pozycję i cenę, zapisz. Sprawdź nagłówek, sekcje i wartość w podglądzie.
+4. Wybierz **Drukuj / zapisz PDF**, następnie w Androidzie **Zapisz jako PDF**; sprawdź czytelność A4, także dla kilku pozycji.
+5. Otwórz wcześniej zapisaną wycenę i upewnij się, że ma dotychczasowy nagłówek, cenę oraz niezmienione rozliczenia projektu.
 
 ## MANU 3.20.0 — Etap 15.1: inteligentne przygotowanie wycen
 - Zapisane wyceny oraz formularz zyskały **zwijany Asystent wyceny**, domyślnie zamknięty, aby nie przeciążyć interfejsu na telefonie.
