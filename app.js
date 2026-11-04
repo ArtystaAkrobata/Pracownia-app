@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.17.0';
+const APP_VERSION='3.17.1';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -1039,7 +1039,7 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
 function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
- const right=detail;
+ const right=detail||options.rightPage===true;
  // Zachowaj pozycję otwartej kartki przed otwarciem formularza projektu.
  const previous=$('.modal');
  if(!detail&&paper&&previous?.classList?.contains('notebook-detail-page')){
@@ -1184,7 +1184,7 @@ function projectForm(p,prefillClientId='',templateId=''){
     </div>
   </details>
   <div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${icon('check')} <span data-project-submit-label>${edit?'Zapisz zmiany':'Utwórz projekt'}</span></button></div>
-  </form>`);
+  </form>`,{rightPage:view==='projects'});
   syncProjectFields();
   syncProjectClientField();
 }
