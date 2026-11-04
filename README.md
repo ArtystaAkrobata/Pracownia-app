@@ -1,6 +1,19 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.26.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.26.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.26.1 — Korekta cofania na Androidzie przy otwartym projekcie
+- Przy ponownym uruchomieniu zainstalowanego MANU system mógł przywrócić stary znacznik `manuBackGuard`, mimo że nie było już poprawnego wpisu historii. Inicjalizacja za każdym razem tworzy teraz świeże `manuBackRoot` oraz `manuBackGuard`.
+- Gdy zdarzenie `popstate` pochodzi z nieoczekiwanego wpisu historii, a MANU ma otwarty modal lub zapamiętaną wcześniejszą kartkę, aplikacja podejmuje próbę wewnętrznego cofnięcia i odtwarza strażnika zamiast pomijać zdarzenie.
+- Usunięto wywołanie dodatkowego `history.back()` wewnątrz `popstate`, gdy MANU jest już na ekranie Start. Na Androidzie jeden gest nie może powodować dwóch kroków historii i przypadkowego zamknięcia PWA.
+- Dodano symulowane testy powrotu: **Start → Projekty → szczegóły „Test” → Wstecz → lista projektów → Wstecz → Start**, odtworzenie starego wpisu oraz sprawdzenie, że pojedyncze Wstecz na Start nie wywołuje kolejnego cofnięcia.
+- To tylko nawigacja; bez zmian schematu danych, projektów, wycen, kosztów, historii wpłat, trybu demo i synchronizacji. Wersja PWA `manu-app-v3.26.1`. Backup: `backup-manu-v3-26-0-before-android-back-fix`.
+
+### Test z nagrania
+1. Z ekranu **Start** otwórz **Projekty**.
+2. Otwórz projekt, np. „Test”.
+3. Naciśnij systemowy **Wstecz** — wróć do listy projektów.
+4. Naciśnij **Wstecz** drugi raz — powinieneś znaleźć się na ekranie **Start**, a nie na pulpicie Androida.
 
 ## MANU 3.26.0 — Etap 16.3: izolowany tryb demonstracyjny dla testerów
 - W **Ustawienia → Testowanie aplikacji** zamiast dotychczasowego przycisku „Wstaw dane demonstracyjne” znajduje się **Uruchom bezpieczny tryb demo**. Wcześniej MANU dodawało przykłady bezpośrednio do bieżących projektów — teraz tego nie robi.
