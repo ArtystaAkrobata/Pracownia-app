@@ -1141,6 +1141,27 @@ body{background:#08090b;color:var(--text)}
 
 
 
+
+/* MANU 3.26.0 — trwałe oznaczenie sesji demonstracyjnej bez dostępu do danych */
+.manu-demo-banner{
+ position:relative;z-index:10;
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+ margin:10px 18px 14px;padding:11px 13px;
+ border:1px solid #d9aa72;border-left:5px solid #c28d57;border-radius:12px;
+ background:linear-gradient(110deg,#fff1d8,#ecdbbc);
+ color:#62442d;box-shadow:0 4px 12px #00000016;
+}
+.manu-demo-banner>span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.manu-demo-banner strong{font-size:12px;letter-spacing:.12em;font-weight:800}
+.manu-demo-banner small{font-size:11px;line-height:1.45;color:#6f503a}
+.manu-demo-banner .btn{background:#664632;color:#fff;border-color:#664632;min-height:38px;white-space:normal}
+.manu-demo-banner .btn:focus-visible{outline:2px solid #593f2e;outline-offset:3px}
+@media(max-width:480px){
+ .manu-demo-banner{margin:8px 11px 12px;padding:10px;gap:8px}
+ .manu-demo-banner small{font-size:10px}
+ .manu-demo-banner .btn{font-size:11px;padding:8px 10px}
+}
+
 /* MANU 3.25.0 — etap 16.1: kompaktowa, niewymuszająca przewinięcia kontrola kopii */
 .manu-security-audit{
  margin:16px 0 18px;padding:14px;
