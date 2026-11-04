@@ -1,6 +1,56 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.18.6';
+const APP_VERSION='3.19.0';
+
+/* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
+const UI_PREFS_KEY='manu-ui-preferences-v1';
+const DEFAULT_UI_PREFS=Object.freeze({startView:'home',showCommand:true,showRecent:true});
+const UI_START_VIEWS=['home','projects','tasks','finance','calendar'];
+function normalizeUiPreferences(raw){
+ const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+ return {
+  startView:UI_START_VIEWS.includes(value.startView)?value.startView:'home',
+  showCommand:value.showCommand!==false,
+  showRecent:value.showRecent!==false
+ };
+}
+function loadUiPreferences(){
+ try{return normalizeUiPreferences(JSON.parse(localStorage.getItem(UI_PREFS_KEY)||'null'))}
+ catch(e){return {...DEFAULT_UI_PREFS}}
+}
+let uiPreferences=loadUiPreferences();
+let personalizationExpanded=false;
+function updateUiPreferences(change){
+ const next=normalizeUiPreferences({...uiPreferences,...change});
+ try{
+  localStorage.setItem(UI_PREFS_KEY,JSON.stringify(next));
+  uiPreferences=next;
+  return true;
+ }catch(e){console.warn('MANU: nie udało się zapisać preferencji',e);return false}
+}
+function personalizationMarkup(){
+ const p=uiPreferences;
+ const screens=[
+  ['home','Start'],['projects','Projekty i warsztaty'],
+  ['tasks','Zadania'],['finance','Finanse'],['calendar','Terminy']
+ ];
+ return `<details class="smart-settings manu-personalization" ${personalizationExpanded?'open':''}>
+ <summary>${icon('settings')} Personalizacja MANU</summary>
+ <div class="smart-settings-content">
+  <p>Wybierz, co widzisz po otwarciu MANU. Nie zmienia to układu innych kartek ani zapisanych danych.</p>
+  <label class="smart-settings-lead" for="manu-start-view">Ekran po uruchomieniu
+  <select id="manu-start-view">${screens.map(([id,name])=>`<option value="${id}" ${p.startView===id?'selected':''}>${name}</option>`).join('')}</select></label>
+  <div class="manu-personalization-subtitle">Widoczność sekcji na ekranie Start</div>
+  <label class="smart-settings-check"><input type="checkbox" id="manu-show-command" ${p.showCommand?'checked':''}><span>Centrum dowodzenia</span></label>
+  <label class="smart-settings-check"><input type="checkbox" id="manu-show-recent" ${p.showRecent?'checked':''}><span>Ostatnie projekty</span></label>
+  <div class="manu-personalization-footer">
+   <p class="muted tiny">Zmiany zobaczysz przy następnym wejściu na Start. Ustawienia zapisują się lokalnie na tym urządzeniu.</p>
+   <button class="btn ghost sm" type="button" data-action="ui-prefs-reset">Przywróć domyślne</button>
+  </div>
+ </div>
+ </details>`;
+}
+
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -479,7 +529,7 @@ function commandCenter(){
    '<button type="button" class="btn secondary sm" data-action="new-project">'+icon('plus')+' Projekt</button></div>'+
   '</section>';
 }
-function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section>${commandCenter()}<section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section><section class="home-recent"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div></section>`}
+function homePage(m){const profileName=window.MANUCloud?.displayName?.()||'';const greeting=profileName?'Dzień dobry, '+htmlEscape(profileName)+' 👋':'Dzień dobry, twórco 👋';const recent=[...state.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,4);return `<div class="cover-signature" aria-label="MANU — Organizer twórcy"><img src="manu48-mark.svg" alt="" width="58" height="58"><strong>MANU</strong><span>ORGANIZER TWÓRCY</span><small>TWÓJ OSOBISTY NOTES</small></div>${pageHeading(greeting,'Twoje dzieła, projekty i plany w jednym eleganckim miejscu.',`<button class="btn" data-action="new-project">${icon('plus')}<span class="hide-small">Nowy projekt</span><span class="hide-small"> / warsztat</span></button>`)}<section class="hero"><div><div class="label">TWÓJ WYNIK · WSZYSTKIE AKTYWNE PROJEKTY</div><h1>${fMoney(m.profit)}</h1><p>Szacunkowo zostaje po wpisanych kosztach, w tym planowanym dojeździe.<br>Bez podatków, składek i nieujętych kosztów działalności.</p></div><div class="hero-stats"><strong>${m.count}</strong><span>otwartych projektów</span></div></section>${uiPreferences.showCommand?commandCenter():''}<section class="stat-grid">${statsCard('Wartość zleceń',fMoney(m.income),'Wpisany przychód','trend')}${statsCard('Koszty',fMoney(m.cost),'Wydatki projektowe','wallet')}${statsCard('Do zapłaty',fMoney(m.unpaid),'Pozostałe wpłaty','money')}${statsCard('Otwarte zadania',m.todo,'Do wykonania','checks')}</section>${uiPreferences.showRecent?`<section class="home-recent"><div class="surface"><div class="section-head"><h2>Ostatnie projekty</h2><button class="link" data-action="nav" data-view="projects">Wszystkie ${icon('arrow')}</button></div>${recent.length?recent.map(projectRow).join(''):empty('Tu zacznie się Twoja historia','Dodaj pierwsze zlecenie albo warsztat. Możesz też wgrać dane demonstracyjne.',`<button class="btn sm" data-action="new-project">${icon('plus')} Dodaj projekt</button><button class="btn secondary sm" data-action="demo">Wstaw demo</button>`)}</div></section>`:''}`}
 function projectRow(p){return `<div class="project-row" role="button" tabindex="0" data-action="open-project" data-id="${htmlEscape(p.id)}">${projectTypeIcon(p)}<div class="project-row-info"><b>${htmlEscape(p.title)}</b><span>${htmlEscape(p.type)} · ${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</span></div><div class="right-stats"><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b><small>po kosztach</small></div></div>`;}
 function quoteItemRow(item={}){
  return `<div class="quote-line" data-quote-row>
@@ -1105,7 +1155,7 @@ async function checkPwaUpdate(){
   refreshPwaPanel();
  }catch(e){console.warn('Sprawdzanie aktualizacji MANU:',e);toast('Nie udało się sprawdzić aktualizacji. Spróbuj ponownie przy połączeniu z internetem.');}
 }
-function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack">${window.MANUCloud?.markup?.()||''}<details class="smart-settings" ${smartSettingsExpanded?'open':''}><summary>${icon('calendar')} Inteligentne przypomnienia</summary><div class="smart-settings-content"><p>MANU wykrywa ważne terminy i pokazuje je na ekranie Start. Nie tworzy nowych, zduplikowanych wpisów.</p><label class="smart-settings-check"><input id="smart-alert-enabled" type="checkbox" ${state.smartAlerts?.enabled!==false?'checked':''}><span>Włącz inteligentne przypomnienia</span></label><label class="smart-settings-lead">Przypominaj o zleceniach i płatnościach<select id="smart-alert-lead" ${state.smartAlerts?.enabled===false?'disabled':''}><option value="1" ${state.smartAlerts?.leadDays===1?'selected':''}>1 dzień wcześniej</option><option value="3" ${state.smartAlerts?.leadDays!==1&&state.smartAlerts?.leadDays!==7?'selected':''}>3 dni wcześniej</option><option value="7" ${state.smartAlerts?.leadDays===7?'selected':''}>7 dni wcześniej</option></select></label><p class="muted tiny">Warsztaty: 7 dni wcześniej. Zadania: dzień wcześniej. Własne przypomnienia: w dniu terminu. „Jutro” odkłada pojedynczą wskazówkę. To funkcja wewnątrz MANU — aplikacja nie wysyła powiadomień, gdy jest całkowicie zamknięta.</p></div></details><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
+function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack">${window.MANUCloud?.markup?.()||''}${personalizationMarkup()}<details class="smart-settings" ${smartSettingsExpanded?'open':''}><summary>${icon('calendar')} Inteligentne przypomnienia</summary><div class="smart-settings-content"><p>MANU wykrywa ważne terminy i pokazuje je na ekranie Start. Nie tworzy nowych, zduplikowanych wpisów.</p><label class="smart-settings-check"><input id="smart-alert-enabled" type="checkbox" ${state.smartAlerts?.enabled!==false?'checked':''}><span>Włącz inteligentne przypomnienia</span></label><label class="smart-settings-lead">Przypominaj o zleceniach i płatnościach<select id="smart-alert-lead" ${state.smartAlerts?.enabled===false?'disabled':''}><option value="1" ${state.smartAlerts?.leadDays===1?'selected':''}>1 dzień wcześniej</option><option value="3" ${state.smartAlerts?.leadDays!==1&&state.smartAlerts?.leadDays!==7?'selected':''}>3 dni wcześniej</option><option value="7" ${state.smartAlerts?.leadDays===7?'selected':''}>7 dni wcześniej</option></select></label><p class="muted tiny">Warsztaty: 7 dni wcześniej. Zadania: dzień wcześniej. Własne przypomnienia: w dniu terminu. „Jutro” odkłada pojedynczą wskazówkę. To funkcja wewnątrz MANU — aplikacja nie wysyła powiadomień, gdy jest całkowicie zamknięta.</p></div></details><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
  <p id="manu-save-status" class="save-state-line ${storageBlocked?'is-error':''}" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
  <p class="small">MANU zapisuje dane na tym urządzeniu po każdej zmianie. Zostawia też jeden poprzedni lokalny stan, który możesz przywrócić. Nie chroni to przed utratą telefonu ani usunięciem danych przeglądarki.</p>
  <div class="settings-actions"><button class="btn" data-action="export">${icon('download')} Pobierz kopię JSON</button>
@@ -1983,7 +2033,15 @@ case 'list-more':{
  event.prompt();
  event.userChoice.finally(()=>refreshPwaPanel());
 }break;
-case 'pwa-check-update':void checkPwaUpdate();break;
+case 'ui-prefs-reset':{
+  if(updateUiPreferences(DEFAULT_UI_PREFS)){
+   const panel=$('.manu-personalization');
+   if(panel)panel.outerHTML=personalizationMarkup();
+   toast('Przywrócono ustawienia domyślne MANU');
+  }else toast('Nie udało się przywrócić ustawień personalizacji');
+  break;
+ }
+ case 'pwa-check-update':void checkPwaUpdate();break;
 case 'offline-check':void checkOfflineReadiness();break;
 case 'pwa-reload':{
  if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
@@ -2148,6 +2206,7 @@ function events(){
  },true);
  document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.project-tools-more')&&el.isConnected){projectToolsExpanded=!!el.open;return;}
+ if(el?.matches?.('details.manu-personalization')&&el.isConnected){personalizationExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
@@ -2155,6 +2214,17 @@ function events(){
  if(!el?.matches?.('details.manu-detail-fold')||!el.isConnected)return;const id=el.dataset.project,key=el.dataset.section;if(!id||!key)return;let opened=detailSectionStates.get(id);if(!opened){opened=new Set();detailSectionStates.set(id,opened)}if(el.open)opened.add(key);else opened.delete(key);},true);document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.closest?.('#project-form'))scheduleProjectDraft();
  if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');
+ if(e.target.id==='manu-start-view'||e.target.id==='manu-show-command'||e.target.id==='manu-show-recent'){
+  const id=e.target.id;
+  const change=id==='manu-start-view'?{startView:e.target.value}:id==='manu-show-command'?{showCommand:e.target.checked}:{showRecent:e.target.checked};
+  if(updateUiPreferences(change))toast('Zapisano personalizację MANU');
+  else{
+   if(id==='manu-start-view')e.target.value=uiPreferences.startView;
+   else e.target.checked=id==='manu-show-command'?uiPreferences.showCommand:uiPreferences.showRecent;
+   toast('Nie udało się zapisać personalizacji na tym urządzeniu');
+  }
+  return;
+ }
  if(e.target.id==='smart-alert-enabled'){
   state.smartAlerts=normalizeSmartAlerts({...state.smartAlerts,enabled:e.target.checked});
   afterDataChange(e.target.checked?'Przypomnienia włączone':'Przypomnienia wyłączone');
@@ -2244,6 +2314,8 @@ async function init(){
  });
  events();
  await load();
+ // Preferencje interfejsu nie modyfikują bazy, lecz wybierają pierwszą kartkę po uruchomieniu.
+ view=uiPreferences.startView;
  calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);lastVisibleDay=calendarSelected;
  render();
  initManuBackGuard();
