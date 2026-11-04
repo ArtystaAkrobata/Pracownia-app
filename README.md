@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.23.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.24.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.24.0 — Etap 15.5: przegląd końcowy dokumentów i płatności
+- Przeprowadzono przegląd całego etapu 15: inteligentne podpowiedzi wycen (15.1), profesjonalne dokumenty PDF (15.2), podsumowanie należności i zaliczek (15.3), powielanie dokumentów i autouzupełnianie danych pracowni (15.4), nawigacja podglądów oraz integralność zapisów (15.5).
+- **Naprawiono przedwczesny komunikat „Zapisano” przy wycenach.** Formularz wyceny czeka teraz na potwierdzenie trwałego zapisu w pamięci urządzenia. Dopiero po sukcesie otwiera zapisany dokument i pokazuje potwierdzenie.
+- Przy błędzie pamięci nowa lub zmieniana wycena **nie jest fałszywie uznawana za zapisaną**: przywracany jest poprzedni rejestr wycen i licznik dokumentów, a formularz pozostaje otwarty wraz z wpisanymi polami. Pojawia się ostrzeżenie, żeby zweryfikować pamięć i wykonać kopię. Nie jest pobierany nowy numer wyceny. Powtórne kliknięcie **Zapisz** podczas trwającej operacji nie tworzy duplikatu.
+- Dodano testy end-to-end w środowisku symulacyjnym: zapis nowej oferty z danymi klienta, awaria zapisu nowej oferty, awaria edycji dokumentu, nowa numeracja powielanej wyceny i nienaruszalność pierwotnego dokumentu, oddzielenie PDF od finansów projektu i zaliczek. Uruchomiono też istniejące testy nawigacji wstecz, kompatybilności starych wycen, historii wpłat, filtrowania oraz integralności backupów.
+- Zmiana nie wymaga migracji danych (`version:18`), nie zmienia formatu PDF ani bazy `pracownia_db_v1`. Interfejs nie dostaje nowych paneli; pozostaje czytelny na telefonie.
+- **Ograniczenie:** MANU jest nadal wersją testową. Testy automatyczne weryfikują logikę i składnię, ale nie zastępują przeglądu wydruku PDF i zachowania przeglądarki na fizycznym Androidzie. Użytkownik powinien nadal regularnie eksportować kopię JSON. Dane istniejących klientów i ofert pozostają zapisane lokalnie lub w skonfigurowanej chmurze.
+- PWA `manu-app-v3.24.0`, gałąź kopii bezpieczeństwa kodu: `backup-manu-v3-23-2-before-stage-15-final-audit`.
+
+### Kontrola zamknięcia etapu 15 na telefonie
+1. Otwórz **Wyceny**. Utwórz krótką ofertę z danymi klienta i zapisz — podgląd powinien otworzyć się dopiero po zakończeniu zapisu.
+2. Otwórz zapisany dokument, **Edytuj**, **Wróć do podglądu**, **Powiel dokument**, a następnie **Wstecz** i **Zamknij**. Zapisane dokumenty i historia powinny pozostać czytelne.
+3. Sprawdź wydruk **PDF** w stylu klasycznym i minimalistycznym.
+4. W **Finansach → Należności i zaliczki** sprawdź kwotę pozostałą do zapłaty i filtry, porównaj z konkretną kartą projektu / uczestnika.
+5. W **Ustawieniach** pobierz kopię JSON i sprawdź, czy zawiera wyceny oraz rozliczenia.
 
 ## MANU 3.23.2 — Nawigacja wstecz w podglądzie dokumentu
 - Po wybraniu **Edytuj** albo **Powiel dokument** z podglądu MANU zapamiętuje, z którego dokumentu otwarto formularz oraz pozycję przewinięcia.
