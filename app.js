@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.14.1';
+const APP_VERSION='3.14.2';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -30,6 +30,8 @@ let notebookTurn='';
 // Etap 12.1: jeden kontekst powrotu dla skrótów na stronie Start.
 let homeReturnContext=null;
 let projectReturnContext=null;
+// Stan rozwinięcia menu Więcej narzędzi w Projektach — także po powrocie z podstrony.
+let projectToolsExpanded=false;
 let calendarMonth='',calendarSelected='';
 let detailReturnScroll=null;
 let smartAlertsExpanded=false;
@@ -543,7 +545,7 @@ function quotePreview(id){
  const q=(state.quotes||[]).find(q=>q.id===id);if(!q)return;
  modal('Wycena '+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
 }
-function projectsPage(){return `${returnToHomeButton('projects')}${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions project-primary-actions"><button type="button" class="btn" data-action="new-project">${icon('plus')} Dodaj projekt</button><button type="button" class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><details class="project-tools-more"><summary class="btn secondary" aria-label="Pokaż dodatkowe narzędzia">${icon('copy')} Więcej narzędzi <span class="project-tools-chevron" aria-hidden="true">⌄</span></summary><div class="project-tools-panel"><button type="button" class="btn secondary" data-action="nav" data-view="gallery">${icon('folder')} Galeria realizacji</button><button type="button" class="btn secondary" data-action="nav" data-view="templates">${icon('copy')} Szablony projektów</button><button type="button" class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button></div></details></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
+function projectsPage(){return `${returnToHomeButton('projects')}${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions project-primary-actions"><button type="button" class="btn" data-action="new-project">${icon('plus')} Dodaj projekt</button><button type="button" class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><details class="project-tools-more"${projectToolsExpanded?' open':''}><summary class="btn secondary" aria-label="Pokaż dodatkowe narzędzia">${icon('copy')} Więcej narzędzi <span class="project-tools-chevron" aria-hidden="true">⌄</span></summary><div class="project-tools-panel"><button type="button" class="btn secondary" data-action="nav" data-view="gallery">${icon('folder')} Galeria realizacji</button><button type="button" class="btn secondary" data-action="nav" data-view="templates">${icon('copy')} Szablony projektów</button><button type="button" class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button></div></details></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
 
 /* MANU 3.4.0 — lokalna księga klientów, zapisywana razem z projektami i wycenami. */
 function linkedProjects(clientId){
@@ -1626,6 +1628,7 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  // Powrót tylko po użyciu skrótu na Start; zwykłe zakładki nie pokazują dodatkowego przycisku.
  const fromHomeShortcut=previous==='home'&&['projects','tasks','finance','calendar'].includes(next)&&!!b.closest('.command-center, .home-recent');
  const fromProject=previous==='projects'&&['clients','quotes','gallery','templates'].includes(next);
+ if(fromProject)projectToolsExpanded=!!document.querySelector('details.project-tools-more')?.open;
  projectReturnContext=fromProject?{page:next,top:window.scrollY}:null;
  // Zachowaj ścieżkę Start → Projekty → podstrona, aby działały oba powroty.
  if(!(fromProject&&homeReturnContext?.page==='projects'))homeReturnContext=fromHomeShortcut?{page:next,top:window.scrollY}:null;
@@ -1803,6 +1806,7 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  closeModal();afterDataChange(original?'Przypomnienie zapisane':'Dodano przypomnienie');break;
 }}}
 function events(){window.addEventListener('beforeunload',e=>{if(pendingWrites>0||storageBlocked){e.preventDefault();e.returnValue='';}});document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
+ if(el?.matches?.('details.project-tools-more')&&el.isConnected){projectToolsExpanded=!!el.open;return;}
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-compare')&&el.isConnected){compareExpanded=!!el.open;return;}
