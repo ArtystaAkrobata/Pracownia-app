@@ -908,3 +908,127 @@ test('MANU 3.23.2: cofanie ma animację odwrotnego obrotu kartki', () => {
  assert.match(css,/@keyframes manu-quote-turn-back/);
  assert.match(appSource,/current\?\.classList\?\.add\('quote-back-motion'\)/);
 });
+
+
+/* MANU 15.5 — end-to-end zapis wyceny bez użycia prawdziwych danych telefonu. */
+function mockQuoteForm(values,amount=250,quoteId=''){
+ const fields={...values};
+ const row={querySelector:selector=>{
+  const map={'[name="description"]':'Grawerowanie lustra','[name="quantity"]':'2',
+    '[name="unit"]':'szt.','[name="unitPrice"]':String(amount)};
+  return Object.hasOwn(map,selector)?{value:map[selector]}:null;
+ }};
+ const saveButton={disabled:false};
+ return {id:'quote-form',dataset:{quote:quoteId},values:fields,
+  querySelectorAll:selector=>selector==='[data-quote-row]'?[row]:[],
+  querySelector:selector=>selector==='button[type="submit"]'?saveButton:null,
+  saveButton};
+}
+const quoteFields=()=>({
+ title:'Wycena testowa',issued:'2026-11-04',validUntil:'2026-11-30',
+ projectId:'',issuer:'Pracownia',issuerContact:'kontakt@example.test',
+ client:'Klient A',clientContact:'client@example.test',clientAddress:'Łęczna',
+ documentType:'offer',documentStyle:'minimal',introduction:'Oferta specjalna',
+ deliveryTerms:'Do 14 dni',paymentTerms:'Przelew po odbiorze',
+ discount:'50',notes:'Warunki'
+});
+
+test('Etap 15.5: zapis nowej oferty jest zatwierdzony przed przejściem do podglądu', async () => {
+ const {api,persisted,context}=boot({version:18,projects:[],tasks:[],quotes:[]});
+ api.useLocalStorage();
+ const form=mockQuoteForm(quoteFields(),250);
+ await api.handleSubmit(form);
+ assert.equal(form.saveButton.disabled,false);
+ assert.equal(api.getState().quotes.length,1);
+ const quote=api.getState().quotes[0];
+ assert.match(quote.number,/^MANU-\d{4}-001$/);
+ assert.equal(quote.clientContact,'client@example.test');
+ assert.equal(quote.documentType,'offer');
+ assert.equal(quote.documentStyle,'minimal');
+ assert.equal(quote.items.length,1);
+ assert.equal(quote.items[0].quantity,2);
+ assert.equal(quote.items[0].unitPrice,250);
+ assert.equal(quote.discount,50);
+ const saved=JSON.parse(persisted.get('snapshot'));
+ assert.equal(saved.quotes.length,1);
+ assert.equal(saved.quotes[0].number,quote.number);
+ assert.equal(saved.quotes[0].clientAddress,'Łęczna');
+ assert.match(context.__lastModal.title,/Oferta cenowa/);
+ assert.match(context.__lastModal.body,/WARTOŚĆ OFERTY/);
+});
+
+test('Etap 15.5: błąd zapisu nowej wyceny nie udaje sukcesu ani nie zużywa numeru', async () => {
+ const {api,persisted,rejectWrites,alerts,context}=boot({version:18,projects:[],tasks:[],quotes:[]});
+ api.useLocalStorage();
+ assert.equal(await api.save(),true);
+ const before=persisted.get('snapshot');
+ const form=mockQuoteForm(quoteFields(),450);
+ rejectWrites(true);
+ await api.handleSubmit(form);
+ assert.equal(form.saveButton.disabled,false);
+ assert.equal(api.getState().quotes.length,0);
+ assert.deepEqual(Object.keys(api.getState().quoteCounters),[]);
+ assert.equal(persisted.get('snapshot'),before);
+ assert.match(alerts.at(-1),/Nie zapisano wyceny/);
+ assert.equal(context.__lastModal,undefined);
+});
+
+test('Etap 15.5: przy błędzie aktualizacji stara oferta i jej kwoty są zachowane', async () => {
+ const source={id:'q1',title:'Pierwotny dokument',number:'MANU-2026-001',
+  client:'Klient',issued:'2026-11-01',discount:0,
+  items:[{id:'line1',description:'Matowienie',quantity:1,unit:'szt.',unitPrice:450}]};
+ const {api,persisted,rejectWrites,alerts}=boot({version:18,projects:[],tasks:[],quotes:[source]});
+ api.useLocalStorage();
+ assert.equal(await api.save(),true);
+ const before=JSON.stringify(api.getState().quotes[0]),stored=persisted.get('snapshot');
+ const form=mockQuoteForm(quoteFields(),999,'q1');
+ rejectWrites(true);
+ await api.handleSubmit(form);
+ assert.equal(JSON.stringify(api.getState().quotes[0]),before);
+ assert.equal(persisted.get('snapshot'),stored);
+ assert.match(alerts.at(-1),/Nie zapisano wyceny/);
+});
+
+test('Etap 15.5: powielona oferta po zapisie ma nową numerację, oryginał bez zmian', async () => {
+ const source={id:'q1',title:'Oferta pierwotna',number:'MANU-2026-001',
+  issued:'2026-11-01',documentType:'offer',documentStyle:'classic',
+  items:[{id:'l1',description:'Lustro',quantity:1,unit:'szt.',unitPrice:500}]};
+ const {api,persisted}=boot({version:18,projects:[],tasks:[],quotes:[source]});
+ api.useLocalStorage();
+ const before=JSON.stringify(api.getState().quotes[0]);
+ const form=mockQuoteForm({...quoteFields(),title:'Oferta — nowa'},300);
+ await api.handleSubmit(form);
+ assert.equal(api.getState().quotes.length,2);
+ const copy=api.getState().quotes[1];
+ assert.equal(copy.number,'MANU-2026-002');
+ assert.equal(copy.items[0].unitPrice,300);
+ assert.equal(JSON.stringify(api.getState().quotes[0]),before);
+ assert.equal(JSON.parse(persisted.get('snapshot')).quotes.length,2);
+});
+
+test('Etap 15.5: PDF i rozliczenie projektu są niezależne od zapisanej wyceny', () => {
+ const {api}=boot({version:18,tasks:[],projects:[job('zlecenie',{
+  title:'Lustro 50 cm',price:500,paid:100,
+  payments:[{id:'p1',kind:'zaliczka',amount:150,date:'2026-11-01'}],
+  expenses:[{id:'e1',category:'materialy',amount:90,date:'2026-11-02',title:'Lustro'}],
+  paymentDue:'2026-11-08'
+ })],quotes:[{
+  id:'q1',title:'Oferta',number:'MANU-2026-001',
+  issued:'2026-11-01',documentType:'offer',client:'Klient',
+  clientContact:'email@example.test',clientAddress:'Łęczna',
+  introduction:'Przygotowanie lustra',deliveryTerms:'14 dni',
+  paymentTerms:'Przelew',items:[{description:'Grawer',quantity:2,unit:'szt.',unitPrice:350}]
+ }]});
+ const before=JSON.stringify(api.getState().projects);
+ const q=api.getState().quotes[0],html=api.quoteDocument(q);
+ assert.match(html,/OFERTA CENOWA/);
+ assert.match(html,/700/);
+ assert.match(html,/email@example.test/);
+ assert.match(html,/Przygotowanie lustra/);
+ assert.match(html,/Przelew/);
+ const finance=api.paymentControlData('2026-11-04');
+ assert.equal(finance.remaining,250);
+ assert.equal(finance.received,250);
+ assert.equal(finance.advance,150);
+ assert.equal(JSON.stringify(api.getState().projects),before);
+});
