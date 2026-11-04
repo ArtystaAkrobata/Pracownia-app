@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.16.0';
+const APP_VERSION='3.17.0';
 const DB_NAME='pracownia_db_v1';
 const DATA_KEY='snapshot';
 const RECOVERY_KEY='safety-previous-v1';
@@ -313,7 +313,7 @@ function mobileBtn(tab,ic,label){return `<button type="button" class="mobile-tab
 function openNotebook(content,page,turn=''){
  const pageLabels={projects:'REJESTR PROJEKTÓW',clients:'KSIĘGA KLIENTÓW',gallery:'GALERIA REALIZACJI',templates:'KSIĘGA SZABLONÓW',quotes:'REJESTR WYCEN',finance:'KSIĘGA FINANSÓW',tasks:'LISTA ZADAŃ',calendar:'KALENDARZ I TERMINY'};
  const edge=['finance','calendar','quotes','clients','gallery','templates'].includes(page)?'right':'left';
- const animation=turn==='next'||turn==='prev'?' page-turn-'+turn:'';
+ const animation=turn==='next'||turn==='prev'?' page-turn-'+turn:turn==='open'?' page-open':'';
  return `<section class="open-notebook open-notebook--${edge}${animation}" aria-label="${pageLabels[page]||'Wnętrze notesu'}" data-book-page="${htmlEscape(page)}" data-book-edge="${edge}">
   <div class="open-notebook-binding" aria-hidden="true">
    <span class="book-cover-edge"></span><span class="book-binding-seam"></span><span class="book-paper-edges"></span>
@@ -1660,8 +1660,9 @@ function handleAction(b){let action=b.dataset.action,id=b.dataset.id;switch(acti
  // Zachowaj ścieżkę Start → Projekty → podstrona, aby działały oba powroty.
  if(!(fromProject&&homeReturnContext?.page==='projects'))homeReturnContext=fromHomeShortcut?{page:next,top:window.scrollY}:null;
  const notebookOrder={home:0,projects:1,clients:2,gallery:3,templates:4,quotes:5,finance:6,tasks:7,calendar:8};
- notebookTurn=Object.hasOwn(notebookOrder,previous)&&Object.hasOwn(notebookOrder,next)&&previous!==next
-   ?notebookOrder[next]>notebookOrder[previous]?'next':'prev':'';
+ notebookTurn=previous!==next&&['home','settings'].includes(previous)&&Object.hasOwn(notebookOrder,next)?'open':
+   Object.hasOwn(notebookOrder,previous)&&Object.hasOwn(notebookOrder,next)&&previous!==next
+    ?notebookOrder[next]>notebookOrder[previous]?'next':'prev':'';
  view=next;
  window.scrollTo(0,0);
  render();
