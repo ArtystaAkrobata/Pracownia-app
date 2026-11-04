@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.20.0';
+const APP_VERSION='3.21.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -321,12 +321,29 @@ function normalizeQuotes(records){
  title:String(q.title||'Wycena').slice(0,140),issuer:String(q.issuer||'').slice(0,180),
  issuerContact:String(q.issuerContact||'').slice(0,350),client:String(q.client||'').slice(0,180),
  clientContact:String(q.clientContact||'').slice(0,350),clientAddress:String(q.clientAddress||'').slice(0,280),
+ documentType:q.documentType==='offer'?'offer':'quote',
+ documentStyle:q.documentStyle==='minimal'?'minimal':'classic',
+ introduction:String(q.introduction||'').slice(0,1000),
+ deliveryTerms:String(q.deliveryTerms||'').slice(0,360),
+ paymentTerms:String(q.paymentTerms||'').slice(0,360),
  issued:validDate(q.issued)||localDay(),validUntil:validDate(q.validUntil),notes:String(q.notes||'').slice(0,900),
  discount:money(q.discount),createdAt:validTime(q.createdAt)||now(),
  items:(Array.isArray(q.items)?q.items:[]).slice(0,80).filter(i=>i&&typeof i==='object'&&!Array.isArray(i)).map(i=>({
  id:String(i.id||uid()),description:String(i.description||'').slice(0,180),quantity:Math.min(100000,Math.max(0,Number(i.quantity)||0)),unit:String(i.unit||'szt.').slice(0,24),unitPrice:money(i.unitPrice)
  }))
  }));
+}
+function quoteDocumentLabel(q){return q?.documentType==='offer'?'OFERTA CENOWA':'WYCENA'}
+function quoteDocumentStyle(q){return q?.documentStyle==='minimal'?'minimal':'classic'}
+function quoteDocumentTerms(q){
+ const rows=[
+  ['Termin realizacji',String(q.deliveryTerms||'')],
+  ['Warunki płatności',String(q.paymentTerms||'')]
+ ].filter(([,value])=>value.trim());
+ if(!rows.length)return '';
+ return '<section class="quote-doc-terms" aria-label="Ustalenia realizacji">'+rows.map(([label,value])=>
+  '<div class="quote-doc-term"><h3>'+htmlEscape(label)+'</h3><p>'+htmlEscape(value)+'</p></div>'
+ ).join('')+'</section>';
 }
 function quoteSubtotal(q){return Math.round((q.items||[]).reduce((sum,i)=>sum+(Number(i.quantity)||0)*money(i.unitPrice),0)*100)/100}
 function quoteTotal(q){return Math.max(0,Math.round((quoteSubtotal(q)-money(q.discount))*100)/100)}
@@ -673,12 +690,28 @@ function quoteForm(projectId='',quoteId=''){
  const existing=(state.quotes||[]).find(q=>q.id===quoteId);
  const p=state.projects.find(p=>p.id===(existing?.projectId||projectId));
  const itemDefault=p?quoteProjectItem(p):{description:'',quantity:1,unit:'szt.',unitPrice:0};
- const q=existing||{number:quoteNewNumber(),projectId:p?.id||'',title:p?.title?'Wycena — '+p.title:'Nowa wycena',client:p?.client||'',clientContact:'',clientAddress:'',issued:localDay(),validUntil:'',issuer:'',issuerContact:'',notes:'',discount:0,items:[itemDefault]};
+ const q=existing||{number:quoteNewNumber(),projectId:p?.id||'',title:p?.title?'Wycena — '+p.title:'Nowa wycena',client:p?.client||'',clientContact:'',clientAddress:'',documentType:'quote',documentStyle:'classic',introduction:'',deliveryTerms:'',paymentTerms:'',issued:localDay(),validUntil:'',issuer:'',issuerContact:'',notes:'',discount:0,items:[itemDefault]};
  modal(existing?'Edytuj wycenę':'Nowa wycena',`<form id="quote-form" data-id="${htmlEscape(q.projectId)}" data-quote="${htmlEscape(existing?.id||'')}">
  <p class="form-note">Wycena nie zmienia ceny projektu, kosztów ani historii wpłat. To dokument ofertowy, nie faktura.</p>
  <div class="form-cols"><div class="field"><label>Numer</label><input value="${htmlEscape(q.number)}" disabled></div><div class="field"><label>Data wystawienia *</label><input name="issued" type="date" required value="${htmlEscape(q.issued)}"></div><div class="field"><label>Ważna do</label><input name="validUntil" type="date" value="${htmlEscape(q.validUntil)}"></div><div class="field"><label>Projekt (opcjonalnie)</label><select id="quote-form-project" name="projectId"><option value="">Bez projektu</option>${state.projects.map(project=>`<option value="${htmlEscape(project.id)}" ${project.id===q.projectId?'selected':''}>${htmlEscape(project.title)}</option>`).join('')}</select></div></div>
  ${quoteAssistantMarkup(q,p)}
- <div class="field"><label>Tytuł wyceny *</label><input name="title" required maxlength="140" value="${htmlEscape(q.title)}" placeholder="Np. Lustro Ø50 cm — matowienie"></div>
+ <details class="quote-document-options" ${q.introduction||q.deliveryTerms||q.paymentTerms?'open':''}>
+  <summary>${icon('brief')} Wygląd i treść dokumentu <span>opcjonalnie</span></summary>
+  <div class="quote-document-options-body">
+   <div class="form-cols"><div class="field"><label>Rodzaj dokumentu</label><select id="quote-document-type" name="documentType">
+    <option value="quote" ${q.documentType!=='offer'?'selected':''}>Wycena</option>
+    <option value="offer" ${q.documentType==='offer'?'selected':''}>Oferta cenowa</option>
+   </select></div><div class="field"><label>Styl PDF</label><select name="documentStyle">
+    <option value="classic" ${q.documentStyle!=='minimal'?'selected':''}>Klasyczny MANU — miedziane akcenty</option>
+    <option value="minimal" ${q.documentStyle==='minimal'?'selected':''}>Minimalistyczny — prosty i jasny</option>
+   </select></div></div>
+   <div class="field"><label>Wprowadzenie / opis propozycji</label><textarea name="introduction" rows="3" maxlength="1000" placeholder="Kilka zdań o realizacji i proponowanym rozwiązaniu">${htmlEscape(q.introduction||'')}</textarea></div>
+   <div class="form-cols"><div class="field"><label>Termin realizacji</label><textarea name="deliveryTerms" rows="2" maxlength="360" placeholder="Np. do 14 dni od akceptacji">${htmlEscape(q.deliveryTerms||'')}</textarea></div>
+   <div class="field"><label>Warunki płatności</label><textarea name="paymentTerms" rows="2" maxlength="360" placeholder="Np. przelew po odbiorze">${htmlEscape(q.paymentTerms||'')}</textarea></div></div>
+   <p class="muted tiny">Pola są opcjonalne. MANU nie wystawia faktur i nie wysyła dokumentów automatycznie.</p>
+  </div>
+ </details>
+ <div class="field"><label>Tytuł dokumentu *</label><input name="title" required maxlength="140" value="${htmlEscape(q.title)}" placeholder="Np. Lustro Ø50 cm — matowienie"></div>
  <div class="form-cols"><div class="field"><label>Wystawiający / pracownia</label><input name="issuer" maxlength="180" value="${htmlEscape(q.issuer)}" placeholder="Nazwa pracowni"></div><div class="field"><label>Klient</label><input name="client" maxlength="180" value="${htmlEscape(q.client)}" placeholder="Odbiorca wyceny"></div></div>
  <div class="field"><label>Kontakt wystawiającego</label><textarea name="issuerContact" rows="2" maxlength="350" placeholder="E-mail lub telefon">${htmlEscape(q.issuerContact)}</textarea></div>
  <div class="form-cols"><div class="field"><label>Kontakt klienta</label><textarea name="clientContact" rows="2" maxlength="350" placeholder="E-mail lub telefon klienta">${htmlEscape(q.clientContact||'')}</textarea></div><div class="field"><label>Adres klienta</label><textarea name="clientAddress" rows="2" maxlength="280" placeholder="Opcjonalnie">${htmlEscape(q.clientAddress||'')}</textarea></div></div>
@@ -707,26 +740,30 @@ function quotesPage(){
  const list=(state.quotes||[]).slice().sort((a,b)=>b.issued.localeCompare(a.issued)||(b.createdAt||'').localeCompare(a.createdAt||''));
  const rows=list.map(q=>{
   const p=state.projects.find(p=>p.id===q.projectId);
-  return `<article class="surface quote-list-card"><div><small>${htmlEscape(q.number)} · ${htmlEscape(q.issued)}</small><h3>${htmlEscape(q.title)}</h3><p>${htmlEscape(q.client||'Klient niepodany')}${p?' · '+htmlEscape(p.title):''}</p></div><div class="quote-list-aside"><strong>${fMoney(quoteTotal(q))}</strong><div><button type="button" class="btn secondary sm" data-action="quote-preview" data-id="${htmlEscape(q.id)}">Podgląd / PDF</button><button type="button" class="btn ghost sm" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost sm" data-action="quote-delete" data-id="${htmlEscape(q.id)}" aria-label="Usuń wycenę">${icon('trash')}</button></div></div></article>`;
+  return `<article class="surface quote-list-card"><div><small>${htmlEscape(quoteDocumentLabel(q))} · ${htmlEscape(q.number)} · ${htmlEscape(q.issued)}</small><h3>${htmlEscape(q.title)}</h3><p>${htmlEscape(q.client||'Klient niepodany')}${p?' · '+htmlEscape(p.title):''}</p></div><div class="quote-list-aside"><strong>${fMoney(quoteTotal(q))}</strong><div><button type="button" class="btn secondary sm" data-action="quote-preview" data-id="${htmlEscape(q.id)}">Podgląd / PDF</button><button type="button" class="btn ghost sm" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost sm" data-action="quote-delete" data-id="${htmlEscape(q.id)}" aria-label="Usuń wycenę">${icon('trash')}</button></div></div></article>`;
  }).join('');
  return `${returnToProjectsButton()}${pageHeading('Wyceny dla klientów','Przygotuj wycenę i zapisz ją jako PDF.',`<button class="btn" data-action="quote-new">${icon('plus')} Nowa wycena</button>`)}
  <div class="quote-list">${rows||'<div class="surface quote-empty"><h3>Nie masz jeszcze wycen</h3><p>Dodaj pierwszą wycenę albo rozpocznij ją ze zlecenia.</p><button class="btn" data-action="quote-new">Przygotuj wycenę</button></div>'}</div><p class="muted tiny">Wyceny są przechowywane lokalnie. Zapisuj kopie JSON w Ustawieniach. Wycena nie jest fakturą.</p>`;
 }
 function quoteDocument(q){
  const sub=quoteSubtotal(q),total=quoteTotal(q),discount=Math.min(sub,money(q.discount));
+ const docLabel=quoteDocumentLabel(q),style=quoteDocumentStyle(q);
  const rows=q.items.map((item,i)=>`<tr><td>${i+1}</td><td class="quote-doc-description">${htmlEscape(item.description)}</td><td>${new Intl.NumberFormat('pl-PL',{maximumFractionDigits:3}).format(item.quantity)}</td><td>${htmlEscape(item.unit)}</td><td>${fMoney(item.unitPrice)}</td><td>${fMoney(item.quantity*item.unitPrice)}</td></tr>`).join('');
- return `<article class="quote-document" aria-label="Wycena ${htmlEscape(q.number)}">
- <header class="quote-doc-header"><div class="quote-doc-brand"><img src="manu48-mark.svg" alt="" width="45" height="45"><div><strong>MANU</strong><span>ORGANIZER TWÓRCY</span></div></div><div class="quote-doc-identity"><span>WYCENA</span><strong>${htmlEscape(q.number)}</strong></div></header>
+ return `<article class="quote-document quote-document--${style}" aria-label="${docLabel} ${htmlEscape(q.number)}">
+ <header class="quote-doc-header"><div class="quote-doc-brand"><img src="manu48-mark.svg" alt="" width="45" height="45"><div><strong>MANU</strong><span>ORGANIZER TWÓRCY</span></div></div><div class="quote-doc-identity"><span>${docLabel}</span><strong>${htmlEscape(q.number)}</strong></div></header>
  <div class="quote-doc-meta"><div><small>Data wystawienia</small><b>${htmlEscape(q.issued)}</b></div><div><small>Ważna do</small><b>${htmlEscape(q.validUntil||'Do uzgodnienia')}</b></div></div>
  <div class="quote-doc-parties"><div><small>PRZYGOTOWAŁ</small><b>${htmlEscape(q.issuer||'Twórca / pracownia')}</b><p>${htmlEscape(q.issuerContact||'')}</p></div><div><small>DLA KLIENTA</small><b>${htmlEscape(q.client||'Klient')}</b><p>${htmlEscape(q.clientContact||'')}</p><p>${htmlEscape(q.clientAddress||'')}</p></div></div>
- <h2>${htmlEscape(q.title)}</h2><table class="quote-doc-table"><thead><tr><th>Lp.</th><th>Opis pozycji</th><th>Ilość</th><th>Jedn.</th><th>Cena jedn.</th><th>Wartość</th></tr></thead><tbody>${rows}</tbody></table>
- <div class="quote-doc-totals"><div><span>Suma pozycji</span><strong>${fMoney(sub)}</strong></div>${discount>0?`<div><span>Rabat</span><strong>− ${fMoney(discount)}</strong></div>`:''}<div class="quote-doc-grand"><span>WARTOŚĆ WYCENY</span><strong>${fMoney(total)}</strong></div></div>
+ <h2>${htmlEscape(q.title)}</h2>
+ ${q.introduction?'<section class="quote-doc-intro"><h3>Opis propozycji</h3><p>'+htmlEscape(q.introduction)+'</p></section>':''}
+ <table class="quote-doc-table"><thead><tr><th>Lp.</th><th>Opis pozycji</th><th>Ilość</th><th>Jedn.</th><th>Cena jedn.</th><th>Wartość</th></tr></thead><tbody>${rows}</tbody></table>
+ <div class="quote-doc-totals"><div><span>Suma pozycji</span><strong>${fMoney(sub)}</strong></div>${discount>0?`<div><span>Rabat</span><strong>− ${fMoney(discount)}</strong></div>`:''}<div class="quote-doc-grand"><span>${q.documentType==='offer'?'WARTOŚĆ OFERTY':'WARTOŚĆ WYCENY'}</span><strong>${fMoney(total)}</strong></div></div>
+ ${quoteDocumentTerms(q)}
  ${q.notes?`<section class="quote-doc-notes"><h3>Warunki i uwagi</h3><p>${htmlEscape(q.notes)}</p></section>`:''}
- <footer class="quote-doc-footer"><span>Dokument ofertowy · Wycena nie jest fakturą ani potwierdzeniem płatności.</span><span>MANU · Organizer twórcy</span><small>Kwoty w PLN. Aplikacja nie oblicza podatku VAT — sprawdź właściwe zasady rozliczeń.</small></footer></article>`;
+ <footer class="quote-doc-footer"><span>${q.documentType==='offer'?'Oferta cenowa':'Wycena'} nie jest fakturą ani potwierdzeniem płatności.</span><span>MANU · Organizer twórcy</span><small>Kwoty w PLN. Aplikacja nie oblicza podatku VAT — sprawdź właściwe zasady rozliczeń.</small></footer></article>`;
 }
 function quotePreview(id){
  const q=(state.quotes||[]).find(q=>q.id===id);if(!q)return;
- modal('Wycena '+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
+ modal((q.documentType==='offer'?'Oferta cenowa ':'Wycena ')+q.number,`<div class="quote-preview-actions"><button type="button" class="btn" data-action="quote-print" data-id="${htmlEscape(q.id)}">${icon('download')} Drukuj / zapisz PDF</button><button type="button" class="btn secondary" data-action="quote-edit" data-id="${htmlEscape(q.id)}">${icon('pencil')} Edytuj</button><button type="button" class="btn ghost" data-action="close">Zamknij</button></div><p class="muted small">Na telefonie w systemowym oknie drukowania wybierz „Zapisz jako PDF”.</p><div class="quote-preview-paper">${quoteDocument(q)}</div>`,{detail:true,projectId:q.projectId});
 }
 function projectsPage(){return `${returnToHomeButton('projects')}${pageHeading('Projekty i warsztaty','Wszystkie realizacje, klienci, koszty i terminy.',`<div class="quote-project-actions project-primary-actions"><button type="button" class="btn" data-action="new-project">${icon('plus')} Dodaj projekt</button><button type="button" class="btn secondary" data-action="nav" data-view="clients">${icon('users')} Klienci</button><details class="project-tools-more"${projectToolsExpanded?' open':''}><summary class="btn secondary" aria-label="Pokaż dodatkowe narzędzia">${icon('copy')} Więcej narzędzi <span class="project-tools-chevron" aria-hidden="true">⌄</span></summary><div class="project-tools-panel"><button type="button" class="btn secondary" data-action="nav" data-view="gallery">${icon('folder')} Galeria realizacji</button><button type="button" class="btn secondary" data-action="nav" data-view="templates">${icon('copy')} Szablony projektów</button><button type="button" class="btn secondary" data-action="nav" data-view="quotes">${icon('brief')} Wyceny</button></div></details></div>`)}<div class="toolbar"><input class="search" id="search-projects" placeholder="Szukaj nazwy lub klienta…" value="${htmlEscape(search)}" aria-label="Wyszukaj projekt"><select id="project-filter" class="select"><option value="all" ${filter==='all'?'selected':''}>Wszystkie typy</option><option value="Zlecenie" ${filter==='Zlecenie'?'selected':''}>Zlecenia</option><option value="Warsztat" ${filter==='Warsztat'?'selected':''}>Warsztaty</option></select></div><div id="project-list" class="projects-grid">${renderProjectGrid()}</div>`;}
 
@@ -2246,7 +2283,13 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  if(!items.length||items.length>80||items.some(i=>!i.description||!i.unit||!Number.isFinite(i.quantity)||i.quantity<=0||i.quantity>100000||!Number.isFinite(i.unitPrice)||i.unitPrice<0||i.unitPrice>100000000)){alert('Sprawdź ilości, ceny i nazwy pozycji wyceny.');return}
  const sub=quoteSubtotal({items}),discount=money(discountRaw);
  if(!Number.isFinite(sub)||sub>1e10||discount>sub){alert('Rabat nie może przekraczać sumy pozycji.');return}
- const update={title,issued,validUntil,projectId,discount,items,issuer:String(data.get('issuer')||'').trim().slice(0,180),issuerContact:String(data.get('issuerContact')||'').trim().slice(0,350),client:String(data.get('client')||'').trim().slice(0,180),clientContact:String(data.get('clientContact')||'').trim().slice(0,350),clientAddress:String(data.get('clientAddress')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,900)};
+ const update={title,issued,validUntil,projectId,discount,items,issuer:String(data.get('issuer')||'').trim().slice(0,180),issuerContact:String(data.get('issuerContact')||'').trim().slice(0,350),client:String(data.get('client')||'').trim().slice(0,180),clientContact:String(data.get('clientContact')||'').trim().slice(0,350),clientAddress:String(data.get('clientAddress')||'').trim().slice(0,280),
+ documentType:data.get('documentType')==='offer'?'offer':'quote',
+ documentStyle:data.get('documentStyle')==='minimal'?'minimal':'classic',
+ introduction:String(data.get('introduction')||'').trim().slice(0,1000),
+ deliveryTerms:String(data.get('deliveryTerms')||'').trim().slice(0,360),
+ paymentTerms:String(data.get('paymentTerms')||'').trim().slice(0,360),
+ notes:String(data.get('notes')||'').trim().slice(0,900)};
  let quote;
  if(existing){Object.assign(existing,update);quote=existing}
  else{if(state.quotes.length>=3000){alert('Osiągnięto limit 3000 wycen.');return}quote={...update,id:uid(),number:quoteNewNumber(),createdAt:now()};state.quotes.push(quote);const quoteYear=quote.number.slice(5,9);state.quoteCounters=state.quoteCounters||{};state.quoteCounters[quoteYear]=Number(quote.number.slice(10))}
