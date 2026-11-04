@@ -63,7 +63,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   };
   const expose = [
     'globalThis.__MANU_TEST = {',
-    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' normalize, normalizeQuotes, quoteForm, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -638,4 +638,13 @@ test('Etap 15.2: błędne typy i style dokumentów przywracają wartości bezpie
  assert.equal(q.introduction.length,1000);
  assert.equal(q.deliveryTerms.length,360);
  assert.equal(q.paymentTerms.length,360);
+});
+
+test('Etap 15.2: zmiana rodzaju dokumentu dostosowuje tylko domyślne tytuły', () => {
+ const {api}=boot({version:18,projects:[],tasks:[]});
+ assert.equal(api.quoteTitleForDocumentType('Nowa wycena','offer'),'Oferta cenowa');
+ assert.equal(api.quoteTitleForDocumentType('Wycena — Lustro','offer'),'Oferta — Lustro');
+ assert.equal(api.quoteTitleForDocumentType('Oferta cenowa','quote'),'Nowa wycena');
+ assert.equal(api.quoteTitleForDocumentType('Oferta — Lustro','quote'),'Wycena — Lustro');
+ assert.equal(api.quoteTitleForDocumentType('Mój indywidualny tytuł','offer'),'Mój indywidualny tytuł');
 });
