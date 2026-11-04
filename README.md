@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.1 — Naprawa powrotu X z podstron i formularzy
+- Naprawiono zgłoszony problem: **Projekty → Stół dębowy → Materiały i przygotowania → Dodaj pozycję → X**. Zamiast zamknąć całą kartę i pokazać listę projektów, X odtwarza kartę „Stół dębowy” w **tym samym miejscu przewinięcia**, z zachowaną rozwiniętą sekcją.
+- Wspólna obsługa X, kliknięcia w tło i Escape odtwarza poprzednie otwarte okno z zapamiętanego elementu DOM i pozycją przewinięcia. Działa też na formularzach etapów, czasu pracy, zadań, materiałów, kosztów, zaliczek, uczestników oraz otwieranych kartach klientów i funkcjach galerii, jeśli przejście odbyło się w oknach MANU.
+- **Wielopoziomowy powrót**: np. karta projektu → karta klienta → edycja klienta → X → karta klienta → X → karta projektu.
+- Powrót przyciskiem Wróć i powrót po zapisie nadal odtwarzają świeży widok projektu przez istniejący mechanizm `detailReturnScroll`; nie pozostawiają starej karty w pamięci powrotów.
+- **Fizyczne Wstecz na Androidzie bez zmian**: zachowany jest mechanizm wpisów historii wprowadzony w 3.26.2. Nie wprowadzono dodatkowych wpisów historii i nie zmieniono zachowania gestu.
+- Bez zmian danych `version:18`, kosztów, wpłat, kont, chmury, synchronizacji i trybu demo. Kopia kodu: `backup-manu-v3-27-0-before-modal-return-fix`. Cache PWA `manu-app-v3.27.1`.
+
+### Kontrola na telefonie
+1. **Projekty → Stół dębowy** (lub dowolny projekt) → rozwiń „Materiały i przygotowania”, przewiń niżej, wybierz **Dodaj pozycję**.
+2. Naciśnij **X**. Powinna pojawić się ta sama karta projektu w tym samym miejscu, bez przewijania na górę.
+3. Powtórz dla **Etapy i czas pracy → Dopisz czas**, **Zadania → Dodaj zadanie**, **Finanse i koszty → Dodaj koszt**, **Wpłaty → Dodaj wpłatę**, a w warsztacie także **Uczestnicy → Dodaj osobę**.
+4. Sprawdź **X**, kliknięcie tła i fizyczne **Wstecz**. Ostatnie z nich ma zachować dotychczasowe działanie na telefonie.
+5. Wybierz **Wróć** wewnątrz formularza i sprawdź, czy wracasz do właściwej sekcji. Dane istniejących projektów nie powinny się zmienić przy samym zamykaniu okien.
 
 ## MANU 3.27.0 — Etap 16.4: pierwsze testy zewnętrzne
 - W **Ustawienia → Testowanie aplikacji** dodano zwijany **Plan pierwszego testu · 10 minut**, obejmujący zlecenie, warsztat, wycenę, cofanie i wyjście z demo. Ten sam plan jest dostępny wewnątrz demo.
