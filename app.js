@@ -3384,7 +3384,7 @@ async function init(){
    pwaHadController=hasController;
    refreshPwaPanel();
   });
-  navigator.serviceWorker.register('./service-worker.js')
+  navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'})
    .then(registration=>watchPwaRegistration(registration))
    .catch(e=>console.warn('Service worker:',e));
  }
