@@ -161,6 +161,7 @@ async function fetchRemote(){
 }
 async function applyRecord(row){
  if(demoStopped())throw Error('W trybie DEMO synchronizacja jest wyłączona.');
+ if(bridge?.isBackupApplying?.())throw Error('Trwa przywracanie lokalnej kopii. Nie pobrano danych z chmury.');
  if(!row||!bridge)throw Error('Brak kopii danych w chmurze.');
  if(!bridge.canReplace())throw Error('Najpierw zamknij otwarty formularz, aby nie stracić niezapisanych zmian.');
  applying=true;
@@ -188,6 +189,7 @@ async function inspect(){
   if(demoStopped())return;
   // Po odpowiedzi serwera odczekaj na lokalne zapisy, zanim zdecydujesz o pobraniu nowszej wersji.
   await bridge.waitForWrites();
+  if(bridge?.isBackupApplying?.())return;
   if(bridge.isStorageBlocked())throw Error('Lokalny zapis jest wstrzymany. Nie zmieniono danych z chmury.');
   ready=false;conflict=false;
   if(binding?.userId===user.id){
@@ -220,16 +222,17 @@ async function push(manual){
  busy=true;
  try{
   await bridge.waitForWrites();
+  if(bridge?.isBackupApplying?.())return;
   if(bridge.isStorageBlocked())throw Error('Lokalny zapis jest wstrzymany. Nie wysłano danych do chmury.');
   const row=await fetchRemote();
-  if(demoStopped())return;
+  if(demoStopped()||bridge?.isBackupApplying?.())return;
   binding=readBinding();
   if(!manual && ((row?.revision||0)!==(binding?.revision||0)||binding?.userId!==user.id)){
    conflict=true;ready=false;
    throw Error('Chmura została zmieniona na innym urządzeniu. Najpierw wybierz, którą wersję zachować.');
   }
   if(manual && !window.confirm(cloudReplacePrompt('upload',bridge.getState(),row?.payload||null,row?.revision)))return;
-  if(demoStopped())return;
+  if(demoStopped()||bridge?.isBackupApplying?.())return;
   const snapshot=structuredClone(bridge.getState()),stamp=snapshot.lastSaved;
   let response;
   if(row){
@@ -267,9 +270,10 @@ async function download(){
  busy=true;
  try{
   await bridge.waitForWrites();
+  if(bridge?.isBackupApplying?.())return;
   if(bridge.isStorageBlocked())throw Error('Zapis lokalny jest wstrzymany. Nie pobrano chmury i nie zmieniono bazy.');
   const row=await fetchRemote();
-  if(demoStopped())return;
+  if(demoStopped()||bridge?.isBackupApplying?.())return;
   if(!row){emit('Na koncie nie ma jeszcze danych do pobrania.');return;}
   const local=bridge.getState();
   if(!bridge.canReplace())throw Error('Zamknij otwarte formularze przed pobieraniem chmury.');
@@ -296,7 +300,7 @@ async function cloudBackup(){
 }
 async function signOut(){
  if(!client||busy)return;
- if(!window.confirm('Wylogować się z MANU?\\n\\nUwaga: projekty, klienci i uczestnicy zapisani lokalnie POZOSTANĄ na tym telefonie. Każdy, kto ma dostęp do urządzenia, może je zobaczyć także po wylogowaniu.\\n\\nNa współdzielonym telefonie używaj tylko trybu DEMO.\\n\\nKontynuować?'))return;
+ if(!window.confirm('Wylogować się z MANU?\n\nUwaga: projekty, klienci i uczestnicy zapisani lokalnie POZOSTANĄ na tym telefonie. Każdy, kto ma dostęp do urządzenia, może je zobaczyć także po wylogowaniu.\n\nNa współdzielonym telefonie używaj tylko trybu DEMO.\n\nKontynuować?'))return;
  clearTimeout(timer);ready=false;busy=true;
  try{
   const {error}=await client.auth.signOut();if(error)throw error;
