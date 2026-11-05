@@ -1,15 +1,15 @@
-const CACHE_NAME='manu-app-v3.27.4';
+const CACHE_NAME='manu-app-v3.27.5';
 // Arkusz aplikacji potrzebny do uruchomienia wszystkich kart bez sieci.
 // Dopiero po zapisaniu całej tej grupy uaktywniamy nową wersję SW.
 const CORE_SHELL=[
  './',
  './index.html',
- './styles.css?v=3.27.4',
- './app.js?v=3.27.4',
+ './styles.css?v=3.27.5',
+ './app.js?v=3.27.5',
  './cloud-config.js?v=3.13.0',
  './cloud.js?v=3.26.0',
- './gallery.js?v=3.27.3',
- './templates.js?v=3.14.1'
+ './gallery.js?v=3.27.5',
+ './templates.js?v=3.27.5'
 ];
 // Brak pojedynczej grafiki nie powinien blokować całej aplikacji offline.
 const OPTIONAL_SHELL=[
