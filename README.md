@@ -1,6 +1,35 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.5 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.0 — Etap 17.1: audyt istniejących funkcji i stabilności
+
+**Zakres:** przegląd kodu formularzy, historii przeglądarki Android, szablonów, zapisu lokalnego, obliczeń finansowych, kopii danych, demonstracji, wersjonowania PWA i powiązań między ekranami. Nie dodawano funkcji biznesowych ani nie migrowano bazy danych.
+
+**Usunięte problemy:**
+- **Podgląd zdjęcia + Escape:** zamknięcie przez Escape korzysta z tego samego cofnięcia historii co X. Sam wpis podglądu nie może teraz zużyć kolejnego kroku do karty projektu / galerii; nawet jeśli podgląd zamknięto wcześniej, ten wpis jest neutralizowany.
+- **Przejścia między kartami szczegółów:** z karty projektu do karty klienta, między dwiema realizacjami lub do podglądu dokumentu można wrócić o jeden poziom, bez skoku do listy. Zwykłe odświeżenie tej samej karty projektu nie tworzy dodatkowego wpisu. Przy powrocie z edycji wyceny do podglądu zachowywany jest projekt nadrzędny.
+- **Szablony:** tworzenie i edycja czekają na potwierdzenie trwałego zapisu. Przy nieudanym zapisie zmiany są cofane w RAM, a formularz zostaje otwarty. W przypadku nieudanego usunięcia szablon wraca na listę. Ponowne szybkie kliknięcie Zapisz podczas operacji nie tworzy duplikatu.
+- **Komunikaty zapisu:** sukces zmian przeprowadzanych przez `afterDataChange()` pokazuje się dopiero po potwierdzeniu przez lokalną pamięć; przy błędzie działa już istniejąca blokada zapisu i ostrzeżenie.
+
+**Wyniki sprawdzeń w symulowanym środowisku JavaScript:**
+- 30/30 testów nawigacji widoków, formularzy, sekcji, X, gestu Androida i podglądu zdjęć.
+- 3/3 dodatkowe testy ścieżek: projekt → wycena → edycja → wycena → projekt oraz lista wycen → dokument → edycja → powrót.
+- 6/6 testów zapisu szablonów, w tym błędy utrwalania, usuwania, edytowania i wielokrotny submit.
+- 12/12 testów finansów zleceń i warsztatów, dojazdu szacunkowego/faktycznego, należności, raportu miesięcznego i numeracji wycen.
+- Wszystkie 109 znalezionych identyfikatorów `data-action` mają odpowiadającą obsługę w sprawdzonych skryptach. To kontrola statyczna, nie pełne testy wszystkich akcji w przeglądarce.
+
+**Czego ten etap jeszcze nie potwierdza:** zachowania na różnych fizycznych telefonach, rzeczywistych transakcji z Supabase, instalacji offline po aktualizacji, skutecznego odzyskania bazy z pliku JSON ani ostatecznego wydruku PDF. To osobne kroki finalizacji 17.2–17.5. Testy symulacyjne nie zastępują tych prób.
+
+**Test kontrolny na telefonie:**
+1. Start → Projekty → karta z klientem → **Karta klienta** → systemowy Wstecz → ta sama karta projektu.
+2. Projekt → Dodatkowe działania → **Przygotuj wycenę**, lub otwórz już zapisaną wycenę. Sprawdź edycję i cofanie do podglądu, a następnie do projektu lub listy.
+3. Szablony → **Nowy szablon** → Zapisz; przycisk powinien odblokować się po zapisie. Sprawdź także Anuluj / X.
+4. Galeria → podgląd zdjęcia → X lub Escape → systemowy Wstecz. Nie powinno być pustego kroku.
+5. Zadania / Kalendarz → nowy wpis → X lub systemowy Wstecz → poprzednia kartka → Start.
+6. Ustawienia → Instalacja i aktualizacje → Wczytaj aktualną wersję. Potwierdź wersję 3.28.0; nie czyść pamięci urządzenia.
+
+**Wersjonowanie:** `APP_VERSION 3.28.0`, cache PWA `manu-app-v3.28.0`; bez zmian schematu `version:18`. Przed aktualizacją utworzono `backup-manu-v3-27-5-before-stage-17-1-audit`.
 
 ## MANU 3.27.5 — Uniwersalne podpowiedzi dla twórców różnych branż
 
@@ -501,23 +530,25 @@
 - PWA: manifest, ikony 192/512 oraz service worker umożliwiający podstawową pracę offline po pierwszym uruchomieniu przez HTTPS.
 
 ## Uruchomienie
-Kod stanowi statyczną aplikację HTML/CSS/JS. Aby uruchomić ją w telefonie, opublikuj zawartość **katalogu głównego** na hostingu HTTPS (np. Vercel/Netlify); nie ma polecenia budowania. `index.html` musi znajdować się w folderze publikacji obok plików `app.js`, `styles.css`, `manifest.webmanifest`, `service-worker.js`, `manu-mark.svg`, `manu-icon.svg` oraz ikon PNG.
+MANU jest statyczną aplikacją HTML/CSS/JS bez kroku budowania. Kod znajduje się w repozytorium `ArtystaAkrobata/Pracownia-app` i jest opublikowany przez GitHub Pages pod adresem https://artystaakrobata.github.io/Pracownia-app/ .
 
-Przy prywatnym repozytorium na GitHub Free, GitHub Pages nie publikuje tej strony. Możesz połączyć repozytorium z hostingiem obsługującym prywatne repozytoria, zachowując kod źródłowy na GitHubie jako prywatny.
+Pliki `index.html`, `app.js`, `styles.css`, `gallery.js`, `templates.js`, `cloud.js`, `cloud-config.js`, `manifest.webmanifest`, `service-worker.js` i ikony `manu48-*` są w głównym katalogu repozytorium.
 
-Po publikacji otwórz adres w Chrome na Androidzie, menu **⋮ → Zainstaluj aplikację** (lub **Dodaj do ekranu głównego**, zależnie od urządzenia).
+Na Androidzie otwórz stronę w Chrome i wybierz **⋮ → Zainstaluj aplikację** lub **Dodaj do ekranu głównego**. Kolejne wersje wczytuj z **Ustawienia → Instalacja i aktualizacje**. Przed odinstalowaniem lub czyszczeniem danych zrób kopię JSON i sprawdź jej zawartość.
 
 ## Dane i bezpieczeństwo
-**Obecna wersja nie ma kont, serwera, synchronizacji między telefonami ani automatycznych backupów.** Każde urządzenie ma swoją osobną pamięć aplikacji. Utrata telefonu lub wyczyszczenie danych przeglądarki może oznaczać utratę wpisów.
+MANU zapisuje dane lokalnie (IndexedDB lub rezerwowo localStorage). Ma też opcjonalną rejestrację/logowanie oraz synchronizację jednego zestawu danych przez skonfigurowane konto Supabase. Automatyczna synchronizacja włącza się dopiero w warunkach określonych przez moduł chmury; sam fakt zainstalowania aplikacji **nie gwarantuje** zapisu w chmurze. Podczas konfliktów wersji użytkownik może potrzebować ręcznego wyboru. Zdjęcia wymagają osobnego prywatnego zasobnika Supabase Storage.
 
-W ustawieniach pobieraj regularnie kopię danych JSON. Import zastępuje dotychczasowe dane. **Na tym etapie używaj wyłącznie informacji fikcyjnych/testowych; nie wpisuj prawdziwych danych osobowych klientów i uczestników.** Przed testami na danych rzeczywistych trzeba wdrożyć odpowiednie zabezpieczenia i zasady zgodne z RODO.
+W repozytorium znajdują się polityki RLS dla danych i galerii (`supabase/manu_snapshots.sql`, `supabase/manu_gallery.sql`), ale obecność skryptów **nie dowodzi** ich prawidłowego uruchomienia w konkretnej instancji Supabase. Przed testami z prawdziwymi danymi potrzebna jest kontrola dostępu między dwoma osobnymi kontami, uprawnień i kwestii RODO. Przed publicznym wdrożeniem należy też przygotować jasne informacje o prywatności.
+
+Utrata telefonu, wyczyszczenie pamięci lub nieudana synchronizacja nadal grożą utratą zmian. Regularnie pobieraj kopię JSON, sprawdzaj ją i przechowuj poza telefonem. Kopia JSON zawiera opisy zdjęć, **nie ich pliki**. Import lokalny i pobieranie danych z chmury mogą zastąpić bieżący zestaw informacji. Do pierwszych testów zewnętrznych używaj wyłącznie fikcyjnych danych w izolowanym trybie DEMO.
 
 Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, a nie zysk księgowy ani wynagrodzenie netto; nie uwzględnia podatków, ZUS, kosztów stałych i innych nieujętych wydatków. W warsztatach z automatycznym rozliczaniem suma wartości i otrzymanych wpłat wynika z listy uczestników i nie jest podwójnie doliczana. Starsze warsztaty zachowują dotychczasowe sumy ręczne; wcześniejsze oznaczenie „wpłata” bez podanej kwoty zostanie zachowane jako ostrzeżenie do uzupełnienia, a nie wymyślona płatność.
 
-## Następne etapy
-1. Testy etapu 1 na prawdziwym Androidzie oraz ewentualne poprawki UX.
-2. Konta użytkowników, bezpieczna synchronizacja, kopie zapasowe i oddzielenie danych użytkowników.
-3. Raporty opłacalności, zdjęcia realizacji, wyceny PDF, dodatkowe szablony branżowe.
-4. Funkcje AI oraz panel udostępniany klientom po osobnych testach bezpieczeństwa.
+## Następne etapy — finalizacja wersji testowej
+1. **17.2 — Bezpieczeństwo danych:** sprawdzony eksport/import JSON na urządzeniu testowym, odtworzenie danych oraz izolacja dwóch kont Supabase z potwierdzonymi politykami dostępu.
+2. **17.3 — Instalacja i niezawodność:** świeża instalacja na drugim telefonie, aktualizacja PWA, test offline, zamknięcie i ponowne uruchomienie aplikacji.
+3. **17.4 — Ostatnie szlify:** korekta problemów zgłoszonych podczas testów, weryfikacja wydruków PDF i spójności wyglądu; bez dodawania funkcji.
+4. **17.5 — Testy zewnętrzne:** mała grupa twórców korzystająca z gotowego trybu DEMO, planu prób i wzoru opinii.
 
-To jest prywatny prototyp, nie gotowy produkt komercyjny.
+MANU jest funkcjonalnym prototypem w trakcie finalizacji, a nie produktem o potwierdzonej gotowości do przechowywania rzeczywistych danych wielu użytkowników.
