@@ -1,6 +1,33 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.0 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.1 — Etap 17.2: bezpieczeństwo danych i kontroli kopii
+
+**Cel:** usunięcie ryzyk przed testami zewnętrznymi bez rozszerzania funkcji. Wdrożone poprawki nie usuwają projektów, nie zmieniają schematu bazy `version:18` i nie wykonują automatycznego importu na telefonach użytkowników.
+
+### Poprawki
+- **Walidacja przywracanych danych:** zarówno pliki JSON, jak i pobierane migawki chmury przechodzą weryfikację wersji i struktury. Dodano limity list zagnieżdżonych (etapy 40, sesje 2500, historia 200, materiały 150, wpłaty 3000, uczestnicy 5000, koszty 5000); nieprawidłowy plik zostaje odrzucony przed zastąpieniem lokalnej bazy. Nie obcinamy po cichu zbyt dużych list podczas przywracania.
+- **Kontrolowane przywracanie:** operacja odmawia zastępowania bazy, gdy trwa synchronizacja z chmurą. W trakcie przywracania blokowane są równoległe nieautoryzowane zapisy i zastępowanie danych przez chmurę. Przy błędzie zapisu nie jest zmieniany stan obecnej bazy.
+- **Ochrona przed niezamierzonym nadpisaniem chmury:** po udanym przywróceniu kopii JSON poprzednie powiązanie rewizji chmury jest unieważniane, a automatyczny upload wyłączany. Osoba korzystająca z aplikacji musi ręcznie wybrać i potwierdzić kierunek `Wyślij` albo `Pobierz`, po zachowaniu obu kopii.
+- **Ostrzeżenie przy wylogowaniu:** lokalna baza nie jest przypisana do konta. Po wylogowaniu z Supabase pozostaje widoczna na danym urządzeniu. MANU pokazuje teraz jednoznaczny komunikat i ostrzega przed udostępnianiem telefonu osobom trzecim.
+- **Skrypt RLS Supabase:** konfiguracja `supabase/manu_snapshots.sql` umożliwia ponowne wykonanie polityk (drop if exists / create policy) i zawiera zapytania kontrolne. Uruchomienie skryptów na rzeczywistym serwerze i testy kont **nie zostały przeprowadzone automatycznie**.
+
+### Testy kontrolne
+- Walidacja kopii: **17/17** testów akceptacji poprawnych/starszych plików i odrzucania uszkodzonych danych oraz przekroczonych limitów.
+- Przywracanie i synchronizacja: **3/3** symulacje (sukces, błąd zapisu, aktywna chmura) z kontrolą zachowania poprzedniej bazy i unieważnienia auto-sync.
+- Izolacja demonstracyjna: **3/3** symulacje (uruchomienie, edycja i zakończenie demo oraz pominięcie fizycznego zapisu danych DEMO).
+- Kontrole statyczne kodu i SQL po publikacji: odrębnie, wyniki potwierdź przed przekazaniem testerom.
+
+### Bezpieczny test na telefonie
+1. **Ustawienia → Zabezpieczenia i kopie danych → Sprawdź**: kontrola lokalna powinna zakończyć się bez błędów. Nie zmienia ona danych.
+2. Wybierz **Pobierz kopię JSON** i zachowaj ją poza telefonem. Następnie **Sprawdź plik kopii** i wskaż pobrany plik — to tylko podgląd i weryfikacja, bez przywracania.
+3. **Ustawienia → Testowanie aplikacji → Tryb DEMO**: dodaj fikcyjne zadanie lub koszt, zakończ DEMO i upewnij się, że własne projekty wróciły bez zmian.
+4. **Nie testuj jeszcze przywracania na swoim jedynym telefonie z realnymi danymi.** Pełny test odzyskiwania należy wykonać na osobnym urządzeniu testowym po przygotowaniu sprawdzonej kopii JSON.
+5. Izolację kont Supabase sprawdź osobno na dwóch **fikcyjnych kontach** i różnych urządzeniach/profilach. Próba dostępu konta B do wierszy i zdjęć konta A powinna zostać odrzucona. SQL Editor wykonujący zapytania jako administrator nie sprawdza RLS.
+6. Dopóki nie potwierdzimy odseparowania kont lokalnych, testy innych osób prowadź tylko na **fikcyjnych danych w trybie DEMO**.
+
+**Backup kodu:** `backup-manu-v3-28-0-before-security-stage-17-2`. PWA: `manu-app-v3.28.1`.
 
 ## MANU 3.28.0 — Etap 17.1: audyt istniejących funkcji i stabilności
 
@@ -546,7 +573,7 @@ Utrata telefonu, wyczyszczenie pamięci lub nieudana synchronizacja nadal groż�
 Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, a nie zysk księgowy ani wynagrodzenie netto; nie uwzględnia podatków, ZUS, kosztów stałych i innych nieujętych wydatków. W warsztatach z automatycznym rozliczaniem suma wartości i otrzymanych wpłat wynika z listy uczestników i nie jest podwójnie doliczana. Starsze warsztaty zachowują dotychczasowe sumy ręczne; wcześniejsze oznaczenie „wpłata” bez podanej kwoty zostanie zachowane jako ostrzeżenie do uzupełnienia, a nie wymyślona płatność.
 
 ## Następne etapy — finalizacja wersji testowej
-1. **17.2 — Bezpieczeństwo danych:** sprawdzony eksport/import JSON na urządzeniu testowym, odtworzenie danych oraz izolacja dwóch kont Supabase z potwierdzonymi politykami dostępu.
+1. **17.2 — Bezpieczeństwo danych:** audyt i poprawki kodu wykonane (3.28.1); nadal wymagane próby importu/odtworzenia na osobnym telefonie oraz izolacja dwóch kont Supabase na działającej instancji.
 2. **17.3 — Instalacja i niezawodność:** świeża instalacja na drugim telefonie, aktualizacja PWA, test offline, zamknięcie i ponowne uruchomienie aplikacji.
 3. **17.4 — Ostatnie szlify:** korekta problemów zgłoszonych podczas testów, weryfikacja wydruków PDF i spójności wyglądu; bez dodawania funkcji.
 4. **17.5 — Testy zewnętrzne:** mała grupa twórców korzystająca z gotowego trybu DEMO, planu prób i wzoru opinii.
