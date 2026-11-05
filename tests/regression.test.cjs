@@ -1226,7 +1226,7 @@ test('Etap 16.3: działanie chmurowe i import danych są zablokowane w demo',asy
  assert.equal(persisted.get('snapshot'),before);
  assert.equal(api.getState().projects.length,2);
  const html=api.demoSettingsPage();
- assert.doesNotMatch(html,/Konto i synchronizacja|Usuń wszystkie dane|Zastąp obecne dane/);
+ assert.doesNotMatch(html,/data-action="(?:cloud-upload|cloud-download|import|backup-apply|clear)"/);
  assert.match(html,/Zakończ demo/);
  api.endDemo();
  assert.equal(api.getState().projects[0].id,'real');
@@ -1303,9 +1303,12 @@ function fakeAndroidHistory(context,initial={manuBackGuard:1}){
    entries[cursor]={state};
    this.state=state;
   },
-  back(){
-   if(cursor<=0){exits++;return;}
-   cursor--;
+  back(){this.go(-1);},
+  go(delta){
+   const target=cursor+Number(delta);
+   if(target<0){exits++;return;}
+   if(target>=entries.length)return;
+   cursor=target;
    this.state=entries[cursor].state;
    listeners.popstate?.({state:this.state});
   }
@@ -1428,7 +1431,7 @@ test('MANU 3.26.2: odświeżenie otwartej karty projektu nie dopisuje kolejnych 
  api.handleAction({dataset:{action:'nav',view:'projects'},closest:()=>null});
  api.projectDetail('test');
  const count=android.entries.length;
- nodes['.modal']={scrollTop:0,scrollTo:()=>{},classList:{contains:()=>true}};
+ nodes['.modal']={scrollTop:0,scrollTo:()=>{},querySelector:()=>null,classList:{contains:()=>true}};
  api.projectDetail('test');
  assert.equal(android.entries.length,count,'Ponowne wyświetlenie projektu nie może tworzyć nowego wpisu');
  assert.equal(api.getProjectModalGuard(),true);
