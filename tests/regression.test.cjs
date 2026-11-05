@@ -64,7 +64,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const expose = [
     'const __MANU_REAL_MODAL = modal, __MANU_REAL_CLOSE = closeModal;',
     'globalThis.__MANU_TEST = {',
-    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, compatPlatform, compatProbe, compatMarkup, compatPanel, compatRun, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, testerPrivacyMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, compatPlatform, compatProbe, compatMarkup, compatPanel, compatRun, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1476,15 +1476,15 @@ test('MANU 3.29.0: przewodnik, zaproszenie i opinia obejmują Android i iOS',()=
 test('MANU 3.29.0: wersje ośmiu plików wymaganych do działania offline pozostają spójne',()=>{
  const index=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
  const worker=fs.readFileSync(path.join(ROOT,'service-worker.js'),'utf8');
- assert.match(appSource,/const APP_VERSION='3\.29\.1'/);
- assert.match(index,/app\.js\?v=3\.29\.1/);
- assert.match(index,/styles\.css\?v=3\.29\.1/);
- assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.1'/);
- assert.match(worker,/app\.js\?v=3\.29\.1/);
- assert.match(worker,/styles\.css\?v=3\.29\.1/);
- assert.match(appSource,/cloud\.js\?v=3\.29\.1/);
- assert.match(appSource,/gallery\.js\?v=3\.29\.1/);
- assert.match(appSource,/templates\.js\?v=3\.29\.1/);
+ assert.match(appSource,/const APP_VERSION='3\.29\.2'/);
+ assert.match(index,/app\.js\?v=3\.29\.2/);
+ assert.match(index,/styles\.css\?v=3\.29\.2/);
+ assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.2'/);
+ assert.match(worker,/app\.js\?v=3\.29\.2/);
+ assert.match(worker,/styles\.css\?v=3\.29\.2/);
+ assert.match(appSource,/cloud\.js\?v=3\.29\.2/);
+ assert.match(appSource,/gallery\.js\?v=3\.29\.2/);
+ assert.match(appSource,/templates\.js\?v=3\.29\.2/);
 });
 
 
@@ -1509,7 +1509,7 @@ test('MANU 3.29.1: iPhone PWA rozpoznaje osiem plików bez modyfikacji cache',as
  context.navigator.storage={persisted:async()=>true};
  let cacheOpens=0,cacheMatches=0;
  context.window.caches={
-  keys:async()=>['manu-app-v3.29.1'],
+  keys:async()=>['manu-app-v3.29.2'],
   open:async()=>{cacheOpens++;return {match:async()=>{cacheMatches++;return {ok:true}}};}
  };
  context.location.href='https://example.org/Pracownia-app/';
@@ -1550,4 +1550,38 @@ test('MANU 3.29.1: kontrola jest ukryta w rozwijanej sekcji Ustawień',()=>{
  assert.match(api.compatPanel(),/manu-compat-result/);
  const source=api.compatMarkup();
  assert.match(source,/nie czyta projektów/);
+});
+
+
+/* Etap 18.5 — informacje dla testerów bez zapisu lub wysyłania danych. */
+test('MANU 3.29.2: prywatność beta jest czytelna w Ustawieniach i w DEMO',()=>{
+ const {api}=boot();
+ assert.match(api.settingsPage(),/Dane i prywatność w wersji beta/);
+ assert.match(api.demoSettingsPage(),/Dane i prywatność w wersji beta/);
+ const html=api.testerPrivacyMarkup();
+ assert.match(html,/IndexedDB/);
+ assert.match(html,/Supabase/);
+ assert.match(html,/kompletna polityka prywatności/);
+ assert.match(html,/fikcyjnych danych/);
+ assert.match(html,/Nie wysyła automatycznie raportu/);
+ assert.match(html,/details class="smart-settings/);
+ assert.doesNotMatch(html,/data-action="(?:export|import|clear|cloud-upload|cloud-download)"/);
+});
+test('MANU 3.29.2: zaproszenie ostrzega o zasadach beta i nie pobiera danych projektów',()=>{
+ const {api}=boot({version:18,projects:[job('p',{title:'Prywatna nazwa projektu'})],tasks:[]});
+ const before=JSON.stringify(api.getState());
+ const invite=api.manuTesterInvite(),form=api.manuTesterReport();
+ assert.match(invite,/Dane i prywatność w wersji beta/);
+ assert.match(invite,/bez logowania|Nie loguj się/);
+ assert.match(form,/nie dołączaj danych osobowych/);
+ assert.doesNotMatch(invite+form,/Prywatna nazwa projektu/);
+ assert.equal(JSON.stringify(api.getState()),before);
+});
+test('MANU 3.29.2: informacja o prywatności pozostaje bez pól i żądań uprawnień',()=>{
+ const {api}=boot();
+ const html=api.testerPrivacyMarkup();
+ assert.doesNotMatch(html,/<input|<form|<script|navigator\.|localStorage\./i);
+ assert.doesNotMatch(html,/data-action=/);
+ const guides=api.testerGuideMarkup();
+ assert.match(guides,/Plan pierwszego testu/);
 });

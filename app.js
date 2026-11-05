@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.29.1';
+const APP_VERSION='3.29.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1545,8 +1545,8 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.1',
-  './gallery.js?v=3.29.1','./templates.js?v=3.29.1'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.2',
+  './gallery.js?v=3.29.2','./templates.js?v=3.29.2'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
@@ -1761,7 +1761,7 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
  <p class="muted small">Aplikacja może działać bez sieci po wcześniejszym wczytaniu zasobów. Offline nie oznacza synchronizacji ani tworzenia kopii w chmurze.</p>
  <p id="manu-offline-check-status" class="manu-offline-check-status" role="status" aria-live="polite">${htmlEscape(offlineAuditMessage)}</p>
  <div class="settings-actions"><button type="button" class="btn secondary" data-action="offline-check">${icon('check')} Sprawdź gotowość offline</button><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
- <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}${compatPanel()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
+ <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}${testerPrivacyMarkup()}${compatPanel()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
 function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
@@ -2473,7 +2473,7 @@ function demoSettingsPage(){
   +'<div class="surface settings-group"><h3>Bezpieczne testowanie MANU</h3>'
   +'<p>Możesz tworzyć projekty, zadania, warsztaty i oferty na fikcyjnych danych. Żadne zmiany nie są zapisywane do prawdziwej bazy ani wysyłane do chmury.</p>'
   +'<p class="form-note">Wyjście lub ponowne uruchomienie MANU usuwa zmiany demonstracyjne. Konta, synchronizacja, galeria chmurowa i kopie JSON są w tym trybie niedostępne.</p>'
-  +'<button type="button" class="btn" data-action="demo-exit">Zakończ demo i wróć do swoich danych</button>'+testerGuideMarkup()+'</div>';
+  +'<button type="button" class="btn" data-action="demo-exit">Zakończ demo i wróć do swoich danych</button>'+testerGuideMarkup()+testerPrivacyMarkup()+'</div>';
 }
 function demoBanner(){
  return demoSession?'<div class="manu-demo-banner" role="status"><span><strong>TRYB DEMO</strong><small>Dane fikcyjne · bez zapisu i chmury</small></span>'
@@ -2507,6 +2507,22 @@ function testerGuideMarkup(){
   </div>
  </details>`;
 }
+
+/* MANU 18.5 — jawne zasady bezpiecznych testów beta.
+   Tekst statyczny: żadnego odczytu danych klienta, zapisu ani wysyłania zgłoszeń. */
+function testerPrivacyMarkup(){
+ return '<details class="smart-settings manu-tester-privacy">'+
+  '<summary>'+icon('shield')+' Dane i prywatność w wersji beta</summary>'+
+  '<div class="smart-settings-content">'+
+  '<p class="small"><strong>MANU jest wersją testową.</strong> Na razie używaj wyłącznie fikcyjnych danych w trybie DEMO. Nie wpisuj danych klientów, uczestników ani danych do prawdziwych rozliczeń.</p>'+
+  '<p class="small"><strong>Gdzie mogą znaleźć się dane?</strong> Zwykłe projekty są przechowywane lokalnie na urządzeniu (IndexedDB lub pamięć awaryjna). Jeśli użytkownik osobno skonfiguruje konto i synchronizację, dane mogą być przesyłane do usługi Supabase. Pierwsze testy zewnętrzne prowadzimy bez logowania i bez synchronizacji.</p>'+
+  '<p class="small"><strong>Co robi DEMO?</strong> Działa na fikcyjnych danych w pamięci tymczasowej. Wyjście z DEMO usuwa próbne zmiany, nie zastępując danych zapisanych w zwykłym notesie. DEMO nie potwierdza jednak odporności zapisu ani bezpieczeństwa kont.</p>'+
+  '<p class="small"><strong>Kopie, PDF i urządzenie.</strong> Kopia JSON zawiera informacje zapisane w notesie; wyeksportowany plik lub PDF może pozostać w plikach telefonu. Nie udostępniaj ich osobom trzecim. Wyczyszczenie danych przeglądarki albo odinstalowanie aplikacji może usunąć lokalne projekty.</p>'+
+  '<p class="small"><strong>Opinie i zrzuty ekranu.</strong> Przycisk „Przygotuj opinię” tylko otwiera udostępnienie lub kopiuje wzór tekstu. Nie wysyła automatycznie raportu. Przed wysłaniem usuń ze zrzutów imiona, numery telefonów, adresy, kwoty i inne prywatne informacje.</p>'+
+  '<p class="muted tiny">To informacja dla testerów, a nie kompletna polityka prywatności dla publicznego produktu. Przed używaniem MANU z rzeczywistymi danymi innych osób potrzebne są dalsze testy bezpieczeństwa i kompletne informacje o przetwarzaniu danych.</p>'+
+  '</div></details>';
+}
+
 function manuTesterInvite(){
  return [
   'Zapraszam do przetestowania MANU — Organizera twórcy (wersja beta).',
@@ -2515,6 +2531,7 @@ function manuTesterInvite(){
   'W Ustawieniach sprawdź wersję i gotowość offline (8/8), następnie wejdź w Testowanie aplikacji → Uruchom bezpieczny tryb demo.',
   'Rozwiń „Plan pierwszego testu · 10 minut”. Sprawdź fikcyjne zlecenie, warsztat, wycenę PDF i działanie Wstecz.',
   'Nie loguj się ani nie wpisuj prawdziwych danych klientów. To test obsługi, a nie synchronizacji kont.',
+  'Przed rozpoczęciem zajrzyj do Ustawienia → Testowanie aplikacji → Dane i prywatność w wersji beta.',
   'Na koniec zakończ demo i wybierz „Przygotuj opinię”. Uzupełnij tekst i odeślij mi wiadomość.'
  ].join(String.fromCharCode(10));
 }
@@ -2535,7 +2552,7 @@ function manuTesterReport(){
   'Co było niejasne lub niewygodne: [wpisz]',
   'Jeżeli wystąpił błąd: co nacisnąłeś i jaki był skutek? [kroki]',
   'Co warto poprawić najpierw: [wpisz]',
-  'Do zrzutów ekranu nie dołączaj danych osobowych.'
+  'Do zrzutów ekranu nie dołączaj danych osobowych. Przekaż tylko te informacje, które chcesz udostępnić.'
  ].join(String.fromCharCode(10));
 }
 async function shareManuTesterText(kind){

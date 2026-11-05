@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.29.1 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.29.2 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.29.2 — Etap 18.5: zasady prywatności i bezpieczne testy beta
+
+**Cel:** przygotować pierwszych zewnętrznych testerów do korzystania z MANU bez gromadzenia prawdziwych danych. Nie powtarzać już zaliczonych testów zapisu i nawigacji na urządzeniu właściciela.
+
+- **Nowa rozwijana sekcja:** `Ustawienia → Testowanie aplikacji → Dane i prywatność w wersji beta`. Dostępna także w ekranie DEMO; domyślnie zwinięta, aby nie zaśmiecać interfejsu.
+- **Treść:** lokalne przechowywanie danych, opcjonalna chmura Supabase, tymczasowy charakter DEMO, ograniczenia kopii JSON i PDF, bezpieczne zgłaszanie opinii i anonimizacja zrzutów. Jasne zastrzeżenie, że jest to informacja dla testerów, **nie kompletna polityka prywatności**.
+- **Zaproszenie:** zawiera wskazanie nowej sekcji, nadal prosi o test bez konta i bez prawdziwych danych. Formularz opinii dodaje ostrzeżenie o udostępnianiu tylko wybranych informacji.
+- **Bez zmian danych i logiki aplikacji:** żadnej migracji, odczytu rekordów testera, nowych uprawnień, żądań sieciowych ani nowych działań destrukcyjnych. Kontrola techniczna 3.29.1 pozostaje bez zmian.
+- **Aktualizacja PWA:** wydanie 3.29.2, osiem podstawowych plików offline. Obsługa iOS nadal czeka na rzeczywisty test fizycznego urządzenia Apple.
+- **Do zrobienia przed publicznym użyciem z danymi rzeczywistymi:** weryfikacja bezpieczeństwa kont i RLS Supabase na dwóch kontach, kompletna dokumentacja prywatności, decyzja o operatorze usługi i kontaktach oraz testy drugiego urządzenia.
+
+**Potwierdzenie dotychczasowych prac:** na Samsungu właściciela zgłoszono działające uruchomienie i nawigację offline (etap 18.3). Testy trwałości danych były już wykonywane we wcześniejszych etapach i nie są powtarzane tylko z powodu zmiany tekstów w UI. Nie jest to dowód gotowości na innych urządzeniach.
+
+**Punkt wyjścia:** `41b3b991` (MANU 3.29.1). Brak migracji danych.
 
 ## MANU 3.29.1 — Etap 18.2: diagnostyka zgodności i niezawodności PWA
 
@@ -683,6 +698,9 @@ Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, 
 3. **17.4 — Ostatnie szlify:** poprawki dokumentów PDF i komunikatów wdrożone w 3.28.3; do potwierdzenia wygląd wydruków na telefonie i tablecie, potem końcowa kontrola wersji beta.
 4. **17.5 — Testy zewnętrzne:** narzędzia i zaproszenie gotowe; rzeczywiste testy przez niezależnych testerów nadal pozostają do przeprowadzenia.
 5. **18.1 — iOS / iPadOS:** instrukcja i raport od wersji 3.29.0; potrzebny test na urządzeniu Apple.
-6. **18.2 — Kontrola zgodności:** diagnostyka przeglądarki i PWA w wersji 3.29.1; praktyczne testy instalacji, PDF i restartu offline nadal do wykonania.
+6. **18.2 — Kontrola zgodności:** diagnostyka przeglądarki i PWA w 3.29.1; wynik na Androidzie potwierdzony przez właściciela.
+7. **18.3 — Restart offline:** właściciel potwierdził na Samsungu uruchomienie i nawigację bez internetu. Próbę na drugim urządzeniu wykonamy z testerami.
+8. **18.4 — Trwałość lokalnego zapisu:** nie powtarzamy wcześniejszych testów na Samsungu, bo mechanizm zapisu nie był zmieniany. Test wielourządzeniowy nadal osobno.
+9. **18.5 — Bezpieczna beta:** informacja dla testera o danych i prywatności w wersji 3.29.2; do sprawdzenia czytelność sekcji i opinie pierwszych testerów.
 
 MANU jest funkcjonalnym prototypem w trakcie finalizacji, a nie produktem o potwierdzonej gotowości do przechowywania rzeczywistych danych wielu użytkowników.
