@@ -1,6 +1,42 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.2 — Etap 17.3: instalacja, praca offline i bezpieczne aktualizacje
+
+**Cel:** ustabilizować PWA przed testami innych twórców. Zmiany nie wprowadzają nowych funkcji biznesowych, nie zmieniają schematu bazy `version:18` i nie kasują danych użytkowników.
+
+### Zmiany
+- **Spójna instalacja offline:** service worker pobiera 8 wymaganych plików z wyłączeniem pośredniego cache HTTP; przed instalacją sprawdza, czy wersja HTML odpowiada skryptowi aplikacji. Jeśli serwer zwraca starą stronę lub brak któregoś wymaganego pliku, instalacja nowej wersji zostaje odrzucona, częściowo pobrany cache jest usuwany, a stara aplikacja pozostaje.
+- **Świadome przełączanie aktualizacji:** nowy service worker nie wywołuje automatycznego `skipWaiting()` podczas aktualizacji. Czeka, aż użytkownik zapisze pracę i wybierze `Ustawienia → Instalacja i aktualizacje → Wczytaj aktualną wersję`. Dopiero wówczas aktywuje się, informuje aplikację o zmianie kontrolera i pozwala bezpiecznie odświeżyć ekran. Pierwsza instalacja może przejąć kontrolę automatycznie.
+- **Ochrona w trakcie zapisu:** aktualizacja nie zaczyna się przy otwartym formularzu, niezakończonym zapisie lokalnym, problemie pamięci, przywracaniu kopii ani aktywnej synchronizacji. Gdy kod aktywacji nie dostanie potwierdzenia, aplikacja nie przeładowuje się w ciemno.
+- **Cache-first dla aktualnego wydania:** po instalacji nawigacja i wymagane zasoby są czytane z tego samego zestawu plików. Nie mieszamy starszego HTML z nowszymi skryptami. Użytkownik może pracować offline bez dostępu do serwera, ale konto i galeria Supabase wymagają internetu.
+- **Izolacja katalogu:** service worker przechwytuje wyłącznie żądania w obrębie `/Pracownia-app/`, a nie pozostałe projekty na tym samym GitHub Pages ani serwery zewnętrzne.
+- **Kontrola gotowości:** `Sprawdź gotowość offline` rozpoznaje aktualizację oczekującą i nie potwierdza jej jako aktywnej. Instrukcja aktualizacji dotyczy wyłącznie PWA — nie nadpisuje ani nie importuje bazy.
+- **Aktualny loader:** rejestracja `service-worker.js` omija cache przeglądarki (`updateViaCache:'none'`). Wszystkie wersje HTML, JS, CSS i cache offline to `3.28.2`.
+
+### Testy wykonane w symulacji
+- **9/9** scenariuszy instalacji service workera i cache: pierwsza instalacja, nowe wydanie oczekujące, ręczna aktywacja, brak pliku krytycznego, stary HTML, nawigacja offline, skrypt offline, izolacja innych repozytoriów i zewnętrznych serwerów oraz czyszczenie starszego cache.
+- **11/11** scenariuszy kontrolek aktualizacji: wykrywanie czekającej wersji, brak samoczynnego przeładowania, blokady przy formularzu, zapisie, błędzie pamięci i zajętej chmurze, działanie offline, anulowanie przez użytkownika i `updatefound`.
+- Wyniki te pochodzą z symulacji JavaScript; **nie potwierdzają jeszcze** działania na prawdziwym drugim telefonie ani niezawodności konkretnej przeglądarki. Przed zaproszeniem testerów potrzebny jest niezależny test fizyczny.
+
+### Test na telefonie z zainstalowanym MANU
+1. **Nie odinstalowuj i nie czyść danych.** W Ustawieniach pobierz kopię JSON, sprawdź plik i zachowaj go poza urządzeniem.
+2. Mając internet, otwórz **Ustawienia → Instalacja i aktualizacje → Sprawdź aktualizacje → Wczytaj aktualną wersję**. Sprawdź informację `MANU 3.28.2`. Podczas przejścia z wcześniejszego mechanizmu SW może być potrzebne całkowite zamknięcie wszystkich okien MANU i ponowne otwarcie. Nie trzeba instalować aplikacji od nowa.
+3. Wejdź w **Ustawienia → Dostępność i praca offline → Sprawdź gotowość offline**. Powinno wyświetlić się `8/8` plików. Jeśli pokazuje oczekującą aktualizację, najpierw aktywuj ją.
+4. Włącz **tryb samolotowy**, zamknij i ponownie uruchom MANU z ikony, następnie przejdź między Start, Projekty, Zadania i Ustawienia. Brak internetu nie może usuwać lokalnych wpisów. Do prób zmian używaj wyłącznie fikcyjnych danych w trybie DEMO.
+5. Wyłącz tryb samolotowy. Nie wykonuj importu kopii ani nie czyść danych na tym telefonie.
+
+### Test na DRUGIM urządzeniu (do potwierdzenia)
+1. Na innym telefonie/profilu otwórz https://artystaakrobata.github.io/Pracownia-app/ w Chrome i zainstaluj przez menu przeglądarki. Używaj wyłącznie fikcyjnych danych.
+2. Utwórz fikcyjny projekt, zadanie i koszt; zamknij całkowicie aplikację i otwórz ją ponownie. Sprawdź, czy dane przetrwały restart.
+3. Sprawdź pracę bez internetu oraz ponowne uruchomienie offline.
+4. Wyeksportuj kopię JSON, sprawdź ją, a następnie — **wyłącznie na testowym urządzeniu** — wykonaj odtworzenie i porównaj dane.
+5. Sprawdź, czy aplikacja nie zamyka się przy systemowym Wstecz. Zgłoszone problemy opisz w istniejącym formularzu opinii.
+
+**Ograniczenie:** nie przeprowadzono automatycznie testów na cudzym telefonie, na iOS ani rzeczywistej izolacji kont Supabase; pozostają oddzielnymi punktami gotowości.
+
+**Backup kodu:** `backup-manu-v3-28-1-before-pwa-reliability-17-3`.
 
 ## MANU 3.28.1 — Etap 17.2: bezpieczeństwo danych i kontroli kopii
 
@@ -574,7 +610,7 @@ Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, 
 
 ## Następne etapy — finalizacja wersji testowej
 1. **17.2 — Bezpieczeństwo danych:** audyt i poprawki kodu wykonane (3.28.1); nadal wymagane próby importu/odtworzenia na osobnym telefonie oraz izolacja dwóch kont Supabase na działającej instancji.
-2. **17.3 — Instalacja i niezawodność:** świeża instalacja na drugim telefonie, aktualizacja PWA, test offline, zamknięcie i ponowne uruchomienie aplikacji.
+2. **17.3 — Instalacja i niezawodność:** poprawki PWA wdrożone w 3.28.2; wymagane potwierdzenie instalacji, restartu i pracy offline na drugim rzeczywistym telefonie.
 3. **17.4 — Ostatnie szlify:** korekta problemów zgłoszonych podczas testów, weryfikacja wydruków PDF i spójności wyglądu; bez dodawania funkcji.
 4. **17.5 — Testy zewnętrzne:** mała grupa twórców korzystająca z gotowego trybu DEMO, planu prób i wzoru opinii.
 
