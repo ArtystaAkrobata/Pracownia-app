@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.28.3';
+const APP_VERSION='3.28.4';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1463,8 +1463,8 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.28.3',
-  './gallery.js?v=3.28.3','./templates.js?v=3.28.3'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.28.4',
+  './gallery.js?v=3.28.4','./templates.js?v=3.28.4'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
