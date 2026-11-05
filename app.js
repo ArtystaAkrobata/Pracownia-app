@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.28.2';
+const APP_VERSION='3.28.3';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -366,7 +366,15 @@ function quoteDocumentTerms(q){
   '<div class="quote-doc-term"><h3>'+htmlEscape(label)+'</h3><p>'+htmlEscape(value)+'</p></div>'
  ).join('')+'</section>';
 }
-function quoteSubtotal(q){return Math.round((q.items||[]).reduce((sum,i)=>sum+(Number(i.quantity)||0)*money(i.unitPrice),0)*100)/100}
+// Dokument sumuje dokładnie te kwoty (do grosza), które klient widzi
+// w poszczególnych wierszach. Bez różnicy 0,01 zł przy ilościach ułamkowych.
+function quoteLineTotal(item){return money((Number(item.quantity)||0)*money(item.unitPrice))}
+function quoteSubtotal(q){return money((q.items||[]).reduce((sum,i)=>sum+quoteLineTotal(i),0))}
+function quoteQuantityText(value){
+ // Ilość może być ułamkiem (m, kg, godziny). Trzy miejsca po przecinku
+ // ukrywały precyzję i utrudniały weryfikację kwoty w PDF.
+ return new Intl.NumberFormat('pl-PL',{maximumFractionDigits:12}).format(Number(value)||0);
+}
 function quoteTotal(q){return Math.max(0,Math.round((quoteSubtotal(q)-money(q.discount))*100)/100)}
 function normalizeQuoteCounters(value){
  const out={};
@@ -740,6 +748,7 @@ function quoteLastIssuer(){
    Dotyczy tylko dokumentów; historia kart i rozliczenia pozostają nienaruszone. */
 let quoteModalReturn=null;
 let quoteSubmissionPending=false;
+let quoteDeletePending=false;
 function rememberQuotePreview(id){
  const actions=$('.quote-preview-actions'),current=$('.modal');
  quoteModalReturn=actions?.dataset?.quotePreview===id&&current
@@ -833,7 +842,7 @@ function quotesPage(){
 function quoteDocument(q){
  const sub=quoteSubtotal(q),total=quoteTotal(q),discount=Math.min(sub,money(q.discount));
  const docLabel=quoteDocumentLabel(q),style=quoteDocumentStyle(q);
- const rows=q.items.map((item,i)=>`<tr><td>${i+1}</td><td class="quote-doc-description">${htmlEscape(item.description)}</td><td>${new Intl.NumberFormat('pl-PL',{maximumFractionDigits:3}).format(item.quantity)}</td><td>${htmlEscape(item.unit)}</td><td>${fMoney(item.unitPrice)}</td><td>${fMoney(item.quantity*item.unitPrice)}</td></tr>`).join('');
+ const rows=q.items.map((item,i)=>`<tr><td>${i+1}</td><td class="quote-doc-description">${htmlEscape(item.description)}</td><td>${quoteQuantityText(item.quantity)}</td><td>${htmlEscape(item.unit)}</td><td>${fMoney(item.unitPrice)}</td><td>${fMoney(quoteLineTotal(item))}</td></tr>`).join('');
  return `<article class="quote-document quote-document--${style}" aria-label="${docLabel} ${htmlEscape(q.number)}">
  <header class="quote-doc-header"><div class="quote-doc-brand"><img src="manu48-mark.svg" alt="" width="45" height="45"><div><strong>MANU</strong><span>ORGANIZER TWÓRCY</span></div></div><div class="quote-doc-identity"><span>${docLabel}</span><strong>${htmlEscape(q.number)}</strong></div></header>
  <div class="quote-doc-meta"><div><small>Data wystawienia</small><b>${htmlEscape(q.issued)}</b></div><div><small>Ważna do</small><b>${htmlEscape(q.validUntil||'Do uzgodnienia')}</b></div></div>
@@ -2901,7 +2910,29 @@ case 'quote-remove-line':{
  }
  break;
 }
-case 'quote-delete':{const q=(state.quotes||[]).find(x=>x.id===id);if(q&&confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z backupu.')){const top=window.scrollY;state.quotes=state.quotes.filter(x=>x.id!==id);save();render();window.scrollTo(0,top);toast('Usunięto wycenę')}break;}
+case 'quote-delete':{
+  if(quoteDeletePending)break;
+  const q=(state.quotes||[]).find(x=>x.id===id);
+  if(!q||!confirm('Usunąć wycenę '+q.number+'? Jej kopię można odzyskać tylko z kopii JSON.'))break;
+  const previousQuotes=structuredClone(state.quotes),top=window.scrollY;
+  state.quotes=state.quotes.filter(x=>x.id!==id);
+  quoteDeletePending=true;
+  render();window.scrollTo(0,top);
+  void (async()=>{
+   let saved=false;
+   try{saved=await save();}
+   catch(e){console.error('MANU: usuwanie wyceny',e)}
+   finally{quoteDeletePending=false}
+   if(!saved){
+    state.quotes=previousQuotes;
+    render();window.scrollTo(0,top);
+    alert('Nie udało się usunąć wyceny z pamięci. Przywrócono ją na liście. Sprawdź zapis danych w Ustawieniach.');
+    return;
+   }
+   toast('Usunięto wycenę');
+  })();
+  break;
+ }
 case 'quote-print':{const q=(state.quotes||[]).find(x=>x.id===id);if(!q)return;const dest=$('#quote-print-root');if(!dest){alert('Nie można przygotować wydruku. Odśwież MANU.');return}dest.innerHTML=quoteDocument(q);try{window.print()}catch(e){alert('Urządzenie nie otworzyło drukowania: '+String(e.message||e))}break;}
 case 'project-draft-clear':clearProjectDraft();projectForm();break;case 'new-project':projectForm();break;case 'client-new-project':projectForm(null,id);break;case 'client-new':clientForm();break;case 'client-edit':clientForm(state.clients.find(c=>c.id===id));break;case 'open-client':clientDetail(id);break;case 'client-delete':deleteClient(id);break;case 'client-import':importLegacyClients();break;case 'timer-start':startTimer(id);break;case 'timer-pause':pauseTimer(id);break;case 'timer-stop':finishTimer(id);break;case 'stage-toggle':toggleStage(id,b.dataset.stage);break;case 'stage-add':stageForm(id);break;case 'stage-remove':removeStage(id,b.dataset.stage);break;case 'work-add':workEntryForm(id);break;case 'work-remove':removeWork(id,b.dataset.entry);break;case 'work-note':workNoteForm(id,b.dataset.entry);break;case 'open-project':projectDetail(id);break;case 'edit-project':projectForm(state.projects.find(p=>p.id===id));break;case 'close':dismissCurrentModal();break;case 'close-overlay':dismissCurrentModal();break;case 'new-task':taskForm();break;case 'project-task-add':taskForm(null,id);break;case 'project-task-toggle':{const t=state.tasks.find(x=>x.id===b.dataset.task&&x.projectId===id);if(t){t.done=!t.done;afterDataChange(t.done?'Zadanie wykonane':'Przywrócono zadanie',id)}break;}case 'edit-task':taskForm(state.tasks.find(x=>x.id===id),b.dataset.project||'');break;case 'calendar-prev':calendarShift(-1);break;case 'calendar-next':calendarShift(1);break;case 'calendar-today':calendarSelected=localDay();calendarMonth=calendarSelected.slice(0,7);refreshCalendarPanel();break;case 'calendar-day':{const date=validDate(b.dataset.date);if(date){calendarSelected=date;calendarMonth=date.slice(0,7);refreshCalendarPanel()}break;}case 'calendar-jump':{const date=validDate(b.dataset.date);if(!date)return;calendarSelected=date;calendarMonth=date.slice(0,7);if(view!=='calendar')rememberManuPage();view='calendar';render();break;}case 'smart-snooze':{
  const ev=calendarEvents().find(x=>x.key===b.dataset.event&&x.date===b.dataset.date&&!x.done);
