@@ -1,6 +1,23 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.1 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.2 — Android Wstecz w sekcjach i formularzach projektu
+
+- Naprawiono zgłoszenie: **Projekty → wybrana realizacja → Etapy i czas pracy / Zadania projektu / Materiały i przygotowania / Finanse i koszty → systemowy Wstecz**. Pierwsze cofnięcie zwija otwarte sekcje, **nie zamyka karty projektu**. Drugie cofnięcie wraca do listy projektów.
+- Otwarcie pierwszej rozwijanej sekcji tworzy wpis `manuProjectSection` w historii przeglądarki. Ręczne zamknięcie ostatniej sekcji usuwa ten poziom, dzięki czemu nie zostają martwe kroki cofania.
+- Podformularze otwierane z karty projektu (etapy, czas pracy, zadania, materiały, koszty, wpłaty, uczestnicy) tworzą odrębny wpis `manuNestedModal`. Fizyczny Wstecz wraca najpierw do **rodzica** w tym samym miejscu przewinięcia, zachowując otwarte sekcje.
+- X i kliknięcie tła używają tego samego cofnięcia historii: X na podformularzu wraca do projektu, X na karcie projektu przechodzi do listy bez niepotrzebnych wpisów. Zachowano dotychczasowe zachowanie podglądu i edycji wycen.
+- Gdy formularz ma przycisk **Wróć** albo zapisuje zmianę w projekcie, karta jest odświeżana po zużyciu wpisu formularza. Przy zamykaniu projektu, duplikowaniu czy zapisie całości stare kroki są usuwane z historii.
+- Testy symulacyjne logiki historii przeszły **5/5** scenariuszy obejmujących sekcje, formularze, X, przewijanie i powrót do listy. Test na rzeczywistym Androidzie nadal wymaga potwierdzenia.
+- Bez zmian bazy `version:18`, nazw projektów, kwot, wpłat i chmury. Cache PWA `manu-app-v3.27.2`. Backup kodu: `backup-manu-v3-27-1-before-android-section-back`.
+
+### Test na telefonie
+1. Wejdź do **Projekty → Stół dębowy → Etapy i czas pracy**. Rozwiń sekcję i naciśnij systemowy **Wstecz** — powinna pozostać karta „Stół dębowy”, a sekcja powinna się zwinąć.
+2. Naciśnij systemowy **Wstecz** ponownie — powinieneś wrócić do listy projektów. Jeszcze raz — do Startu.
+3. Wejdź ponownie do projektu, rozwiń **Zadania projektu**, naciśnij **Dodaj zadanie**. Systemowy **Wstecz** powinien wrócić do otwartej sekcji tej samej karty, z zapamiętanym przewinięciem.
+4. Sprawdź identyczny scenariusz przez **X**, następnie wykonaj test w sekcjach **Materiały i przygotowania** oraz **Finanse i koszty**.
+5. Rozwiń sekcję, zamknij ją ręcznie i naciśnij Wstecz — projekt ma zamknąć się od razu, bez pustego kroku.
 
 ## MANU 3.27.1 — Naprawa powrotu X z podstron i formularzy
 - Naprawiono zgłoszony problem: **Projekty → Stół dębowy → Materiały i przygotowania → Dodaj pozycję → X**. Zamiast zamknąć całą kartę i pokazać listę projektów, X odtwarza kartę „Stół dębowy” w **tym samym miejscu przewinięcia**, z zachowaną rozwiniętą sekcją.
