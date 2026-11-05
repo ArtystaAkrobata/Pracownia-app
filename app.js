@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.1';
+const APP_VERSION='3.27.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -745,6 +745,8 @@ function rememberQuotePreview(id){
 }
 function returnToQuotePreview(){
  if(!$('#quote-form')||!quoteModalReturn)return false;
+ if(manuQuoteFormHistoryActive&&!manuHandlingPopState&&window.history?.state?.manuNestedModal===1){window.history.back();return true}
+
  const previous=quoteModalReturn;
  quoteModalReturn=null;
  // Powrót z formularza wyceny nie powinien przywracać przewinięcia formularza
@@ -1619,7 +1621,10 @@ function modal(title,body,options={}){
    overlay:previousOverlay,scrollTop:previous.scrollTop,
    pageX:window.scrollX,pageY:window.scrollY,projectId:previousProjectId
   });
+  armManuNestedModalHistory();
  }
+ if(quoteOwnReturn&&previous?.querySelector?.('[data-quote-preview]')&&!manuQuoteFormHistoryActive)
+  manuQuoteFormHistoryActive=armManuNestedModalHistory();
  // Karta projektu dostaje własny wpis historii od razu przy otwarciu.
  // Systemowy Wstecz zużyje ten wpis, nie wpis przejścia Start → Projekty.
  if(detail&&!previous)armManuProjectModalHistory();
@@ -1659,12 +1664,31 @@ function restorePreviousModal(){
  return true;
 }
 function dismissCurrentModal(){
- if(!$('.modal'))return;
+ const current=$('.modal');if(!current)return;
+ if(manuBackGuardReady&&window.history?.back){
+  if(manuQuoteFormHistoryActive&&$('#quote-form')&&window.history.state?.manuNestedModal===1){window.history.back();return}
+  if(modalReturnStack.length&&manuNestedModalHistoryDepth>0&&window.history.state?.manuNestedModal===1){window.history.back();return}
+  if(current.classList.contains('notebook-detail-page')&&manuProjectModalHistoryActive){
+   window.history.go(manuProjectSectionHistoryActive?-2:-1);return;
+  }
+ }
  if(returnToQuotePreview())return;
  if(restorePreviousModal())return;
  closeModal();
 }
-function closeModal(){modalReturnStack.length=0;releaseManuProjectModalHistory();quoteModalReturn=null;if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';const printed=$('#quote-print-root');if(printed)printed.innerHTML='';}
+function closeModal(){
+ const levels=manuHandlingPopState?0:manuNestedModalHistoryDepth+
+  (manuProjectSectionHistoryActive?1:0)+(manuProjectModalHistoryActive?1:0);
+ const trimmed=levels>0&&trimManuHistory(levels);
+ manuNestedModalHistoryDepth=0;manuProjectSectionHistoryActive=false;
+ manuQuoteFormHistoryActive=false;manuPendingProjectRefreshId='';
+ modalReturnStack.length=0;
+ if(trimmed)manuProjectModalHistoryActive=false;else releaseManuProjectModalHistory();
+ quoteModalReturn=null;
+ if($('#project-form')?.dataset?.draftEligible==='yes')clearProjectDraft();
+ detailReturnScroll=null;pendingBackup=null;$('#modal-root').innerHTML='';
+ const printed=$('#quote-print-root');if(printed)printed.innerHTML='';
+}
 
 // MANU 13.5 — jeden szkic nowego projektu, wyłącznie na tym urządzeniu.
 // Nie zapisujemy go jako projektu i nie wysyłamy do chmury.
@@ -2151,14 +2175,22 @@ function detailFold(p,key,title,desc,content,iconName){
 }
 function projectCostDetails(p){return `<div class="detail-section"><div class="section-head"><h3>Koszty projektu</h3><button class="btn sm secondary" data-action="add-expense" data-id="${htmlEscape(p.id)}">${icon('plus')} Dodaj koszt</button></div>${p.expenses.length?p.expenses.map(e=>`<div class="detail-entry"><span>${htmlEscape(e.title)} <small>· ${expenseCategoryName(e.category)} ${e.date?'· '+htmlEscape(e.date):'· bez daty'}</small></span><div><b>${fMoney(e.amount)}</b> <button class="btn ghost sm" data-action="delete-expense" data-id="${htmlEscape(p.id)}" data-expense="${htmlEscape(e.id)}" aria-label="Usuń koszt">${icon('trash')}</button></div></div>`).join(''):travelCost(p)>0?'':'<p class="muted small">Brak dodanych kosztów.</p>'}${estimatedTravelApplied(p)>0?`<div class="detail-entry travel-cost-entry"><span>Planowany dojazd <small>(wyliczony automatycznie)</small></span><b>${fMoney(travelCost(p))}</b></div><p class="muted tiny">Szacowany koszt dojazdu jest już uwzględniony w wyniku projektu. Nie dodawaj tej samej kwoty ponownie jako wydatek ręczny.</p>`:''}</div>`;}
 function projectToolsMarkup(p){return `<div class="detail-section"><button class="btn secondary" data-action="quote-new" data-project="${htmlEscape(p.id)}">${icon('brief')} Przygotuj wycenę</button> <button class="btn secondary" data-action="template-save-from-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Zapisz jako szablon</button> <button class="btn secondary" data-action="duplicate-project" data-id="${htmlEscape(p.id)}">${icon('copy')} Powiel projekt / warsztat</button></div><div class="danger-zone"><button class="btn danger sm" data-action="delete-project" data-id="${htmlEscape(p.id)}">${icon('trash')} Usuń projekt</button></div>`;}
-function projectDetail(id){const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;const projectTasks=state.tasks.filter(t=>t.projectId===p.id);const materialTotal=(p.workshopMaterials||[]).length;const prepared=(p.workshopMaterials||[]).filter(m=>m.done).length;modal(p.title,`${detailFoldCriticalStyle()}<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div>${p.clientId&&state.clients.some(c=>c.id===p.clientId)?`<button class="btn ghost sm" data-action="open-client" data-id="${htmlEscape(p.clientId)}">${icon('users')} Karta klienta</button>`:''}<button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${p.type==='Warsztat'?`Klient: ${htmlEscape(p.client||'Nie podano')} · Organizator: ${htmlEscape(p.organizer||'Nie podano')}`:`${htmlEscape(p.client||'Bez wskazanego klienta')}`} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}<p class="muted small manu-detail-guide">Wybierz sekcję, aby zobaczyć szczegóły. Możesz otworzyć kilka jednocześnie.</p>
+function projectDetail(id){
+ if(!manuHandlingPopState&&manuBackGuardReady&&manuNestedModalHistoryDepth>0&&
+    modalReturnStack.at(-1)?.projectId===id&&window.history?.state?.manuNestedModal===1){
+  manuPendingProjectRefreshId=id;window.history.back();return;
+ }
+ const p=state.projects.find(p=>p.id===id);if(!p)return;let cost=expenses(p),perHour=p.hours?profit(p)/p.hours:0;const projectTasks=state.tasks.filter(t=>t.projectId===p.id);const materialTotal=(p.workshopMaterials||[]).length;const prepared=(p.workshopMaterials||[]).filter(m=>m.done).length;modal(p.title,`${detailFoldCriticalStyle()}<div class="detail-top"><div class="detail-badges"><span class="pill">${htmlEscape(p.type)}</span>${pillStatus(p)}</div>${p.clientId&&state.clients.some(c=>c.id===p.clientId)?`<button class="btn ghost sm" data-action="open-client" data-id="${htmlEscape(p.clientId)}">${icon('users')} Karta klienta</button>`:''}<button class="btn secondary sm" data-action="edit-project" data-id="${htmlEscape(p.id)}">${icon('pencil')} Edytuj</button></div><p class="muted small">${p.type==='Warsztat'?`Klient: ${htmlEscape(p.client||'Nie podano')} · Organizator: ${htmlEscape(p.organizer||'Nie podano')}`:`${htmlEscape(p.client||'Bez wskazanego klienta')}`} · ${fDate(p.date)}</p><div class="detail-metrics"><div><small>Wartość</small><b>${fMoney(projectIncome(p))}</b></div><div><small>Koszty</small><b>${fMoney(cost)}</b></div><div><small>Po kosztach</small><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b></div></div><div class="detail-metrics"><div><small>Wpłacono</small><b>${fMoney(projectPaid(p))}</b></div><div><small>Czas pracy</small><b>${fHours(p.hours)} h</b></div><div><small>Za godzinę</small><b>${p.hours?fMoney(perHour):'—'}</b></div></div>${projectSpecificDetail(p)}<p class="muted small manu-detail-guide">Wybierz sekcję, aby zobaczyć szczegóły. Możesz otworzyć kilka jednocześnie.</p>
 ${detailFold(p,'progress','Etapy i czas pracy',progressPercent(p)+'% etapów · '+fHours(p.hours)+' godz. pracy',workSection(p),'clock')}
 ${detailFold(p,'tasks','Zadania projektu',projectTasks.filter(t=>t.done).length+' z '+projectTasks.length+' wykonanych',projectTaskChecklist(p),'checks')}
 ${p.type==='Warsztat'?detailFold(p,'participants','Uczestnicy i wpłaty',confirmedParticipants(p).length+' zapisanych · '+waitlistedParticipants(p).length+' rezerwowych',showParticipants(p),'users'):''}
 ${detailFold(p,'materials',p.type==='Warsztat'?'Przygotowanie warsztatu':'Materiały i przygotowania',prepared+' z '+materialTotal+' przygotowanych'+(p.type==='Warsztat'?' · podsumowanie':''),p.type==='Warsztat'?workshopOperations(p):projectMaterialChecklist(p),'folder')}
 ${detailFold(p,'finance','Finanse i koszty','Koszty '+fMoney(cost)+' · do otrzymania '+fMoney(Math.max(0,projectIncome(p)-projectPaid(p))),financeDetail(p)+projectCostDetails(p),'wallet')}
 ${detailFold(p,'gallery','Galeria i notatki',String((p.photos||[]).length)+' zdjęć'+(p.notes?' · notatki':''),(window.MANUGallery?.album?.(p)||'')+'<section class="detail-section"><h3>Notatki</h3><p class="muted small">'+(p.notes?htmlEscape(p.notes):'Brak notatek.')+'</p></section>','folder')}
-${detailFold(p,'tools','Dodatkowe działania','Wycena, szablony, powielanie i usuwanie',projectToolsMarkup(p),'settings')}`,{detail:true,projectId:p.id});void window.MANUGallery?.hydrate?.($('#modal-root'));}
+${detailFold(p,'tools','Dodatkowe działania','Wycena, szablony, powielanie i usuwanie',projectToolsMarkup(p),'settings')}`,{detail:true,projectId:p.id});
+ if(!manuProjectSectionHistoryActive&&manuProjectModalHistoryActive&&
+    $('.modal')?.querySelector('details.manu-detail-fold[open]'))armManuProjectSectionHistory();
+ void window.MANUGallery?.hydrate?.($('#modal-root'));}
 const localDay=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 function paymentForm(id,participantId=''){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
@@ -2458,6 +2490,23 @@ function afterDataChange(msg,detailId){
 const manuPageHistory=[];
 let manuBackGuardReady=false;
 let manuProjectModalHistoryActive=false;
+let manuProjectSectionHistoryActive=false,manuNestedModalHistoryDepth=0,manuQuoteFormHistoryActive=false;
+let manuHandlingPopState=false,manuPendingHistoryTrim=null,manuPendingProjectRefreshId='';
+function armManuProjectSectionHistory(){
+ if(!manuBackGuardReady||!manuProjectModalHistoryActive||manuProjectSectionHistoryActive)return false;
+ try{window.history.pushState({manuProjectSection:1},'');manuProjectSectionHistoryActive=true;return true}
+ catch(e){console.warn('MANU: brak wpisu sekcji',e);return false}
+}
+function armManuNestedModalHistory(){
+ if(!manuBackGuardReady)return false;
+ try{window.history.pushState({manuNestedModal:1},'');manuNestedModalHistoryDepth++;return true}
+ catch(e){console.warn('MANU: brak wpisu formularza',e);return false}
+}
+function trimManuHistory(steps){
+ if(!manuBackGuardReady||steps<1||!window.history?.go)return false;
+ try{manuPendingHistoryTrim={after:null};window.history.go(-steps);return true}
+ catch(e){manuPendingHistoryTrim=null;console.warn('MANU: nie można skrócić historii',e);return false}
+}
 function armManuProjectModalHistory(){
  if(!manuBackGuardReady||manuProjectModalHistoryActive)return false;
  try{
@@ -2508,53 +2557,58 @@ function armManuBackGuard(){
  }
 }
 function onManuBack(event){
- // Cofanie między kartkami prowadzi do wcześniejszego manuBackGuard,
- // a ostatnie cofnięcie — do początkowego manuBackRoot.
  if(!manuBackGuardReady)return;
- const inManuHistory=event.state?.manuBackGuard===1||event.state?.manuBackRoot===1;
- // Na Androidzie / po aktualizacji PWA wpis historii może nie mieć już
- // znacznika MANU. Jeżeli wciąż mamy wewnętrzny ekran lub modal,
- // wykorzystaj go zamiast pozwalać przeglądarce przypadkowo zamknąć aplikację.
- if(!inManuHistory&&!$('.modal')&&!manuPageHistory.length&&view==='home')return;
- let keepCurrentPage=false;
- // Pierwszy gest zamyka podgląd lub aktualnie otwartą kartę/formularz.
- if(window.MANUGallery?.isPreviewOpen?.()){
-  window.MANUGallery.closePreview();
-  keepCurrentPage=true;
- }else if($('.modal')){
-  const consumedProjectModalEntry=manuProjectModalHistoryActive;
-  const returnedToPreview=returnToQuotePreview();
-  if(!returnedToPreview)closeModal();
-  else if(consumedProjectModalEntry)manuProjectModalHistoryActive=false;
-  // Projekt ma własny wpis historii utworzony przy otwarciu, dlatego
-  // po jego zamknięciu NIE wolno pushState() wewnątrz popstate.
-  // Na Androidzie taki wpis nie zawsze jest honorowany i kolejny Wstecz
-  // potrafi nieoczekiwanie zamknąć zainstalowaną aplikację.
-  keepCurrentPage=!consumedProjectModalEntry||returnedToPreview;
- }else if(manuPageHistory.length){
-  const previous=manuPageHistory.pop();
-  view=previous.view;
-  homeReturnContext=previous.home;
-  projectReturnContext=previous.project;
-  projectToolsExpanded=previous.tools;
-  notebookTurn='';
-  render();
-  window.scrollTo({left:0,top:previous.top,behavior:'instant'});
- }else if(view!=='home'){
-  view='home';
-  homeReturnContext=null;
-  projectReturnContext=null;
-  notebookTurn='';
-  render();
-  window.scrollTo({left:0,top:0,behavior:'instant'});
- }else{
-  // Jesteśmy już na Start: nie wywołuj history.back() ponownie wewnątrz
-  // popstate, bo na Androidzie jeden gest może przez to zamknąć PWA.
-  return;
+ if(manuPendingHistoryTrim){
+  const after=manuPendingHistoryTrim.after;manuPendingHistoryTrim=null;
+  if(typeof after==='function')after();return;
  }
- // Przy cofnięciu z modalu przywróć strażnika dla pozostałych kartek.
- // Odbuduj go również, jeśli przeglądarka oddała wpis bez znacznika.
- if((keepCurrentPage||!inManuHistory)&&!armManuBackGuard())manuBackGuardReady=false;
+ manuHandlingPopState=true;
+ try{
+  const inManuHistory=event.state?.manuBackGuard===1||event.state?.manuBackRoot===1;
+  if(!inManuHistory&&!$('.modal')&&!manuPageHistory.length&&view==='home')return;
+  if(manuQuoteFormHistoryActive&&$('#quote-form')){
+   manuQuoteFormHistoryActive=false;
+   manuNestedModalHistoryDepth=Math.max(0,manuNestedModalHistoryDepth-1);
+   returnToQuotePreview();return;
+  }
+  if(modalReturnStack.length&&manuNestedModalHistoryDepth>0){
+   manuNestedModalHistoryDepth--;
+   restorePreviousModal();
+   if(manuPendingProjectRefreshId){
+    const id=manuPendingProjectRefreshId;manuPendingProjectRefreshId='';
+    const parent=$('.modal');
+    detailReturnScroll={projectId:id,top:parent?.scrollTop||0,pageX:window.scrollX,pageY:window.scrollY};
+    projectDetail(id);
+   }
+   return;
+  }
+  // Pierwszy Android Wstecz z rozwiniętej sekcji pozostawia kartę projektu.
+  if(manuProjectSectionHistoryActive&&event.state?.manuProjectModal===1&&
+     $('.modal')?.classList.contains('notebook-detail-page')){
+   manuProjectSectionHistoryActive=false;
+   const m=$('.modal'),top=m.scrollTop;
+   m.querySelectorAll('details.manu-detail-fold[open]').forEach(el=>{el.open=false});
+   m.scrollTop=top;return;
+  }
+  let keepCurrentPage=false;
+  if(window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();keepCurrentPage=true}
+  else if($('.modal')){
+   const consumedProjectModalEntry=manuProjectModalHistoryActive;
+   const returnedToPreview=returnToQuotePreview();
+   if(!returnedToPreview)closeModal();
+   else if(consumedProjectModalEntry)manuProjectModalHistoryActive=false;
+   keepCurrentPage=!consumedProjectModalEntry||returnedToPreview;
+  }else if(manuPageHistory.length){
+   const previous=manuPageHistory.pop();view=previous.view;
+   homeReturnContext=previous.home;projectReturnContext=previous.project;
+   projectToolsExpanded=previous.tools;notebookTurn='';
+   render();window.scrollTo({left:0,top:previous.top,behavior:'instant'});
+  }else if(view!=='home'){
+   view='home';homeReturnContext=null;projectReturnContext=null;notebookTurn='';
+   render();window.scrollTo({left:0,top:0,behavior:'instant'});
+  }else return;
+  if((keepCurrentPage||!inManuHistory)&&!armManuBackGuard())manuBackGuardReady=false;
+ }finally{manuHandlingPopState=false}
 }
 function initManuBackGuard(){
  if(!window.history?.pushState||!window.history?.replaceState)return;
