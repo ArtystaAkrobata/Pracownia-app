@@ -28,6 +28,16 @@ function storeBinding(revision,lastSaved){
   notice='Nie można zapisać informacji o synchronizacji na telefonie.';
  }
 }
+// Import kopii JSON na urządzenie nie zezwala na automatyczne nadpisanie chmury.
+function localRestored(){
+ clearTimeout(timer);timer=null;
+ ready=false;conflict=true;remote=null;binding=null;
+ try{localStorage.removeItem(KEY)}catch(e){
+  console.warn('MANU: nie można wyczyścić powiązania chmury po przywróceniu',e);
+ }
+ notice='Przywrócono kopię na urządzeniu. Synchronizacja automatyczna została wstrzymana. Zachowaj obie kopie i ręcznie wybierz „Wyślij” lub „Pobierz”.';
+ renderIfSettings();
+}
 // Nie niszcz rozpoczętego formularza hasła podczas odświeżania sesji lub kontroli chmury.
 function isAccountFormEditing(){
  const changingPassword=!!document.querySelector('.cloud-password-details[open]');
@@ -88,7 +98,7 @@ function statusMarkup(){
   '<button type="button" class="btn secondary" data-action="cloud-check">Sprawdź synchronizację</button>'+
   '<button type="button" class="btn ghost" data-action="cloud-backup">Pobierz kopię chmury</button>'+
   '<button type="button" class="btn ghost" data-action="cloud-signout">Wyloguj się</button></div>'+
-  '<p class="muted tiny">Operacje „Wyślij” i „Pobierz” mogą zastąpić istniejące dane. Zapisz kopie JSON przed potwierdzeniem. Wylogowanie nie usuwa lokalnych projektów.</p>'+
+  '<p class="muted tiny">„Wyślij” i „Pobierz” mogą zastąpić istniejące dane. Zapisz wcześniej kopie JSON obu wersji. Wylogowanie NIE ukrywa danych lokalnych przed innymi użytkownikami tego telefonu — nie testuj prawdziwych danych klientów na współdzielonym urządzeniu.</p>'+
   '<section class="cloud-profile" aria-label="Profil i zabezpieczenia konta">'+
   '<h4>Profil użytkownika</h4>'+
   '<p class="muted small">E-mail: <b>'+escape(user.email||'')+'</b></p>'+
@@ -286,7 +296,7 @@ async function cloudBackup(){
 }
 async function signOut(){
  if(!client||busy)return;
- if(!window.confirm('Wylogować? Dane zapisane lokalnie nadal pozostaną na tym urządzeniu.'))return;
+ if(!window.confirm('Wylogować się z MANU?\\n\\nUwaga: projekty, klienci i uczestnicy zapisani lokalnie POZOSTANĄ na tym telefonie. Każdy, kto ma dostęp do urządzenia, może je zobaczyć także po wylogowaniu.\\n\\nNa współdzielonym telefonie używaj tylko trybu DEMO.\\n\\nKontynuować?'))return;
  clearTimeout(timer);ready=false;busy=true;
  try{
   const {error}=await client.auth.signOut();if(error)throw error;
@@ -519,6 +529,7 @@ window.MANUCloud={
  galleryConnected,galleryUpload,galleryUrls,galleryRemove,
  displayName:()=>String(user?.user_metadata?.display_name||'').trim().slice(0,48),
  localSaved:()=>{if(!applying&&!demoStopped())schedulePush()},
+ localRestored,
  async action(name){
   if(name==='cloud-upload')await push(true);
   else if(name==='cloud-download')await download();
