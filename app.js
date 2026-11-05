@@ -1452,7 +1452,7 @@ async function checkOfflineReadiness(){
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
   './cloud-config.js?v=3.13.0','./cloud.js?v=3.26.0',
-  './gallery.js?v=3.27.3','./templates.js?v=3.14.1'
+  './gallery.js?v=3.27.5','./templates.js?v=3.27.5'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
