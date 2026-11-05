@@ -1497,6 +1497,66 @@ async function checkPwaUpdate(){
  }catch(e){console.warn('Sprawdzanie aktualizacji MANU:',e);toast('Nie udało się sprawdzić aktualizacji. Spróbuj ponownie przy połączeniu z internetem.');}
 }
 
+// Etap 17.3 — użytkownik świadomie aktywuje pobraną aktualizację.
+function watchPwaRegistration(registration){
+ if(!registration)return;
+ pwaRegistration=registration;
+ const announceWaiting=()=>{
+  if(!registration.waiting||!navigator.serviceWorker.controller)return;
+  if(!pwaUpdateReady){
+   pwaUpdateReady=true;
+   toast('Pobrano aktualizację MANU. Zapisz pracę i aktywuj ją w Ustawieniach.');
+  }
+  refreshPwaPanel();
+ };
+ if(pwaObservedRegistration!==registration){
+  pwaObservedRegistration=registration;
+  registration.addEventListener('updatefound',()=>{
+   const installing=registration.installing;
+   if(installing)installing.addEventListener('statechange',()=>{
+    if(installing.state==='installed')announceWaiting();
+   });
+  });
+ }
+ announceWaiting();
+}
+async function reloadPwaSafely(){
+ if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
+  alert('Zamknij aktywny formularz, aby nie stracić niezapisanych zmian.');
+  return;
+ }
+ if(storageBlocked||pendingWrites>0||backupApplying||quoteSubmissionPending||window.MANUCloud?.isBusy?.()){
+  alert('Zakończ zapisywanie danych, odtwarzanie kopii i synchronizację przed aktualizacją MANU.');
+  return;
+ }
+ try{
+  const registration='serviceWorker' in navigator
+   ?(pwaRegistration||await navigator.serviceWorker.getRegistration()):null;
+  const waiting=!!(registration?.waiting&&navigator.serviceWorker.controller);
+  if(!waiting&&navigator.onLine===false){
+   toast('Brak gotowej aktualizacji offline. Włącz internet, aby odświeżyć MANU.');
+   return;
+  }
+  if(!confirm(waiting
+   ?'Aktywować pobraną wersję MANU i uruchomić ją ponownie? Zapisz wszystkie zmiany przed aktualizacją.'
+   :'Odświeżyć MANU i sprawdzić aktualną wersję? Upewnij się, że formularze są zapisane.'))return;
+  if(waiting){
+   pwaActivationRequested=true;
+   registration.waiting.postMessage({type:'MANU_ACTIVATE_UPDATE'});
+   setTimeout(()=>{
+    if(pwaActivationRequested){
+     pwaActivationRequested=false;
+     toast('Aktualizacja nie została jeszcze aktywowana. Zamknij MANU, uruchom ponownie i sprawdź wersję.');
+    }
+   },12000);
+  }else window.location.reload();
+ }catch(e){
+  pwaActivationRequested=false;
+  console.warn('MANU: przełączanie wersji PWA',e);
+  toast('Nie udało się aktywować aktualizacji. Spróbuj ponownie po uruchomieniu MANU.');
+ }
+}
+
 /* Etap 16.1: wyłącznie odczytowa kontrola zapisów; bez tworzenia ani nadpisywania danych. */
 let securityAuditReport=null,securityAuditBusy=false;
 function securityAuditSnapshot(raw){
@@ -2920,19 +2980,8 @@ case 'ui-quick-move':{
  }
  case 'pwa-check-update':void checkPwaUpdate();break;
 case 'offline-check':void checkOfflineReadiness();break;case 'security-audit':void runSecurityAudit();break;
-case 'pwa-reload':{
- if(navigator.onLine===false){toast('Włącz internet, aby wczytać aktualną wersję MANU.');break;}
- if($('.modal')||document.querySelector('.cloud-password-details[open], #cloud-reset-password-form')){
-  alert('Zamknij aktywny formularz, aby nie stracić niezapisanych zmian.');
-  break;
- }
- if(storageBlocked||pendingWrites>0){
-  alert('Najpierw zakończ zapis danych i sprawdź status pamięci MANU.');
-  break;
- }
- if(confirm('Odświeżyć MANU i wczytać aktualną wersję? Upewnij się, że wszystkie formularze są zapisane.'))window.location.reload();
- break;
-}}}
+case 'pwa-reload':void reloadPwaSafely();break;
+}}
 async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');
  if(manuPendingHistoryTrim)manuPendingHistoryTrim.after=()=>clientDetail(client.id);
  else clientDetail(client.id);
@@ -3320,15 +3369,23 @@ async function init(){
   pwaHadController=!!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    const hasController=!!navigator.serviceWorker.controller;
-   if(pwaHadController&&hasController){
+   if(pwaActivationRequested&&hasController){
+    pwaActivationRequested=false;
+    if(!storageBlocked&&!pendingWrites&&!backupApplying&&!quoteSubmissionPending&&!$('.modal')){
+     window.location.reload();
+     return;
+    }
     pwaUpdateReady=true;
-    refreshPwaPanel();
-    toast('Nowa wersja MANU jest gotowa. Otwórz Ustawienia, aby bezpiecznie odświeżyć aplikację.');
+    toast('Nowa wersja MANU jest aktywna. Zapisz pracę i odśwież ją z Ustawień.');
+   }else if(pwaHadController&&hasController){
+    pwaUpdateReady=true;
+    toast('Nowa wersja MANU jest aktywna. Wczytaj ją po zapisaniu pracy.');
    }
    pwaHadController=hasController;
+   refreshPwaPanel();
   });
   navigator.serviceWorker.register('./service-worker.js')
-   .then(registration=>{pwaRegistration=registration;refreshPwaPanel()})
+   .then(registration=>watchPwaRegistration(registration))
    .catch(e=>console.warn('Service worker:',e));
  }
 }
