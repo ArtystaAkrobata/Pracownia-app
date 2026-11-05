@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.2';
+const APP_VERSION='3.27.3';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1678,10 +1678,13 @@ function dismissCurrentModal(){
 }
 function closeModal(){
  const levels=manuHandlingPopState?0:manuNestedModalHistoryDepth+
+  (manuGalleryPreviewHistoryActive?1:0)+
   (manuProjectSectionHistoryActive?1:0)+(manuProjectModalHistoryActive?1:0);
  const trimmed=levels>0&&trimManuHistory(levels);
  manuNestedModalHistoryDepth=0;manuProjectSectionHistoryActive=false;
- manuQuoteFormHistoryActive=false;manuPendingProjectRefreshId='';
+ manuQuoteFormHistoryActive=false;manuGalleryPreviewHistoryActive=false;
+ if(window.MANUGallery?.isPreviewOpen?.())window.MANUGallery.closePreview();
+ manuPendingProjectRefreshId='';
  modalReturnStack.length=0;
  if(trimmed)manuProjectModalHistoryActive=false;else releaseManuProjectModalHistory();
  quoteModalReturn=null;
@@ -2491,6 +2494,18 @@ const manuPageHistory=[];
 let manuBackGuardReady=false;
 let manuProjectModalHistoryActive=false;
 let manuProjectSectionHistoryActive=false,manuNestedModalHistoryDepth=0,manuQuoteFormHistoryActive=false;
+let manuGalleryPreviewHistoryActive=false;
+function armManuGalleryPreviewHistory(){
+ if(!manuBackGuardReady||manuGalleryPreviewHistoryActive)return false;
+ try{window.history.pushState({manuGalleryPreview:1},'');manuGalleryPreviewHistoryActive=true;return true}
+ catch(e){console.warn('MANU: historia podglądu zdjęcia',e);return false}
+}
+function requestManuGalleryPreviewClose(){
+ if(manuGalleryPreviewHistoryActive&&window.history?.state?.manuGalleryPreview===1){
+  window.history.back();return true;
+ }
+ manuGalleryPreviewHistoryActive=false;return false;
+}
 let manuHandlingPopState=false,manuPendingHistoryTrim=null,manuPendingProjectRefreshId='';
 function armManuProjectSectionHistory(){
  if(!manuBackGuardReady||!manuProjectModalHistoryActive||manuProjectSectionHistoryActive)return false;
@@ -2565,7 +2580,16 @@ function onManuBack(event){
  manuHandlingPopState=true;
  try{
   const inManuHistory=event.state?.manuBackGuard===1||event.state?.manuBackRoot===1;
-  if(!inManuHistory&&!$('.modal')&&!manuPageHistory.length&&view==='home')return;
+  if(!inManuHistory&&!$('.modal')&&!manuPageHistory.length&&view==='home'&&
+     !manuGalleryPreviewHistoryActive)return;
+  // Zdjęcie jest najwyższą warstwą: Wstecz zamyka tylko podgląd, nie kartę.
+  if(manuGalleryPreviewHistoryActive){
+   manuGalleryPreviewHistoryActive=false;
+   if(window.MANUGallery?.isPreviewOpen?.()){
+    window.MANUGallery.closePreview();
+    return;
+   }
+  }
   if(manuQuoteFormHistoryActive&&$('#quote-form')){
    manuQuoteFormHistoryActive=false;
    manuNestedModalHistoryDepth=Math.max(0,manuNestedModalHistoryDepth-1);
@@ -2617,7 +2641,7 @@ function initManuBackGuard(){
   // Przestarzały manuBackGuard w odtworzonej sesji nie dowodzi istnienia
   // rzeczywistego poprzedniego wpisu w historii przeglądarki.
   const existing=window.history.state&&typeof window.history.state==='object'?window.history.state:{};
-  const {manuBackGuard:oldGuard,manuBackRoot:oldRoot,manuProjectModal:oldModal,manuProjectSection:oldSection,manuNestedModal:oldNested,...other}=existing;
+  const {manuBackGuard:oldGuard,manuBackRoot:oldRoot,manuProjectModal:oldModal,manuProjectSection:oldSection,manuNestedModal:oldNested,manuGalleryPreview:oldGallery,...other}=existing;
   window.history.replaceState({...other,manuBackRoot:1},'');
   if(!armManuBackGuard())return;
   manuBackGuardReady=true;
@@ -3186,7 +3210,7 @@ async function init(){
  window.MANUTemplates?.init?.({
   getState:()=>state,
   modal:(title,body)=>modal(title,body),
-  closeModal:()=>closeModal(),
+  closeModal:()=>dismissCurrentModal(),
   goProjects:()=>{view='projects';window.scrollTo(0,0);render();},
   openProjectFromTemplate:id=>projectForm(null,'',id),
   afterChange:message=>afterDataChange(message)
@@ -3197,7 +3221,9 @@ async function init(){
   render:()=>render(),
   projectDetail:id=>projectDetail(id),
   save:()=>save(),
-  toast:message=>toast(message)
+  toast:message=>toast(message),
+  onPreviewOpen:()=>armManuGalleryPreviewHistory(),
+  onPreviewClose:()=>requestManuGalleryPreviewClose()
  });
  events();
  await load();
