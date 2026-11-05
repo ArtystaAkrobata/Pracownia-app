@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.5 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.5 — Etap 17.5: przygotowanie dla pierwszych zewnętrznych testerów
+
+**Cel:** bezpieczny, samodzielny test pierwszego uruchomienia i obsługi na urządzeniu testera. Bez nowych funkcji produkcyjnych i bez migracji danych.
+
+- **Zaproszenie i przewodnik:** w `Ustawienia → Testowanie aplikacji → Plan pierwszego testu · 10 minut` uzupełniono kroki instalacji PWA na Android Chrome, kontroli wersji i 8/8 plików offline, wejścia w demo, pracy ze zleceniem i warsztatem, wyceny PDF, nawigacji oraz wyjścia z demo.
+- **Raport testowy:** przycisk `Przygotuj opinię` zawiera teraz model i wersję Androida, informację przeglądarka/PWA, wersję aplikacji, wynik instalacji i 8/8, edycji projektu, warsztatu, PDF, przycisków Wstecz i zakończenia demo oraz kroki odtworzenia problemu. Formularz nie pobiera danych użytkownika i nie wysyła opinii bez jego działania.
+- **Przyjazne zaproszenie:** `Udostępnij zaproszenie` kieruje do własnego urządzenia, linku GitHub Pages, bezpiecznego demo oraz sposobu przekazania informacji zwrotnej; bez żądania loginu.
+- **Odseparowane usuwanie:** przycisk `Usuń wszystkie dane` usunięty z sąsiedztwa `Uruchom bezpieczny tryb demo`; jest wyłącznie w zwijanej `Ustawienia → Zabezpieczenia i kopie danych → Strefa usuwania danych` wraz z informacją o kopii JSON i skutkach synchronizacji. Poprzednie potwierdzenia akcji są zachowane. Nie używać go do kończenia demo.
+- **Uwaga o zakresie:** demo pracuje w pamięci tymczasowej; celowo nie testuje trwałości danych po restarcie, odzyskiwania danych ani bezpieczeństwa synchronizacji kont. Tych obszarów nie wolno oznaczać jako zweryfikowane tylko dlatego, że demo działa. Testy rzeczywiste z użyciem wielu kont nadal są osobną pracą.
+
+**Scenariusz pierwszego zaproszenia:** wysłać link jednej lub dwóm zaufanym osobom z własnymi urządzeniami Android; poprosić wyłącznie o sprawdzenie fikcyjnych danych w demo, zapisanie opinii i zgłoszenie błędów; nie przekazywać kont ani danych klientów.
+
+**Do weryfikacji po publikacji:** fizyczne uruchomienie na nowym urządzeniu, poprawność przycisku zaproszenia i opinii, brak opcji destrukcyjnej obok demo, potwierdzenie powrotu z demo. Rzeczywiste testy PWA w 3.28.2 i podglądu A4 w 3.28.4 były wykonywane na urządzeniach użytkownika, ale nie zastępują tej kontroli po aktualizacji.
+
+**Backup kodu:** `backup-manu-v3-28-4-before-beta-invite-17-5`. PWA: `manu-app-v3.28.5`. Dane bez migracji.
 
 ## MANU 3.28.4 — Etap 17.4: korekta szerokości ilości na wydruku PDF A4
 
