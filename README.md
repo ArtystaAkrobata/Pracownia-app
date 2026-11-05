@@ -1,6 +1,23 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.3 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.3 — Etap 17.4: ostatnie szlify i weryfikacja ofert PDF
+
+**Zakres:** dopracowanie dokumentów i komunikatów bez nowych funkcji ani zmian schematu danych. Wydanie podlega testom na rzeczywistych telefonach.
+
+- **Spójne kwoty w wycenach:** każda pozycja dokumentu jest liczona i pokazywana po zaokrągleniu do 1 grosza. Suma dokumentu stanowi sumę tych właśnie widocznych pozycji, zamiast osobnego zaokrąglenia wszystkich niezaokrąglonych ułamków. Usuwa to różnice o grosz w ofertach z wieloma pozycjami ułamkowymi.
+- **Dokładniejsze ilości:** PDF pokazuje do 12 miejsc po przecinku, zamiast maksymalnie 3, dzięki czemu przy ilościach takich jak 0,333333 metra/godziny opis zgadza się z obliczeniami. Ceny jednostkowe i wartości pieniężne pozostają w PLN, do dwóch miejsc.
+- **Czytelność na małym ekranie i przy wydruku A4:** uzupełniono zawijanie długich nazw, numerów dokumentów, danych klienta i kolumn ilości; podgląd mobilny ma lepiej kontrolowane przewijanie poziome. Układ drukowania nadal ukrywa pozostałą część aplikacji i powtarza nagłówek tabeli.
+- **Bezpieczne usuwanie dokumentu:** kliknięcie „Usuń wycenę” czeka na potwierdzenie zapisu. W razie błędu wycena wraca na listę i użytkownik otrzymuje ostrzeżenie. Szybkie kolejne kliknięcia nie usuwają dodatkowych wycen podczas trwającej operacji.
+- **Spójne komunikaty:** lista wycen wyjaśnia zapis lokalny i opcjonalną chmurę; Ustawienia nie sugerują już, że samo posiadanie konta oznacza brak konfiguracji.
+- **Uwaga przy istniejących dokumentach:** dla zapisanych wycen z bardzo dokładnymi ilościami ułamkowymi wynik może teraz zmienić się o pojedyncze grosze, ponieważ liczy się sumę zaokrąglonych wierszy. Projekty, wpłaty i koszty realizacji nie są przeliczane. Przed wysłaniem istniejącej wyceny klientowi ponownie sprawdź wartości.
+
+**Testy w kodzie (symulacja):** 11/11 kontroli struktury wycen/ofert (dwa style, rabaty, ułamki, 80 pozycji, warunki, zabezpieczenie HTML) oraz 4/4 testów usuwania wycen (sukces, błąd zapisu, podwójne kliknięcie, anulowanie). Nie zastępują kontroli wydruku na fizycznym Androidzie i w drukarce/PDF.
+
+**Weryfikacja przez użytkownika (jeszcze do zrobienia):** na telefonie i tablecie otwórz istniejącą lub wyłącznie fikcyjną wycenę, sprawdź podgląd obu stylów, wybierz „Drukuj / zapisz PDF” i zapisz plik jako PDF. Upewnij się, że nazwy, kwoty i końcowe podsumowanie są czytelne, a na wydruku nie ma menu MANU. Sprawdź też dłuższą ofertę, jeśli to możliwe.
+
+**Backup kodu:** `backup-manu-v3-28-2-before-final-polish-17-4`. PWA: `manu-app-v3.28.3`. Schemat danych bez zmian.
 
 ## MANU 3.28.2 — Etap 17.3: instalacja, praca offline i bezpieczne aktualizacje
 
@@ -611,7 +628,7 @@ Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, 
 ## Następne etapy — finalizacja wersji testowej
 1. **17.2 — Bezpieczeństwo danych:** audyt i poprawki kodu wykonane (3.28.1); nadal wymagane próby importu/odtworzenia na osobnym telefonie oraz izolacja dwóch kont Supabase na działającej instancji.
 2. **17.3 — Instalacja i niezawodność:** poprawki PWA wdrożone w 3.28.2; wymagane potwierdzenie instalacji, restartu i pracy offline na drugim rzeczywistym telefonie.
-3. **17.4 — Ostatnie szlify:** korekta problemów zgłoszonych podczas testów, weryfikacja wydruków PDF i spójności wyglądu; bez dodawania funkcji.
+3. **17.4 — Ostatnie szlify:** poprawki dokumentów PDF i komunikatów wdrożone w 3.28.3; do potwierdzenia wygląd wydruków na telefonie i tablecie, potem końcowa kontrola wersji beta.
 4. **17.5 — Testy zewnętrzne:** mała grupa twórców korzystająca z gotowego trybu DEMO, planu prób i wzoru opinii.
 
 MANU jest funkcjonalnym prototypem w trakcie finalizacji, a nie produktem o potwierdzonej gotowości do przechowywania rzeczywistych danych wielu użytkowników.
