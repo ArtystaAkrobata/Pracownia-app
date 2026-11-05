@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.4';
+const APP_VERSION='3.27.5';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -257,7 +257,7 @@ async function readRecovery(){
 const validTime=t=>typeof t==='string'&&Number.isFinite(Date.parse(t))?t:'';
 const TIMER_LIMIT=24*3600;
 function defaultStages(type,status='Planowane'){
- const labels=type==='Warsztat'?['Plan i program','Zapisy uczestników','Przygotowanie materiałów','Prowadzenie warsztatu','Rozliczenie']:['Plan i projekt','Materiały','Wykonanie','Wykończenie','Odbiór zlecenia'];
+ const labels=type==='Warsztat'?['Plan i program','Zapisy uczestników','Przygotowanie materiałów','Prowadzenie warsztatu','Rozliczenie']:['Ustalenia i plan','Przygotowanie','Realizacja','Kontrola i poprawki','Przekazanie i rozliczenie'];
  return labels.map((title,index)=>({id:'s'+index,title,done:status==='Zakończone'}));
 }
 function normalizeStages(p){
@@ -639,7 +639,7 @@ function homePage(m){const profileName=demoSession?'':window.MANUCloud?.displayN
 function projectRow(p){return `<div class="project-row" role="button" tabindex="0" data-action="open-project" data-id="${htmlEscape(p.id)}">${projectTypeIcon(p)}<div class="project-row-info"><b>${htmlEscape(p.title)}</b><span>${htmlEscape(p.type)} · ${htmlEscape(p.client||'Bez klienta')} · ${fDate(p.date)}</span></div><div class="right-stats"><b class="${profit(p)>=0?'money-positive':'money-negative'}">${fMoney(profit(p))}</b><small>po kosztach</small></div></div>`;}
 function quoteItemRow(item={}){
  return `<div class="quote-line" data-quote-row>
-  <div class="field quote-line-description"><label>Pozycja</label><input name="description" maxlength="180" value="${htmlEscape(item.description||'')}" required placeholder="Np. Matowienie lustra"></div>
+  <div class="field quote-line-description"><label>Pozycja</label><input name="description" maxlength="180" value="${htmlEscape(item.description||'')}" required placeholder="Np. Wykonanie zamówienia lub usługi"></div>
   <div class="field"><label>Ilość</label><input name="quantity" type="number" min="0.01" max="100000" step="any" value="${item.quantity||1}" required></div>
   <div class="field"><label>Jednostka</label><input name="unit" maxlength="24" value="${htmlEscape(item.unit||'szt.')}" required></div>
   <div class="field"><label>Cena jedn. (zł)</label><input name="unitPrice" type="number" min="0" max="100000000" step="0.01" value="${money(item.unitPrice)}" required></div>
@@ -792,7 +792,7 @@ function quoteForm(projectId='',quoteId='',sourceId=''){
    <p class="muted tiny">Pola są opcjonalne. MANU nie wystawia faktur i nie wysyła dokumentów automatycznie.</p>
   </div>
  </details>
- <div class="field"><label>Tytuł dokumentu *</label><input name="title" required maxlength="140" value="${htmlEscape(q.title)}" placeholder="Np. Lustro Ø50 cm — matowienie"></div>
+ <div class="field"><label>Tytuł dokumentu *</label><input name="title" required maxlength="140" value="${htmlEscape(q.title)}" placeholder="Np. Wycena indywidualnego projektu"></div>
  <div class="form-cols"><div class="field"><label>Wystawiający / pracownia</label><input name="issuer" maxlength="180" value="${htmlEscape(q.issuer)}" placeholder="Nazwa pracowni"></div><div class="field"><label>Klient</label><input name="client" maxlength="180" value="${htmlEscape(q.client)}" placeholder="Odbiorca wyceny"></div></div>
  <div class="field"><label>Kontakt wystawiającego</label><textarea name="issuerContact" rows="2" maxlength="350" placeholder="E-mail lub telefon">${htmlEscape(q.issuerContact)}</textarea></div>
  <div class="form-cols"><div class="field"><label>Kontakt klienta</label><textarea name="clientContact" rows="2" maxlength="350" placeholder="E-mail lub telefon klienta">${htmlEscape(q.clientContact||'')}</textarea></div><div class="field"><label>Adres klienta</label><textarea name="clientAddress" rows="2" maxlength="280" placeholder="Opcjonalnie">${htmlEscape(q.clientAddress||'')}</textarea></div></div>
@@ -1390,7 +1390,7 @@ function refreshCalendarPanel(){
 }
 function reminderForm(id='',date=''){
  const r=(state.reminders||[]).find(x=>x.id===id),due=validDate(date)||r?.date||calendarSelected||localDay();
- modal(r?'Edytuj przypomnienie':'Nowe przypomnienie',`<form id="reminder-form" data-id="${htmlEscape(id)}"><div class="field"><label>Co chcesz zapamiętać? *</label><input name="title" required maxlength="180" placeholder="Np. Zamówić materiały" value="${htmlEscape(r?.title||'')}"></div><div class="form-cols"><div class="field"><label>Data *</label><input name="date" type="date" required value="${htmlEscape(due)}"></div><div class="field"><label>Godzina (opcjonalnie)</label><input name="time" type="time" value="${htmlEscape(r?.time||'')}"></div></div><div class="field"><label>Powiązany projekt (opcjonalnie)</label><select name="projectId"><option value="">Bez projektu</option>${state.projects.filter(p=>p.status!=='Anulowane').map(p=>`<option value="${htmlEscape(p.id)}" ${p.id===r?.projectId?'selected':''}>${htmlEscape(p.title)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${r?'Zapisz zmiany':'Dodaj przypomnienie'}</button></div></form>`);
+ modal(r?'Edytuj przypomnienie':'Nowe przypomnienie',`<form id="reminder-form" data-id="${htmlEscape(id)}"><div class="field"><label>Co chcesz zapamiętać? *</label><input name="title" required maxlength="180" placeholder="Np. Potwierdzić termin spotkania" value="${htmlEscape(r?.title||'')}"></div><div class="form-cols"><div class="field"><label>Data *</label><input name="date" type="date" required value="${htmlEscape(due)}"></div><div class="field"><label>Godzina (opcjonalnie)</label><input name="time" type="time" value="${htmlEscape(r?.time||'')}"></div></div><div class="field"><label>Powiązany projekt (opcjonalnie)</label><select name="projectId"><option value="">Bez projektu</option>${state.projects.filter(p=>p.status!=='Anulowane').map(p=>`<option value="${htmlEscape(p.id)}" ${p.id===r?.projectId?'selected':''}>${htmlEscape(p.title)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button type="submit" class="btn">${r?'Zapisz zmiany':'Dodaj przypomnienie'}</button></div></form>`);
 }
 function filteredTasks(){
  return state.tasks.filter(t=>taskFilter==='all'||(taskFilter==='done'?t.done:!t.done))
@@ -1777,7 +1777,7 @@ function projectForm(p,prefillClientId='',templateId=''){
     <div class="field"><label>Rodzaj działalności</label><select name="type"><option value="Zlecenie" ${x.type==='Zlecenie'?'selected':''}>Zlecenie / realizacja</option><option value="Warsztat" ${x.type==='Warsztat'?'selected':''}>Warsztat</option></select></div>
     <div class="field"><label>Status</label><select name="status">${optionsStatus(x.status)}</select></div>
   </div>
-  <div class="field"><label>Nazwa *</label><input name="title" required maxlength="120" placeholder="Np. Lustro z grawerem" value="${htmlEscape(x.title)}"></div>
+  <div class="field"><label>Nazwa *</label><input name="title" required maxlength="120" placeholder="Np. Projekt na zamówienie" value="${htmlEscape(x.title)}"></div>
   <div class="form-cols">
     <div class="field field-full"><label>Powiąż z kartą klienta</label><select name="clientId" aria-label="Klient z bazy MANU"><option value="">Bez powiązania z bazą</option>${state.clients.slice().sort((a,b)=>a.name.localeCompare(b.name,'pl')).map(c=>'<option value="'+htmlEscape(c.id)+'" '+(c.id===linkedClientId?'selected':'')+'>'+htmlEscape(c.name)+'</option>').join('')}</select><p class="muted tiny">Wybierz kartę z bazy klientów lub wpisz nazwę poniżej. Uczestników warsztatów dodajesz osobno.</p></div>
     <div class="field"><label data-label="client">Klient / zamawiający</label><input name="client" maxlength="100" placeholder="Opcjonalnie" value="${htmlEscape(linkedClient?.name||(x.type==='Warsztat'&&!linkedClientId?'':x.client))}" ${linkedClient?'readonly':''}></div>
@@ -1786,7 +1786,7 @@ function projectForm(p,prefillClientId='',templateId=''){
 
 
   <section class="project-kind-section project-form-primary-workshop" data-kind="Warsztat" hidden>
-    <div class="field"><label>Organizator / prowadzący</label><input name="organizer" maxlength="120" placeholder="Np. Adam — organizator warsztatów" value="${htmlEscape(x.organizer??(x.type==='Warsztat'&&!linkedClientId?x.client:''))}"><p class="muted tiny">To pole jest niezależne od klienta powiązanego z bazą MANU.</p></div>
+    <div class="field"><label>Organizator / prowadzący</label><input name="organizer" maxlength="120" placeholder="Np. Imię i nazwisko lub nazwa organizatora" value="${htmlEscape(x.organizer??(x.type==='Warsztat'&&!linkedClientId?x.client:''))}"><p class="muted tiny">To pole jest niezależne od klienta powiązanego z bazą MANU.</p></div>
     <div class="form-cols">
     <div class="field"><label>Liczba dostępnych miejsc</label><input name="capacity" type="number" min="0" step="1" value="${Math.floor(val(x.capacity))}"></div>
     <div class="field"><label>Cena za uczestnika (zł)</label><input name="participantFee" type="number" min="0" step="0.01" value="${money(x.participantFee)}"></div>
@@ -1813,7 +1813,7 @@ function projectForm(p,prefillClientId='',templateId=''){
         <span class="location-chevron" aria-hidden="true">⌄</span>
       </summary>
       <div class="location-accordion-content">
-        <div class="field"><label>Miejsce wykonania zlecenia</label><input name="workLocation" maxlength="220" placeholder="Np. własna pracownia lub pełny adres muralu" value="${htmlEscape(x.workLocation||'')}"></div>
+        <div class="field"><label>Miejsce wykonania zlecenia</label><input name="workLocation" maxlength="220" placeholder="Np. Online, pracownia lub adres klienta" value="${htmlEscape(x.workLocation||'')}"></div>
         <div class="travel-fields">
           <div class="travel-heading">${icon('map')} <strong>Sposób dojazdu</strong></div>
           <div class="transport-choices" role="radiogroup" aria-label="Sposób dojazdu">
@@ -1957,7 +1957,7 @@ function syncProjectFields(){
   form.querySelector('[data-label="date"]').textContent=workshop?'Data warsztatu':'Termin wykonania';
   const submitLabel=form.querySelector('[data-project-submit-label]');
   if(submitLabel)submitLabel.textContent=form.dataset.isEdit==='yes'?'Zapisz zmiany':workshop?'Utwórz warsztat':'Utwórz projekt';
-  form.elements.namedItem('title').placeholder=workshop?'Np. Warsztaty kaligrafii – Gotyk':'Np. Lustro z grawerem, stół dębowy';
+  form.elements.namedItem('title').placeholder=workshop?'Np. Warsztaty tematyczne':'Np. Projekt na zamówienie, realizacja';
   form.querySelector('[data-label="price"]').textContent=workshop?'Wartość warsztatu (zł)':'Cena realizacji (zł)';
   form.querySelector('[data-label="paid"]').textContent='Wcześniejsze wpłaty (bez historii) (zł)';
   form.querySelector('[data-money-description]').textContent=workshop?'Zachowane ręczne rozliczenie starszego warsztatu. Nowe wpłaty zapisuj w historii na karcie realizacji.':'Tutaj zachowujesz tylko kwoty bez daty. Nowe zaliczki i dopłaty dopisuj w historii wpłat na karcie realizacji, aby nie liczyć ich drugi raz.';
@@ -2023,7 +2023,7 @@ function showParticipants(p){
 }
 function workshopMaterialForm(id){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
- modal('Lista materiałów i przygotowań',`<form id="workshop-material-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Co trzeba przygotować? *</label><input required maxlength="130" name="title" placeholder="Np. 12 zestawów kaligrafii, papier, atrament"></div><div class="field"><label>Ile sztuk / kompletów?</label><input name="quantity" type="number" min="1" max="9999" step="1" value="1"></div><p class="form-note">To lista przygotowań, a nie wydatek. Koszt zakupów wpisuj osobno w finansach, aby nie policzyć ich podwójnie.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Dodaj do listy</button></div></form>`);
+ modal('Lista materiałów i przygotowań',`<form id="workshop-material-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Co trzeba przygotować? *</label><input required maxlength="130" name="title" placeholder="Np. Materiały dla grupy, sprzęt, link do zajęć"></div><div class="field"><label>Ile sztuk / kompletów?</label><input name="quantity" type="number" min="1" max="9999" step="1" value="1"></div><p class="form-note">To lista przygotowań, a nie wydatek. Koszt zakupów wpisuj osobno w finansach, aby nie policzyć ich podwójnie.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Dodaj do listy</button></div></form>`);
 }
 function workshopOperations(p){
  const materials=p.workshopMaterials||[],prep=materialsSummary(p),attendance=attendanceSummary(p),confirmed=confirmedParticipants(p),wait=waitlistedParticipants(p);
@@ -2071,12 +2071,12 @@ function workSection(p){
 }
 function stageForm(id){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
- modal('Dodaj etap projektu',`<form id="stage-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Nazwa etapu *</label><input required name="title" maxlength="120" placeholder="Np. Przygotowanie szablonu" autofocus></div><div class="modal-actions"><button class="btn ghost" type="button" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Dodaj etap</button></div></form>`);
+ modal('Dodaj etap projektu',`<form id="stage-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Nazwa etapu *</label><input required name="title" maxlength="120" placeholder="Np. Uzgodnienie szczegółów" autofocus></div><div class="modal-actions"><button class="btn ghost" type="button" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Dodaj etap</button></div></form>`);
 }
 function workEntryForm(id){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
  const day=new Date();const date=[day.getFullYear(),String(day.getMonth()+1).padStart(2,'0'),String(day.getDate()).padStart(2,'0')].join('-');
- modal('Dopisz czas pracy',`<form id="work-entry-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="form-cols"><div class="field"><label>Data pracy</label><input name="date" type="date" required value="${date}"></div><div class="field"><label>Przepracowane minuty *</label><input name="minutes" type="number" min="1" max="1440" step="1" required placeholder="Np. 90"></div></div><div class="field"><label>Co zostało zrobione?</label><textarea name="note" maxlength="350" rows="3" placeholder="Np. Szkic muralu i przygotowanie kolorów"></textarea></div><p class="form-note">Wpis zostanie doliczony do łącznego czasu pracy i pojawi się w historii. Nie dodawaj ponownie godzin już ujętych w projekcie.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz czas</button></div></form>`);
+ modal('Dopisz czas pracy',`<form id="work-entry-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="form-cols"><div class="field"><label>Data pracy</label><input name="date" type="date" required value="${date}"></div><div class="field"><label>Przepracowane minuty *</label><input name="minutes" type="number" min="1" max="1440" step="1" required placeholder="Np. 90"></div></div><div class="field"><label>Co zostało zrobione?</label><textarea name="note" maxlength="350" rows="3" placeholder="Np. Przygotowanie projektu i materiałów"></textarea></div><p class="form-note">Wpis zostanie doliczony do łącznego czasu pracy i pojawi się w historii. Nie dodawaj ponownie godzin już ujętych w projekcie.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz czas</button></div></form>`);
 }
 function startTimer(id){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
@@ -2129,7 +2129,7 @@ function removeWork(id,entryId){
 }
 function workNoteForm(id,entryId){
  const p=state.projects.find(x=>x.id===id),e=p?.workLog?.find(x=>x.id===entryId);if(!e)return;
- modal('Opis sesji pracy',`<form id="work-note-form" data-id="${htmlEscape(id)}" data-entry="${htmlEscape(entryId)}"><p class="muted small">${htmlEscape(p.title)} · ${durationSecs(e.seconds)}</p><div class="field"><label>Co zostało zrobione?</label><textarea name="note" rows="4" maxlength="350" placeholder="Np. Malowanie konturów i poprawki">${htmlEscape(e.note)}</textarea></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button type="submit" class="btn">Zapisz opis</button></div></form>`);
+ modal('Opis sesji pracy',`<form id="work-note-form" data-id="${htmlEscape(id)}" data-entry="${htmlEscape(entryId)}"><p class="muted small">${htmlEscape(p.title)} · ${durationSecs(e.seconds)}</p><div class="field"><label>Co zostało zrobione?</label><textarea name="note" rows="4" maxlength="350" placeholder="Np. Realizacja zadania i wprowadzone poprawki">${htmlEscape(e.note)}</textarea></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button type="submit" class="btn">Zapisz opis</button></div></form>`);
 }
 function projectTaskChecklist(p){
  const list=state.tasks.filter(t=>t.projectId===p.id);
@@ -2219,7 +2219,7 @@ function financeDetail(p){
 }
 function expenseForm(id){
  const p=state.projects.find(x=>x.id===id);if(!p)return;
- modal('Nowy wydatek',`<form id="expense-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Nazwa wydatku *</label><input name="title" maxlength="100" required placeholder="Np. lustro, materiały, transport"></div><div class="form-cols"><div class="field"><label>Kwota (zł) *</label><input name="amount" required type="number" step="0.01" min="0.01"></div><div class="field"><label>Data poniesienia kosztu *</label><input name="date" type="date" required value="${localDay()}"></div></div><div class="field"><label>Kategoria</label><select name="category"><option value="materialy">Materiały</option><option value="uslugi">Usługi / podwykonawcy</option><option value="dojazd">Dojazd faktyczny</option><option value="inne">Inne</option></select></div><p class="form-note">Dojazd faktyczny zastępuje wyliczony koszt szacunkowy. Nie doliczaj tego samego transportu drugi raz.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz wydatek</button></div></form>`);
+ modal('Nowy wydatek',`<form id="expense-form" data-id="${htmlEscape(id)}"><p class="muted small">${htmlEscape(p.title)}</p><div class="field"><label>Nazwa wydatku *</label><input name="title" maxlength="100" required placeholder="Np. Zakup materiałów, wynajem, dojazd"></div><div class="form-cols"><div class="field"><label>Kwota (zł) *</label><input name="amount" required type="number" step="0.01" min="0.01"></div><div class="field"><label>Data poniesienia kosztu *</label><input name="date" type="date" required value="${localDay()}"></div></div><div class="field"><label>Kategoria</label><select name="category"><option value="materialy">Materiały</option><option value="uslugi">Usługi / podwykonawcy</option><option value="dojazd">Dojazd faktyczny</option><option value="inne">Inne</option></select></div><p class="form-note">Dojazd faktyczny zastępuje wyliczony koszt szacunkowy. Nie doliczaj tego samego transportu drugi raz.</p><div class="modal-actions"><button type="button" class="btn ghost" data-action="open-project" data-id="${htmlEscape(id)}">Wróć</button><button class="btn" type="submit">Zapisz wydatek</button></div></form>`);
 }
 function participantForm(id,pid=''){
  const project=state.projects.find(p=>p.id===id);if(!project||project.type!=='Warsztat')return;
@@ -2229,7 +2229,7 @@ function participantForm(id,pid=''){
 }
 function taskForm(t,fromProjectId=''){
  const edit=!!t,selected=t||{title:'',due:view==='calendar'?calendarSelected:'',projectId:fromProjectId};
- modal(edit?'Edytuj zadanie':'Nowe zadanie',`<form id="task-form" data-id="${htmlEscape(t?.id||'')}" data-return-project="${htmlEscape(fromProjectId)}"><div class="field"><label>Co trzeba zrobić? *</label><input name="title" required maxlength="180" value="${htmlEscape(selected.title)}" placeholder="Np. Kupić materiały na warsztaty"></div><div class="field"><label>Termin</label><input name="due" type="date" value="${htmlEscape(selected.due||'')}"></div><div class="field"><label>Powiązany projekt</label><select name="projectId"><option value="">Bez projektu</option>${state.projects.map(p=>`<option value="${htmlEscape(p.id)}" ${selected.projectId===p.id?'selected':''}>${htmlEscape(p.title)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button class="btn" type="submit">${edit?'Zapisz zmiany':'Dodaj zadanie'}</button></div></form>`);
+ modal(edit?'Edytuj zadanie':'Nowe zadanie',`<form id="task-form" data-id="${htmlEscape(t?.id||'')}" data-return-project="${htmlEscape(fromProjectId)}"><div class="field"><label>Co trzeba zrobić? *</label><input name="title" required maxlength="180" value="${htmlEscape(selected.title)}" placeholder="Np. Przygotować ofertę lub materiały"></div><div class="field"><label>Termin</label><input name="due" type="date" value="${htmlEscape(selected.due||'')}"></div><div class="field"><label>Powiązany projekt</label><select name="projectId"><option value="">Bez projektu</option>${state.projects.map(p=>`<option value="${htmlEscape(p.id)}" ${selected.projectId===p.id?'selected':''}>${htmlEscape(p.title)}</option>`).join('')}</select></div><div class="modal-actions"><button type="button" class="btn ghost" data-action="close">Anuluj</button><button class="btn" type="submit">${edit?'Zapisz zmiany':'Dodaj zadanie'}</button></div></form>`);
 }
 function toast(message){const root=$('#toast-root');root.innerHTML=`<div class="toast">${htmlEscape(message)}</div>`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>root.innerHTML='',2900);}
 
@@ -2243,13 +2243,13 @@ function demoSnapshot(){
   {id:'demo-klient-2',name:'Uczestnik przykładowy',company:'',email:'',phone:'',address:'',notes:'Dane demonstracyjne',createdAt:now()}
  ];
  draft.projects=[
-  {id:'demo-zlecenie',title:'Lustro z grawerem 50 cm (demo)',type:'Zlecenie',
+  {id:'demo-zlecenie',title:'Projekt dla klienta (demo)',type:'Zlecenie',
    client:'Pracownia Przykład',clientId:'demo-klient-1',date:future(14),paymentDue:future(9),
    status:'W trakcie',price:550,paid:100,quantity:1,estimatedMaterials:105,
    payments:[{id:'demo-zaliczka',date:day,amount:150,kind:'zaliczka',note:'Przykładowa wpłata'}],
-   expenses:[{id:'demo-koszt',title:'Lustro i rama',amount:95,date:day,category:'materialy'}],
+   expenses:[{id:'demo-koszt',title:'Materiały do realizacji',amount:95,date:day,category:'materialy'}],
    notes:'Wszystkie dane tej sesji są fikcyjne i znikają po wyjściu.',createdAt:now()},
-  {id:'demo-warsztat',title:'Warsztaty kaligrafii — gotyk (demo)',type:'Warsztat',status:'Planowane',
+  {id:'demo-warsztat',title:'Warsztaty tematyczne (demo)',type:'Warsztat',status:'Planowane',
    date:future(21),paymentDue:future(15),price:500,capacity:5,participantFee:150,
    financeMode:'participants',participants:[
     {id:'demo-osoba-a',name:'Osoba A (demo)',fee:150,bookingStatus:'confirmed',paidAmount:0,
@@ -2258,10 +2258,10 @@ function demoSnapshot(){
    ],expenses:[{id:'demo-koszt-w',title:'Materiały na zajęcia',amount:65,date:day,category:'materialy'}],
    notes:'Przykład bez danych osobowych.',createdAt:now()}
  ];
- draft.tasks=[{id:'demo-zadanie',title:'Przygotować projekt graweru (demo)',due:future(3),done:false,projectId:'demo-zlecenie',createdAt:now()}];
- draft.quotes=[{id:'demo-wycena',number:'MANU-'+day.slice(0,4)+'-001',title:'Wycena — lustro (demo)',
+ draft.tasks=[{id:'demo-zadanie',title:'Przygotować materiały do realizacji (demo)',due:future(3),done:false,projectId:'demo-zlecenie',createdAt:now()}];
+ draft.quotes=[{id:'demo-wycena',number:'MANU-'+day.slice(0,4)+'-001',title:'Wycena projektu (demo)',
   client:'Pracownia Przykład',projectId:'demo-zlecenie',issued:day,documentType:'quote',
-  items:[{id:'demo-pozycja',description:'Lustro z grawerem',quantity:1,unit:'szt.',unitPrice:550}],
+  items:[{id:'demo-pozycja',description:'Wykonanie projektu na zamówienie',quantity:1,unit:'szt.',unitPrice:550}],
   discount:0,createdAt:now()}];
  return normalize(draft);
 }
