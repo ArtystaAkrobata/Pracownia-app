@@ -130,6 +130,8 @@ async function showPreview(projectId,photoId){
  '<div class="manu-lightbox-photo"><img alt="'+escape(photo.caption||kinds[photo.kind]||'Zdjęcie')+'" data-gallery-path="'+escape(photo.path)+'"></div>'+
  '<div class="manu-lightbox-caption">'+escape(photo.caption||kinds[photo.kind]||'Zdjęcie')+'</div></div></div>';
  document.body.classList.add('gallery-lightbox-open');
+ // Zarejestruj podgląd jako osobny poziom Android Wstecz.
+ bridge?.onPreviewOpen?.();
  host.querySelector('.manu-lightbox-close')?.focus();
  await hydrate(host);
 }
@@ -144,7 +146,9 @@ function handleAction(b){
  if(action==='gallery-add')showAdd(projectId);
  else if(action==='gallery-edit')showEdit(projectId,photoId);
  else if(action==='gallery-preview')void showPreview(projectId,photoId);
- else if(action==='gallery-close')closePreview();
+ else if(action==='gallery-close'){
+  if(!bridge?.onPreviewClose?.())closePreview();
+ }
  else if(action==='gallery-return')bridge.projectDetail(projectId);
  else if(action==='gallery-open-project')bridge.projectDetail(projectId);
  else if(action==='gallery-delete')void removePhoto(projectId,photoId);
