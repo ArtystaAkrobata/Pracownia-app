@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.28.1';
+const APP_VERSION='3.28.2';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -141,6 +141,7 @@ const blank=()=>({version:18,projects:[],clients:[],tasks:[],reminders:[],smartA
 let state=blank(),view='home',filter='all',search='',clientSearch='',taskFilter='open',installEvent=null,isDemo=false;
 let demoSession=null;
 let pwaRegistration=null,pwaUpdateReady=false,pwaHadController=false;
+let pwaActivationRequested=false,pwaObservedRegistration=null;
 let offlineAuditMessage='Gotowość offline nie została jeszcze sprawdzona na tym urządzeniu.';
 // Listy pokazują po 40 rekordów; wyszukiwanie działa na pełnej bazie.
 const LIST_BATCH_SIZE=40;
@@ -1426,7 +1427,7 @@ function pwaSettingsMarkup(){
  <div class="settings-actions manu-pwa-actions">
  ${!standalone&&installEvent?`<button type="button" class="btn" data-action="install">${icon('plus')} Zainstaluj MANU</button>`:''}
  <button type="button" class="btn secondary" data-action="pwa-check-update">${icon('info')} Sprawdź aktualizacje</button>
- <button type="button" class="btn" data-action="pwa-reload" ${navigator.onLine===false?'disabled':''}>${icon('check')} Wczytaj aktualną wersję</button>
+ <button type="button" class="btn" data-action="pwa-reload" ${navigator.onLine===false&&!pwaUpdateReady?'disabled':''}>${icon('check')} Wczytaj aktualną wersję</button>
  </div>`;
 }
 function refreshPwaPanel(){
@@ -1453,13 +1454,17 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.28.1',
-  './gallery.js?v=3.28.1','./templates.js?v=3.28.1'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.28.2',
+  './gallery.js?v=3.28.2','./templates.js?v=3.28.2'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
   if(!registration?.active){
    report('MANU nie ma jeszcze aktywnej obsługi offline. Uruchom aplikację przy połączeniu z internetem i spróbuj ponownie.');
+   return;
+  }
+  if(registration.waiting&&navigator.serviceWorker.controller){
+   report('Pobrano nową wersję MANU, ale czeka na zatwierdzenie. Wybierz „Wczytaj aktualną wersję”, a następnie powtórz kontrolę offline.');
    return;
   }
   const key='manu-app-v'+APP_VERSION,keys=await caches.keys();
@@ -1484,8 +1489,10 @@ async function checkPwaUpdate(){
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
   if(!registration){toast('Aplikacja offline nie została jeszcze zarejestrowana. Odśwież MANU i spróbuj ponownie.');return;}
+  watchPwaRegistration(registration);
   await registration.update();
-  toast(pwaUpdateReady?'Nowa wersja MANU jest gotowa do odświeżenia.':'Sprawdzono aktualizacje. Jeśli nowa wersja zostanie przygotowana, MANU wyświetli komunikat.');
+  if(registration.waiting&&navigator.serviceWorker.controller)pwaUpdateReady=true;
+  toast(pwaUpdateReady?'Nowa wersja MANU została pobrana. Zakończ pracę i wybierz „Wczytaj aktualną wersję”.':'Sprawdzono aktualizacje. Jeśli nowa wersja zostanie przygotowana, MANU wyświetli komunikat.');
   refreshPwaPanel();
  }catch(e){console.warn('Sprawdzanie aktualizacji MANU:',e);toast('Nie udało się sprawdzić aktualizacji. Spróbuj ponownie przy połączeniu z internetem.');}
 }
