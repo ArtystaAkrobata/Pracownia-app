@@ -25,16 +25,27 @@ const inAppScope=url=>{
 };
 
 self.addEventListener('install',event=>{
- event.waitUntil(caches.open(CACHE_NAME).then(async cache=>{
-  // Błąd choć jednego pliku krytycznego wstrzymuje instalację NOWEJ wersji.
-  // Poprzednia działająca aplikacja pozostaje bez zmian.
-  await cache.addAll(CORE_SHELL);
-  await Promise.allSettled(OPTIONAL_SHELL.map(path=>cache.add(path)));
- }).then(()=>{
-  // Pierwsza instalacja: przejmij aplikację. Aktualizacja: czekaj na
-  // świadomą zgodę — nie mieszaj starego HTML z nowym JavaScriptem.
-  if(!self.registration.active)return self.skipWaiting();
- }));
+ event.waitUntil((async()=>{
+  try{
+   const cache=await caches.open(CACHE_NAME);
+   // Omiń pośrednią pamięć HTTP — GitHub Pages może jeszcze serwować
+   // HTML z poprzedniej wersji. Najpierw zapisz spójny zestaw plików.
+   const requests=CORE_SHELL.map(path=>
+    new Request(new URL(path,self.registration.scope),{cache:'reload'})
+   );
+   await cache.addAll(requests);
+   const response=await cache.match('./index.html');
+   if(!response||(await response.text()).includes('app.js?v=3.28.2')===false)
+    throw Error('MANU: HTML nie odpowiada wersji 3.28.2. Zachowano poprzednią aplikację.');
+   await Promise.allSettled(OPTIONAL_SHELL.map(path=>cache.add(path)));
+   // Pierwsza instalacja przejmuje kontrolę, aktualizacja czeka na zgodę.
+   if(!self.registration.active)await self.skipWaiting();
+  }catch(e){
+   // Nie zostawiaj częściowo zainstalowanego cache nowej wersji.
+   await caches.delete(CACHE_NAME);
+   throw e;
+  }
+ })());
 });
 
 self.addEventListener('message',event=>{
