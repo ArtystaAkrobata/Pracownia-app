@@ -1615,7 +1615,13 @@ function modal(title,body,options={}){
  // Podgląd i edycja wyceny mają osobny mechanizm powrotu.
  const quoteOwnReturn=!!quoteModalReturn&&(
   !!previous?.querySelector?.('[data-quote-preview]')||!!previous?.querySelector?.('#quote-form'));
- if(!detail&&previous&&previousOverlay&&(previousIsDetail||paper)&&!quoteOwnReturn){
+ // Przechodząc między kartami szczegółów (projekt → klient, klient → projekt,
+ // projekt → podgląd wyceny) zachowaj również poprzednią kartę.
+ // Odświeżenie TEJ SAMEJ karty projektu po zmianie danych nie jest nową stroną.
+ const refreshSameProjectCard=detail&&previousIsDetail&&previousProjectId&&
+  options.projectId===previousProjectId&&body.includes('class="manu-detail-fold"');
+ if(previous&&previousOverlay&&(previousIsDetail||paper)&&!quoteOwnReturn&&
+    (!detail||!refreshSameProjectCard)){
   if(modalReturnStack.length>=MODAL_RETURN_LIMIT)modalReturnStack.shift();
   modalReturnStack.push({
    overlay:previousOverlay,scrollTop:previous.scrollTop,
