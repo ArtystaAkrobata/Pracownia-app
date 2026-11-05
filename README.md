@@ -1,6 +1,21 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.5 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.5 — Uniwersalne podpowiedzi dla twórców różnych branż
+
+- Zmieniono teksty przykładowe w formularzach: nowy projekt i warsztat, nowy wydatek, nowy etap, czas pracy i opis sesji, zadania, przypomnienia, wyceny/oferty, materiały warsztatu, galeria zdjęć, szablony. Są teraz zrozumiałe niezależnie od branży twórcy.
+- Kluczowa podpowiedź **Nazwa projektu** jest zależna od wybranego typu: „Np. Projekt na zamówienie, realizacja” lub „Np. Warsztaty tematyczne”. Dotyczy zarówno otwarcia formularza, jak i przełączania Zlecenie ↔ Warsztat.
+- Usunięto specjalistyczne przykłady związane z lustrami, grawerem, kaligrafią, muralami i stolarką z podpowiedzi i fikcyjnej bazy demonstracyjnej. Przykładowe projekty demo: „Projekt dla klienta (demo)” i „Warsztaty tematyczne (demo)”.
+- Własne dane, istniejące nazwy projektów, kwoty, zapisane szablony i starsze kopie JSON pozostają bez zmian. Wbudowane nazwy **nowych, domyślnych etapów zlecenia** ujednolicono: Ustalenia i plan, Przygotowanie, Realizacja, Kontrola i poprawki, Przekazanie i rozliczenie.
+- Bez zmian schematu danych `version:18`, zachowania formularzy i nawigacji. Zaktualizowano `app.js`, `templates.js`, `gallery.js` oraz wersje pobierania wszystkich tych plików i cache offline `manu-app-v3.27.5`. Kod zabezpieczono gałęzią `backup-manu-v3-27-4-before-neutral-examples`.
+
+### Krótki test na telefonie
+1. **Projekty → Dodaj projekt**: pole „Nazwa” ma podpowiedź „Np. Projekt na zamówienie, realizacja”; po zmianie rodzaju na Warsztat ma się pojawić „Np. Warsztaty tematyczne”, a po powrocie — podpowiedź zlecenia.
+2. Z karty projektu sprawdź **Zadania projektu → Dodaj zadanie**, **Etapy i czas pracy → Dodaj etap** i **Finanse i koszty → Dodaj wydatek**: brak tekstów o grawerowaniu czy lustrach.
+3. Na warsztacie sprawdź **Lista materiałów i przygotowań → Dodaj materiał**; podpowiedź uwzględnia materiały, sprzęt lub link do zajęć.
+4. Otwórz **Wyceny → Nowa wycena**, **Galeria → Dodaj zdjęcie**, **Szablony → edytuj szablon** i oceń neutralność przykładów.
+5. Wejdź w **Ustawienia → Testowanie aplikacji → Uruchom bezpieczny tryb demo**: przykładowe projekty i dokumenty nie odnoszą się do jednej branży.
 
 ## MANU 3.27.4 — Systemowy Wstecz z „Nowy klient” i innych formularzy
 
