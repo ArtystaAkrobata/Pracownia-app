@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.28.0';
+const APP_VERSION='3.28.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -2382,6 +2382,15 @@ async function shareManuTesterText(kind){
 
 function validateBackup(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('To nie jest kopia danych MANU');
+ // Nie obcinamy po cichu nieograniczonych list w przywracanym pliku.
+ const checkList=(list,max,label)=>{
+  if(list==null)return [];
+  if(!Array.isArray(list)||list.length>max)
+   throw Error('Nieprawidłowa lub zbyt długa lista: '+label+' (maks. '+max+').');
+  return list;
+ };
+ if(raw.lastSaved!=null&&!validTime(raw.lastSaved))
+  throw Error('Nieprawidłowa data ostatniego zapisu w kopii.');
  if(!Array.isArray(raw.projects)||!Array.isArray(raw.tasks))throw Error('Brakuje listy projektów lub zadań');
  if(raw.reminders!=null&&(!Array.isArray(raw.reminders)||raw.reminders.length>3000||raw.reminders.some(r=>!r||typeof r!=='object'||typeof r.title!=='string'||!validDate(r.date))))throw Error('Nieprawidłowa lista przypomnień');
  if(raw.smartAlerts!=null&&(!raw.smartAlerts||typeof raw.smartAlerts!=='object'||Array.isArray(raw.smartAlerts)||(raw.smartAlerts.snoozed!=null&&(!raw.smartAlerts.snoozed||typeof raw.smartAlerts.snoozed!=='object'||Array.isArray(raw.smartAlerts.snoozed)||Object.keys(raw.smartAlerts.snoozed).length>400))))throw Error('Nieprawidłowe ustawienia inteligentnych przypomnień');
@@ -2394,7 +2403,20 @@ function validateBackup(raw){
   if(!p||typeof p!=='object'||Array.isArray(p)||typeof p.title!=='string')throw Error('Nieprawidłowy rekord projektu');
   if(p.expenses!=null&&(!Array.isArray(p.expenses)||p.expenses.some(e=>!e||typeof e!=='object'||Array.isArray(e))))throw Error('Nieprawidłowa lista kosztów');
   if(p.photos!=null&&(!Array.isArray(p.photos)||p.photos.length>50||p.photos.some(photo=>!photo||typeof photo!=='object'||Array.isArray(photo)||typeof photo.path!=='string'||! /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\.jpg$/.test(photo.path))))throw Error('Nieprawidłowa galeria projektu');
-  if(p.participants!=null&&(!Array.isArray(p.participants)||p.participants.some(a=>!a||typeof a!=='object'||Array.isArray(a))))throw Error('Nieprawidłowa lista uczestników');
+  checkList(p.expenses,5000,'koszty projektu');
+  checkList(p.stages,40,'etapy projektu');
+  checkList(p.workLog,2500,'sesje pracy projektu');
+  checkList(p.activityLog,200,'historia projektu');
+  checkList(p.workshopMaterials,150,'materiały przygotowań');
+  const payments=checkList(p.payments,3000,'wpłaty projektu');
+  if(payments.some(x=>!x||typeof x!=='object'||Array.isArray(x)))throw Error('Nieprawidłowe wpłaty projektu');
+  const people=checkList(p.participants,5000,'uczestnicy projektu');
+  if(people.some(a=>!a||typeof a!=='object'||Array.isArray(a)))throw Error('Nieprawidłowa lista uczestników');
+  for(const person of people){
+   const records=checkList(person.payments,3000,'wpłaty uczestnika');
+   if(records.some(x=>!x||typeof x!=='object'||Array.isArray(x)))
+    throw Error('Nieprawidłowa lista wpłat uczestnika');
+  }
  }
  for(const t of raw.tasks)if(!t||typeof t!=='object'||Array.isArray(t)||typeof t.title!=='string')throw Error('Nieprawidłowy rekord zadania');
  return normalize(raw);
@@ -2453,13 +2475,20 @@ async function applyBackup(){
  const counts=backupSummary(data.snapshot);
  const message='Zastąpić wszystkie obecne projekty i zadania danymi z kopii ('+counts.projects+' projektów, '+counts.tasks+' zadań)?\nZalecane: najpierw pobierz kopię obecnych danych.';
  if(!confirm(message))return;
+ if(window.MANUCloud?.isBusy?.()){
+  alert('Trwa operacja chmury. Zakończ synchronizację przed przywróceniem kopii.');
+  return;
+ }
  backupApplying=true;
  try{
   const restored=structuredClone(data.snapshot),ok=await save(restored,true);
   if(!ok){alert('Nie udało się zapisać przywracanych danych. Obecny stan pozostawiono bez zmian.');return}
   state=restored;
   pendingBackup=null;
-  closeModal();render();toast('Przywrócono dane i zapisano je na urządzeniu.');
+  // Przywrócenie kopii lokalnej nie zezwala automatycznie na nadpisanie chmury.
+  window.MANUCloud?.localRestored?.();
+  closeModal();render();
+  toast('Przywrócono dane na urządzeniu. Przed synchronizacją wybierz, którą kopię zachować.');
  }finally{backupApplying=false}
 }
 function afterDataChange(msg,detailId){
