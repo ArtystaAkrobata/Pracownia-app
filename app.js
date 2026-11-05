@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.3';
+const APP_VERSION='3.27.4';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1625,9 +1625,10 @@ function modal(title,body,options={}){
  }
  if(quoteOwnReturn&&previous?.querySelector?.('[data-quote-preview]')&&!manuQuoteFormHistoryActive)
   manuQuoteFormHistoryActive=armManuNestedModalHistory();
- // Karta projektu dostaje własny wpis historii od razu przy otwarciu.
- // Systemowy Wstecz zużyje ten wpis, nie wpis przejścia Start → Projekty.
- if(detail&&!previous)armManuProjectModalHistory();
+ // Wszystkie samodzielne okna dostają własny wpis historii Androida.
+ // Dotyczy też Nowy klient, Nowa wycena, nowe zadanie i przypomnienie.
+ // Dzięki temu Wstecz z formularza nie zużywa historii strony pod spodem.
+ if(!previous)armManuProjectModalHistory();
  if(!detail&&previousIsDetail&&previousProjectId){
   detailReturnScroll={
    projectId:previousProjectId,top:previous.scrollTop,pageX:window.scrollX,pageY:window.scrollY
@@ -1668,7 +1669,8 @@ function dismissCurrentModal(){
  if(manuBackGuardReady&&window.history?.back){
   if(manuQuoteFormHistoryActive&&$('#quote-form')&&window.history.state?.manuNestedModal===1){window.history.back();return}
   if(modalReturnStack.length&&manuNestedModalHistoryDepth>0&&window.history.state?.manuNestedModal===1){window.history.back();return}
-  if(current.classList.contains('notebook-detail-page')&&manuProjectModalHistoryActive){
+  // X używa tej samej historii co fizyczny Wstecz także z formularzy.
+  if(manuProjectModalHistoryActive&&!modalReturnStack.length){
    window.history.go(manuProjectSectionHistoryActive?-2:-1);return;
   }
  }
@@ -2534,6 +2536,7 @@ function armManuProjectModalHistory(){
  }
 }
 function releaseManuProjectModalHistory(){
+ // Nazwa historyczna: wpis obecnie dotyczy każdego samodzielnego okna.
  if(!manuProjectModalHistoryActive)return;
  manuProjectModalHistoryActive=false;
  // Zamknięcie przez X nie wykonuje wstecz. Zamieniamy zajmowany wpis
@@ -2878,7 +2881,10 @@ case 'pwa-reload':{
  if(confirm('Odświeżyć MANU i wczytać aktualną wersję? Upewnij się, że wszystkie formularze są zapisane.'))window.location.reload();
  break;
 }}}
-async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');clientDetail(client.id);break;}case 'quote-form':{
+async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');
+ if(manuPendingHistoryTrim)manuPendingHistoryTrim.after=()=>clientDetail(client.id);
+ else clientDetail(client.id);
+ break;}case 'quote-form':{
  if(quoteSubmissionPending)return;
  const quoteId=String(form.dataset.quote||''),existing=(state.quotes||[]).find(q=>q.id===quoteId);
  if(quoteId&&!existing){alert('Ta wycena nie istnieje już w pamięci MANU. Skopiuj treść formularza przed zamknięciem.');return;}
@@ -2923,7 +2929,10 @@ async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id
  }
  const scrollY=window.scrollY;
  closeModal();view='quotes';render();window.scrollTo(0,scrollY);
- quotePreview(quote.id);toast(existing?'Zapisano zmiany wyceny':'Zapisano nową wycenę');
+ // Tworzenie podglądu dopiero po cofnięciu wpisu formularza.
+ const openSavedQuote=()=>{quotePreview(quote.id);toast(existing?'Zapisano zmiany wyceny':'Zapisano nową wycenę')};
+ if(manuPendingHistoryTrim)manuPendingHistoryTrim.after=openSavedQuote;
+ else openSavedQuote();
  break;
 }case 'project-form':{const templateId=String(form.dataset.template||'');const selectedTemplate=templateId?window.MANUTemplates?.findTemplate?.(templateId):null;const title=String(data.get('title')||'').trim();if(!title){alert('Podaj nazwę projektu');return;}const existing=state.projects.find(p=>p.id===id);const previousStatus=existing?.status;
  if(!existing&&state.projects.length>=10000){alert('Osiągnięto limit 10 000 projektów MANU. Zrób kopię danych i uporządkuj archiwum.');return;}
