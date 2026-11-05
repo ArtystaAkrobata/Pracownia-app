@@ -2560,7 +2560,7 @@ function onManuBack(event){
  if(!manuBackGuardReady)return;
  if(manuPendingHistoryTrim){
   const after=manuPendingHistoryTrim.after;manuPendingHistoryTrim=null;
-  if(typeof after==='function')after();return;
+  if(typeof after==='function')window.setTimeout?.(after,0);return;
  }
  manuHandlingPopState=true;
  try{
@@ -2617,7 +2617,7 @@ function initManuBackGuard(){
   // Przestarzały manuBackGuard w odtworzonej sesji nie dowodzi istnienia
   // rzeczywistego poprzedniego wpisu w historii przeglądarki.
   const existing=window.history.state&&typeof window.history.state==='object'?window.history.state:{};
-  const {manuBackGuard:oldGuard,manuBackRoot:oldRoot,...other}=existing;
+  const {manuBackGuard:oldGuard,manuBackRoot:oldRoot,manuProjectModal:oldModal,manuProjectSection:oldSection,manuNestedModal:oldNested,...other}=existing;
   window.history.replaceState({...other,manuBackRoot:1},'');
   if(!armManuBackGuard())return;
   manuBackGuardReady=true;
