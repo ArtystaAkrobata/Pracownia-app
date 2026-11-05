@@ -1638,7 +1638,10 @@ function modal(title,body,options={}){
  const pageLabel=detail?'MANU · KARTA REALIZACJI':'MANU · KARTA PRACY';
  $('#modal-root').innerHTML=`<div class="modal-overlay ${paper?'paper-overlay':''}" data-action="close-overlay"><div class="modal ${paper?'notebook-page':''} ${detail?'notebook-detail-page':''} ${right?'notebook-page--right':''}" role="dialog" aria-modal="true" aria-label="${htmlEscape(title)}">${paper&&!right?paperBinding:''}<div class="${paper?'paper-sheet':'modal-sheet'}"><div class="modal-header"><div class="modal-page-title">${paper?'<small class="paper-kicker">'+pageLabel+'</small>':''}<h2>${htmlEscape(title)}</h2></div><button type="button" class="close" data-action="close" aria-label="Zamknij okno">×</button></div><div class="modal-body">${body}</div></div>${paper&&right?paperBinding:''}</div></div>`;
  const next=$('.modal');
- if(detail&&detailReturnScroll?.projectId===options.projectId&&next){
+ // Szczegóły klienta i wyceny nie muszą mieć projectId: nie porównuj
+ // undefined z undefined, bo oznaczałoby fałszywe przywrócenie scrolla.
+ if(detail&&detailReturnScroll&&options.projectId&&
+    detailReturnScroll.projectId===options.projectId&&next){
   next.classList.add('notebook-refresh');
   next.scrollTop=detailReturnScroll.top;
   const {pageX,pageY}=detailReturnScroll;
