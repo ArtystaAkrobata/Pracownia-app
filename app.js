@@ -212,6 +212,8 @@ function writeLocalSnapshot(snapshot,keepPrevious){
 function save(candidate=state,force=false){
  // Tryb demonstracyjny pracuje tylko w RAM: żadnych zapisów ani synchronizacji.
  if(demoSession)return Promise.resolve(true);
+ // Podczas przywracania wolno wykonać tylko kontrolowany zapis odzyskiwanej kopii.
+ if(backupApplying&&!force)return Promise.resolve(false);
  if(storageBlocked&&!force){saveStatus='error';updateSaveIndicator();toast('Zapis wstrzymany. Otwórz Ustawienia i sprawdź dane.');return Promise.resolve(false)}
  const snapshot=structuredClone(candidate);
  snapshot.lastSaved=now();
@@ -3296,7 +3298,8 @@ async function init(){
   isDemo:()=>!!demoSession,
   waitForWrites:()=>writeQueue,
   isStorageBlocked:()=>storageBlocked,
-  canReplace:()=>!demoSession&&!storageBlocked&&!document.querySelector('.modal, .cloud-password-details[open], #cloud-reset-password-form'),
+  isBackupApplying:()=>backupApplying,
+  canReplace:()=>!demoSession&&!storageBlocked&&!backupApplying&&!document.querySelector('.modal, .cloud-password-details[open], #cloud-reset-password-form'),
   refresh:()=>{if(view==='settings')render();},
   refreshHome:()=>{if(view==='home')render();},
   openSettings:()=>{view='settings';render();window.scrollTo(0,0);},
