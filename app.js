@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.27.5';
+const APP_VERSION='3.28.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -2458,7 +2458,12 @@ async function applyBackup(){
 }
 function afterDataChange(msg,detailId){
  // Aktualizuj kalendarz w miejscu: bez animacji kartki i bez przewijania na górę.
- if(view==='calendar'&&!detailId){save();refreshCalendarPanel();if(msg)toast(msg);return}
+ if(view==='calendar'&&!detailId){
+  const persisted=save();
+  refreshCalendarPanel();
+  if(msg)void persisted.then(ok=>{if(ok)toast(msg)});
+  return;
+ }
  // Aktualizacja etapów odświeża całą kartę projektu. Nie może jednak
  // przenosić czytelnika na początek strony ani restartować animacji kartki.
  const before=$('.modal');
@@ -2467,7 +2472,7 @@ function afterDataChange(msg,detailId){
  const oldPageX=window.scrollX,oldPageY=window.scrollY;
  const active=preserve?document.activeElement:null;
  const control=active?.dataset?.action?{...active.dataset}:null;
- save();
+ const persisted=save();
  render();
  if(detailId){
   projectDetail(detailId);
@@ -2491,7 +2496,8 @@ function afterDataChange(msg,detailId){
  if(window.scrollY!==oldPageY||window.scrollX!==oldPageX){
   window.scrollTo(oldPageX,oldPageY);
  }
- if(msg)toast(msg);
+ // Potwierdzamy udany zapis dopiero po zatwierdzeniu go przez pamięć.
+ if(msg)void persisted.then(ok=>{if(ok)toast(msg)});
 }
 
 /* MANU 13.6 — gest Wstecz na Androidzie, bez przeładowania SPA i bez zmian bazy. */
@@ -2591,10 +2597,9 @@ function onManuBack(event){
   // Zdjęcie jest najwyższą warstwą: Wstecz zamyka tylko podgląd, nie kartę.
   if(manuGalleryPreviewHistoryActive){
    manuGalleryPreviewHistoryActive=false;
-   if(window.MANUGallery?.isPreviewOpen?.()){
-    window.MANUGallery.closePreview();
-    return;
-   }
+   // Nawet gdy zdjęcie zamknięto wcześniej, zużyj tylko wpis podglądu.
+   if(window.MANUGallery?.isPreviewOpen?.())window.MANUGallery.closePreview();
+   return;
   }
   if(manuQuoteFormHistoryActive&&$('#quote-form')){
    manuQuoteFormHistoryActive=false;
@@ -3089,7 +3094,11 @@ function events(){
  const fold=e.target.closest?.('details.manu-detail-fold');
  if(fold&&e.target.closest('summary')===fold.querySelector('summary')&&!fold.open&&
     $('.modal')?.classList.contains('notebook-detail-page'))armManuProjectSectionHistory();
- const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){window.MANUGallery.closePreview();return;}if(e.key==='Escape'&&$('.modal'))dismissCurrentModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
+ const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='close-overlay'&&e.target!==b)return;if(b.classList?.contains('manu-lightbox-backdrop')&&e.target!==b)return;handleAction(b)});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&window.MANUGallery?.isPreviewOpen?.()){
+   e.preventDefault();
+   if(!requestManuGalleryPreviewClose())window.MANUGallery.closePreview();
+   return;
+  }if(e.key==='Escape'&&$('.modal'))dismissCurrentModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('[role="button"][data-action]')){e.preventDefault();handleAction(e.target)}});document.addEventListener('submit',e=>{if(e.target.id==='template-form'){e.preventDefault();window.MANUTemplates?.submit?.(e.target);return;}if(e.target.id==='gallery-photo-form'||e.target.id==='gallery-edit-form'){e.preventDefault();void window.MANUGallery?.submit?.(e.target);return;}if(!['project-form','expense-form','participant-form','task-form','stage-form','work-entry-form','work-note-form','payment-form','workshop-material-form','reminder-form','quote-form','client-form'].includes(e.target.id))return;e.preventDefault();handleSubmit(e.target)});document.addEventListener('input',e=>{if(e.target.closest?.('#project-form'))scheduleProjectDraft();if(e.target.classList?.contains('manu-form-invalid')&&e.target.validity?.valid)e.target.classList.remove('manu-form-invalid');if(e.target.id==='template-search'){window.MANUTemplates?.searchChanged?.(e.target.value);return;}if(e.target.closest?.('#quote-form')&&(e.target.matches('input')||e.target.matches('textarea')))refreshQuoteTotal();if(e.target.id==='client-search'){clientSearch=e.target.value;listVisible.clients=LIST_BATCH_SIZE;const list=$('#client-list');if(list)list.innerHTML=renderClientList();}if(e.target.id==='search-projects'){search=e.target.value;listVisible.projects=LIST_BATCH_SIZE;let list=$('#project-list');if(list)list.innerHTML=renderProjectGrid()}if(e.target.closest?.('#project-form .travel-fields'))syncTravelFields();if(e.target.closest?.('#project-form')&&e.target.matches?.('input[name="capacity"],input[name="participantFee"]'))syncWorkshopPotential()});document.addEventListener('change',e=>{
  if(e.target.id==='payment-control-filter'){
   paymentControlFilter=['all','late','soon','none'].includes(e.target.value)?e.target.value:'all';
   paymentControlVisible=12;
@@ -3225,7 +3234,9 @@ async function init(){
   closeModal:()=>dismissCurrentModal(),
   goProjects:()=>{view='projects';window.scrollTo(0,0);render();},
   openProjectFromTemplate:id=>projectForm(null,'',id),
-  afterChange:message=>afterDataChange(message)
+  afterChange:message=>afterDataChange(message),
+  save:()=>save(),
+  afterSaved:message=>{render();if(message)toast(message)}
  });
  window.MANUGallery?.init?.({
   getState:()=>state,
