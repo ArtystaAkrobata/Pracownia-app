@@ -151,7 +151,7 @@ function card(t,preset){
 }
 function expenseRow(e={}){
  return '<div class="template-cost-row" data-template-cost>'+
-  '<div class="field"><label>Pozycja</label><input name="cost_title" maxlength="110" value="'+escape(e.title||'')+'" placeholder="Np. Materiały"></div>'+
+  '<div class="field"><label>Pozycja</label><input name="cost_title" maxlength="110" value="'+escape(e.title||'')+'" placeholder="Np. Zakup materiałów"></div>'+
   '<div class="field"><label>Kwota (zł)</label><input name="cost_amount" type="number" min="0" step="0.01" max="100000000" value="'+money(e.amount||0)+'"></div>'+
   '<div class="field"><label>Kategoria</label><select name="cost_category">'+choices.map(x=>
   '<option value="'+x+'" '+(category(e.category)===x?'selected':'')+'>'+label(x)+'</option>').join('')+'</select></div>'+
@@ -199,7 +199,7 @@ function editor(t=null,sourceProject=''){
  '<textarea name="tasks" rows="5" maxlength="9000" placeholder="Zamówić materiały&#10;Potwierdzić termin&#10;Przygotować miejsce">'+escape((item.tasks||[]).join('\n'))+'</textarea>'+
  '<p class="muted tiny">Po utworzeniu projektu zadania pojawią się na liście Zadania, bez dat i z oznaczeniem „Do zrobienia”.</p></div>'+
  '<div class="field"><label>Lista materiałów / przygotowań (po jednej pozycji w wierszu)</label>'+
- '<textarea name="materials" rows="5" maxlength="9000" placeholder="Papier | 12&#10;Atrament | 2&#10;Narzędzia | 1">'+
+ '<textarea name="materials" rows="5" maxlength="9000" placeholder="Materiały | 12&#10;Sprzęt | 2&#10;Instrukcje | 1">'+
  escape((item.materials||[]).map(x=>x.title+' | '+x.quantity).join('\n'))+'</textarea>'+
  '<p class="muted tiny">Format: Nazwa | Ilość. Bez liczby MANU przyjmie 1. Ta lista nie tworzy wydatków i nie zwiększa kosztów.</p></div>'+
  '<div class="field"><label>Etapy realizacji (po jednym w wierszu)</label>'+
