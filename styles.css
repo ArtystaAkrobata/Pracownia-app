@@ -3865,3 +3865,37 @@ html[data-manu-text="large"] .manu-quick-button{font-size:14px;line-height:1.45}
 .manu-tester-steps{margin:12px 0 14px;padding-left:23px;display:grid;gap:8px}
 .manu-tester-steps li{font-size:13px;line-height:1.55;padding-left:2px}
 .manu-tester-actions{margin-top:12px}
+
+
+/* MANU 3.28.3 · Etap 17.4 — dopracowanie czytelności wycen i PDF.
+   Nie zmieniamy składu notesu ani wyglądu zapisanych projektów. */
+.quote-doc-header,.quote-doc-identity,.quote-doc-brand,
+.quote-doc-parties>div,.quote-doc-meta>div{min-width:0}
+.quote-doc-identity>span,.quote-doc-identity>strong,
+.quote-doc-meta b,.quote-doc-parties b{
+ overflow-wrap:anywhere;
+}
+.quote-doc-table th,.quote-doc-table td{
+ overflow-wrap:anywhere;
+}
+.quote-doc-table td:nth-child(n+3){
+ font-variant-numeric:tabular-nums;
+}
+@media(max-width:690px){
+ .quote-preview-paper{
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+ }
+ .quote-preview-actions .btn{max-width:100%}
+}
+@media print{
+ html{color-scheme:light!important}
+ #quote-print-root .quote-doc-brand,
+ #quote-print-root .quote-doc-identity,
+ #quote-print-root .quote-doc-parties>div{min-width:0;max-width:100%}
+ #quote-print-root .quote-doc-table th,
+ #quote-print-root .quote-doc-table td{overflow-wrap:anywhere;word-break:normal}
+ #quote-print-root .quote-doc-table td:nth-child(n+3){
+  font-variant-numeric:tabular-nums;
+ }
+}
