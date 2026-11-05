@@ -1,6 +1,23 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.2 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.3 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.3 — Audyt cofania ze wszystkich sekcji
+
+- Zweryfikowano siedem rozwijanych sekcji karty projektu: Etapy i czas pracy, Zadania projektu, Uczestnicy i wpłaty (warsztaty), Materiały i przygotowania, Finanse i koszty, Galeria i notatki oraz Dodatkowe działania. Po rozwinięciu sekcji systemowy Wstecz powinien wracać do tej samej karty projektu (zwijając sekcje), nie do listy; kolejny Wstecz wraca do listy.
+- Zweryfikowano cofanie z formularzy: etap, czas pracy, opis, zadanie, materiał, koszt, wpłata, uczestnik, szablon, edycja projektu. X i fizyczny Wstecz wracają do rodzica z zachowanym przewinięciem i otwartymi sekcjami.
+- **Naprawa galerii**: otwarcie podglądu zdjęcia tworzy osobny krok historii Androida. Fizyczny Wstecz lub X zamykają najpierw samo zdjęcie, pozostawiając otwartą kartę projektu i sekcję Galeria. Prawidłowe działanie obejmuje również podgląd z osobnej kartki Galeria.
+- **Naprawa szablonów**: przycisk Anuluj w formularzu szablonu otwartym z projektu używa tego samego cofnięcia co X, zamiast bezwarunkowo zamknąć cały projekt. Po zapisie szablonu zachowuje się nawigacja do nadrzędnej karty.
+- Testy regresji w symulowanej historii przeglądarki: **38/38** przypadków zaliczonych, w tym sekwencje X i systemowego Wstecz, wiele kolejnych otwarć formularzy, wielopoziomowe przejście projekt → klient → edycja oraz podgląd zdjęcia. Testy nie zastępują sprawdzenia fizycznego telefonu.
+- Dane w IndexedDB i Supabase nie były zmieniane; nie podniesiono wersji schematu `version:18`. PWA: `manu-app-v3.27.3`; wymuszono nowy adres pobierania `gallery.js?v=3.27.3`, także do cache offline.
+- Backup kodu przed audytem: `backup-manu-v3-27-2-before-full-navigation-audit`.
+
+### Krótki test na Androidzie
+1. **Projekty → Stół dębowy → Etapy i czas pracy**. Rozwiń sekcję; systemowy Wstecz powinien zwinąć ją bez wychodzenia z karty. Kolejne Wstecz wraca do rejestru.
+2. Wejdź ponownie, rozwiń **Materiały i przygotowania**, wybierz **Dodaj pozycję** i naciśnij fizyczny Wstecz. Wróć dokładnie do rozwiniętej sekcji i przewinięcia. Powtórz z X.
+3. Sprawdź **Zadania projektu → Dodaj zadanie**, **Finanse i koszty → Dodaj koszt**, a w warsztacie **Uczestnicy i wpłaty → Dodaj osobę**.
+4. Jeżeli masz zdjęcia w galerii, otwórz podgląd i zamknij go fizycznym Wstecz, a potem powtórz przyciskiem X — karta projektu ma pozostać.
+5. Sprawdź **Dodatkowe działania → Zapisz jako szablon → Anuluj**. Powrót powinien odsłonić wybraną kartę projektu, nie listę.
 
 ## MANU 3.27.2 — Android Wstecz w sekcjach i formularzach projektu
 
