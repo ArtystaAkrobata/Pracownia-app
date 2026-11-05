@@ -1607,7 +1607,7 @@ function modal(title,body,options={}){
    :'';
  // Nie dopisuj starego formularza do stosu, gdy wracasz do bieżącego projektu
  // przez Wróć lub gdy po zapisaniu aktualizujemy jego kartę.
- if(detail&&previous&&!previousIsDetail&&modalReturnStack.length){
+ if(detail&&previous&&!previousIsDetail&&modalReturnStack.length&&!manuHandlingPopState){
   const parentIndex=modalReturnStack.findLastIndex(item=>item.projectId===options.projectId);
   if(parentIndex>=0)modalReturnStack.splice(parentIndex);
   else modalReturnStack.length=0;
@@ -1621,7 +1621,7 @@ function modal(title,body,options={}){
  const refreshSameProjectCard=detail&&previousIsDetail&&previousProjectId&&
   options.projectId===previousProjectId&&body.includes('class="manu-detail-fold"');
  if(previous&&previousOverlay&&(previousIsDetail||paper)&&!quoteOwnReturn&&
-    (!detail||!refreshSameProjectCard)){
+    (!detail||(previousIsDetail&&!refreshSameProjectCard))){
   if(modalReturnStack.length>=MODAL_RETURN_LIMIT)modalReturnStack.shift();
   modalReturnStack.push({
    overlay:previousOverlay,scrollTop:previous.scrollTop,
