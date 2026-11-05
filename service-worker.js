@@ -38,7 +38,7 @@ self.addEventListener('install',event=>{
 });
 
 self.addEventListener('message',event=>{
- if(event.data?.type==='MANU_ACTIVATE_UPDATE'&&self.registration.waiting===self){
+ if(event.data?.type==='MANU_ACTIVATE_UPDATE'){
   event.waitUntil(self.skipWaiting());
  }
 });
