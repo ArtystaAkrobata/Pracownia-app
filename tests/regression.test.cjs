@@ -64,7 +64,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const expose = [
     'const __MANU_REAL_MODAL = modal, __MANU_REAL_CLOSE = closeModal;',
     'globalThis.__MANU_TEST = {',
-    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, compatPlatform, compatProbe, compatMarkup, compatPanel, compatRun, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1476,13 +1476,78 @@ test('MANU 3.29.0: przewodnik, zaproszenie i opinia obejmują Android i iOS',()=
 test('MANU 3.29.0: wersje ośmiu plików wymaganych do działania offline pozostają spójne',()=>{
  const index=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
  const worker=fs.readFileSync(path.join(ROOT,'service-worker.js'),'utf8');
- assert.match(appSource,/const APP_VERSION='3\.29\.0'/);
- assert.match(index,/app\.js\?v=3\.29\.0/);
- assert.match(index,/styles\.css\?v=3\.29\.0/);
- assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.0'/);
- assert.match(worker,/app\.js\?v=3\.29\.0/);
- assert.match(worker,/styles\.css\?v=3\.29\.0/);
- assert.match(appSource,/cloud\.js\?v=3\.29\.0/);
- assert.match(appSource,/gallery\.js\?v=3\.29\.0/);
- assert.match(appSource,/templates\.js\?v=3\.29\.0/);
+ assert.match(appSource,/const APP_VERSION='3\.29\.1'/);
+ assert.match(index,/app\.js\?v=3\.29\.1/);
+ assert.match(index,/styles\.css\?v=3\.29\.1/);
+ assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.1'/);
+ assert.match(worker,/app\.js\?v=3\.29\.1/);
+ assert.match(worker,/styles\.css\?v=3\.29\.1/);
+ assert.match(appSource,/cloud\.js\?v=3\.29\.1/);
+ assert.match(appSource,/gallery\.js\?v=3\.29\.1/);
+ assert.match(appSource,/templates\.js\?v=3\.29\.1/);
+});
+
+
+/* Etap 18.2 — diagnostyka nie zmienia danych ani pamięci. */
+test('MANU 3.29.1: iOS bez service worker nie udaje gotowości offline',async()=>{
+ const {api,context}=boot({version:18,projects:[job('x')],tasks:[]});
+ context.navigator.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)';
+ const before=JSON.stringify(api.getState());
+ const check=await api.compatProbe();
+ assert.equal(check.platform,'iOS / iPadOS');
+ assert.equal(check.rows.find(r=>r.name==='Pliki offline').detail,'Brak możliwości sprawdzenia');
+ assert.equal(check.rows.find(r=>r.name==='Drukowanie / PDF').detail,'Brak wykrytej funkcji drukowania');
+ assert.equal(JSON.stringify(api.getState()),before);
+});
+test('MANU 3.29.1: iPhone PWA rozpoznaje osiem plików bez modyfikacji cache',async()=>{
+ const {api,context}=boot();
+ context.navigator.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)';
+ context.window.matchMedia=()=>({matches:true});
+ context.window.indexedDB={};
+ context.window.print=()=>{};
+ context.navigator.serviceWorker={controller:{},getRegistration:async()=>({active:{}})};
+ context.navigator.storage={persisted:async()=>true};
+ let cacheOpens=0,cacheMatches=0;
+ context.window.caches={
+  keys:async()=>['manu-app-v3.29.1'],
+  open:async()=>{cacheOpens++;return {match:async()=>{cacheMatches++;return {ok:true}}};}
+ };
+ context.location.href='https://example.org/Pracownia-app/';
+ context.URL=URL;
+ const check=await api.compatProbe();
+ assert.equal(check.platform,'iOS / iPadOS');
+ assert.equal(check.rows.find(r=>r.name==='Uruchomienie').detail,'Z ekranu głównego (PWA)');
+ assert.equal(check.rows.find(r=>r.name==='Pliki offline').detail,'8/8 plików');
+ assert.equal(check.rows.find(r=>r.name==='Ochrona pamięci').detail,'Przyznana');
+ assert.equal(cacheOpens,1);
+ assert.equal(cacheMatches,8);
+});
+test('MANU 3.29.1: oczekująca aktualizacja nie jest uznana za gotową',async()=>{
+ const {api,context}=boot();
+ context.navigator.userAgent='Mozilla/5.0 (Linux; Android 16)';
+ let cacheReads=0;
+ context.navigator.serviceWorker={controller:{},getRegistration:async()=>({active:{},waiting:{}})};
+ context.window.caches={keys:async()=>{cacheReads++;return []}};
+ const check=await api.compatProbe();
+ assert.equal(check.platform,'Android');
+ assert.match(check.rows.find(r=>r.name==='Pliki offline').detail,/Aktualizacja czeka/);
+ assert.equal(cacheReads,0);
+});
+test('MANU 3.29.1: brak cache nie tworzy nowej pustej pamięci',async()=>{
+ const {api,context}=boot();
+ let cacheOpens=0;
+ context.navigator.serviceWorker={getRegistration:async()=>({active:{}})};
+ context.window.caches={keys:async()=>[],open:async()=>{cacheOpens++;return {}}};
+ const result=await api.compatProbe();
+ assert.match(result.rows.find(r=>r.name==='Pliki offline').detail,/Brak zestawu/);
+ assert.equal(cacheOpens,0);
+});
+test('MANU 3.29.1: kontrola jest ukryta w rozwijanej sekcji Ustawień',()=>{
+ const {api}=boot();
+ const settings=api.settingsPage();
+ assert.match(settings,/Kontrola zgodności urządzenia/);
+ assert.match(settings,/data-action="compat-check"/);
+ assert.match(api.compatPanel(),/manu-compat-result/);
+ const source=api.compatMarkup();
+ assert.match(source,/nie czyta projektów/);
 });

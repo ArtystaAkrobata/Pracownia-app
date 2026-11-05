@@ -1,14 +1,14 @@
-// MANU 3.29.0 — spójny zestaw plików i kontrolowane aktywowanie aktualizacji.
-const CACHE_NAME='manu-app-v3.29.0';
+// MANU 3.29.1 — spójny zestaw plików i kontrolowane aktywowanie aktualizacji.
+const CACHE_NAME='manu-app-v3.29.1';
 const CORE_SHELL=[
  './',
  './index.html',
- './styles.css?v=3.29.0',
- './app.js?v=3.29.0',
+ './styles.css?v=3.29.1',
+ './app.js?v=3.29.1',
  './cloud-config.js?v=3.13.0',
- './cloud.js?v=3.29.0',
- './gallery.js?v=3.29.0',
- './templates.js?v=3.29.0'
+ './cloud.js?v=3.29.1',
+ './gallery.js?v=3.29.1',
+ './templates.js?v=3.29.1'
 ];
 const OPTIONAL_SHELL=[
  './manifest.webmanifest',
@@ -35,8 +35,8 @@ self.addEventListener('install',event=>{
    );
    await cache.addAll(requests);
    const response=await cache.match('./index.html');
-   if(!response||(await response.text()).includes('app.js?v=3.29.0')===false)
-    throw Error('MANU: HTML nie odpowiada wersji 3.29.0. Zachowano poprzednią aplikację.');
+   if(!response||(await response.text()).includes('app.js?v=3.29.1')===false)
+    throw Error('MANU: HTML nie odpowiada wersji 3.29.1. Zachowano poprzednią aplikację.');
    await Promise.allSettled(OPTIONAL_SHELL.map(path=>cache.add(path)));
    // Pierwsza instalacja przejmuje kontrolę, aktualizacja czeka na zgodę.
    if(!self.registration.active)await self.skipWaiting();

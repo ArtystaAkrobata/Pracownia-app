@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.29.0';
+const APP_VERSION='3.29.1';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1419,6 +1419,81 @@ function tasksPage(){
  return `${returnToHomeButton('tasks')}${pageHeading('Zadania','Nie zapomnij o tym, co trzeba zrobić.',`<button class="btn" data-action="new-task">${icon('plus')}<span>Nowe zadanie</span></button>`)}<div class="surface"><div class="section-head"><h2>Lista zadań</h2><div class="filters"><button class="filter ${taskFilter==='open'?'active':''}" data-action="task-filter" data-filter="open">Do zrobienia</button><button class="filter ${taskFilter==='done'?'active':''}" data-action="task-filter" data-filter="done">Gotowe</button><button class="filter ${taskFilter==='all'?'active':''}" data-action="task-filter" data-filter="all">Wszystkie</button></div></div><div id="task-list">${renderTaskList()}</div></div>`;
 }
 
+
+/* Etap 18.2: odczytowa kontrola zgodności. Bez modyfikacji bazy i cache. */
+let compatReport=null,compatBusy=false;
+function compatPlatform(){
+ if(pwaIsAppleDevice())return 'iOS / iPadOS';
+ if(/Android/i.test(String(navigator.userAgent||'')))return 'Android';
+ return 'Inny system';
+}
+async function compatProbe(){
+ const rows=[];
+ const add=(name,detail)=>rows.push({name,detail});
+ add('Uruchomienie',pwaIsStandalone()?'Z ekranu głównego (PWA)':'W przeglądarce');
+ if(!('serviceWorker' in navigator)||!('caches' in window)){
+  add('Pliki offline','Brak możliwości sprawdzenia');
+ }else try{
+  const reg=pwaRegistration||await navigator.serviceWorker.getRegistration();
+  if(!reg?.active)add('Pliki offline','Brak aktywnego service workera');
+  else if(reg.waiting&&navigator.serviceWorker.controller)add('Pliki offline','Aktualizacja czeka na zatwierdzenie');
+  else{
+   const key='manu-app-v'+APP_VERSION,keys=await window.caches.keys();
+   if(!keys.includes(key))add('Pliki offline','Brak zestawu aktualnej wersji');
+   else{
+    const cache=await window.caches.open(key);
+    const paths=[
+     './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
+     './cloud-config.js?v=3.13.0','./cloud.js?v='+APP_VERSION,
+     './gallery.js?v='+APP_VERSION,'./templates.js?v='+APP_VERSION
+    ];
+    const hit=await Promise.all(paths.map(p=>cache.match(new URL(p,location.href))));
+    add('Pliki offline',hit.filter(Boolean).length+'/'+paths.length+' plików');
+   }
+  }
+ }catch(e){console.warn('MANU: kontrola plików offline',e);add('Pliki offline','Nie udało się sprawdzić');}
+ add('Pamięć lokalna','indexedDB' in window?'Interfejs IndexedDB dostępny':'Brak interfejsu IndexedDB');
+ try{
+  if(typeof navigator.storage?.persisted==='function'){
+   add('Ochrona pamięci',(await navigator.storage.persisted())?'Przyznana':'Nieprzyznana');
+  }else add('Ochrona pamięci','Nie można sprawdzić w tej przeglądarce');
+ }catch(e){add('Ochrona pamięci','Nie udało się sprawdzić');}
+ add('Drukowanie / PDF',typeof window.print==='function'?'Funkcja drukowania dostępna':'Brak wykrytej funkcji drukowania');
+ add('Internet',navigator.onLine===false?'Przeglądarka zgłasza brak połączenia':'Przeglądarka zgłasza połączenie');
+ return {version:APP_VERSION,platform:compatPlatform(),rows};
+}
+function compatMarkup(){
+ if(compatBusy)return '<p class="muted small">Sprawdzanie dostępności funkcji…</p>';
+ if(!compatReport)return '<p class="muted small">Kontrola nie czyta projektów, zdjęć, danych klientów ani kont. Nie zapisuje niczego w pamięci.</p>';
+ return '<p><strong>MANU '+htmlEscape(compatReport.version)+' · '+htmlEscape(compatReport.platform)+'</strong></p>'+
+  '<div class="manu-compat-results">'+compatReport.rows.map(r=>'<div class="manu-compat-result"><strong>'+
+  htmlEscape(r.name)+'</strong><span>'+htmlEscape(r.detail)+'</span></div>').join('')+'</div>'+
+  '<p class="muted tiny">Wynik opisuje dostępność funkcji, a nie potwierdza zapisu PDF, pracy offline po restarcie ani trwałości projektów. Regularnie twórz kopie JSON.</p>';
+}
+function compatPanel(){
+ return '<details class="smart-settings manu-compat-details"><summary>'+icon('info')+
+  ' Kontrola zgodności urządzenia</summary><div class="smart-settings-content">'+
+  '<p class="small">Sprawdź funkcje potrzebne na Androidzie, iPhonie lub iPadzie. Bez ingerencji w zapisane dane.</p>'+
+  '<button type="button" class="btn secondary" id="manu-compat-button" data-action="compat-check">'+icon('check')+
+  ' Sprawdź urządzenie</button><div id="manu-compat-result" role="status" aria-live="polite">'+compatMarkup()+'</div></div></details>';
+}
+async function compatRun(){
+ if(compatBusy)return;
+ compatBusy=true;
+ const el=$('#manu-compat-result'),button=$('#manu-compat-button');
+ if(button)button.disabled=true;
+ if(el)el.innerHTML=compatMarkup();
+ try{compatReport=await compatProbe();}
+ catch(e){
+  console.warn('MANU: diagnostyka urządzenia',e);
+  compatReport={version:APP_VERSION,platform:compatPlatform(),rows:[{name:'Kontrola',detail:'Nie udało się ukończyć. Nie usuwaj danych.'}]};
+ }finally{
+  compatBusy=false;
+  if(el)el.innerHTML=compatMarkup();
+  if(button)button.disabled=false;
+ }
+}
+
 function pwaIsStandalone(){
  return !!(window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true);
 }
@@ -1470,8 +1545,8 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.0',
-  './gallery.js?v=3.29.0','./templates.js?v=3.29.0'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.1',
+  './gallery.js?v=3.29.1','./templates.js?v=3.29.1'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
@@ -1686,7 +1761,7 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
  <p class="muted small">Aplikacja może działać bez sieci po wcześniejszym wczytaniu zasobów. Offline nie oznacza synchronizacji ani tworzenia kopii w chmurze.</p>
  <p id="manu-offline-check-status" class="manu-offline-check-status" role="status" aria-live="polite">${htmlEscape(offlineAuditMessage)}</p>
  <div class="settings-actions"><button type="button" class="btn secondary" data-action="offline-check">${icon('check')} Sprawdź gotowość offline</button><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
- <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
+ <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}${compatPanel()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
 function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
@@ -3034,7 +3109,7 @@ case 'ui-quick-move':{
   break;
  }
  case 'pwa-check-update':void checkPwaUpdate();break;
-case 'offline-check':void checkOfflineReadiness();break;case 'security-audit':void runSecurityAudit();break;
+case 'offline-check':void checkOfflineReadiness();break;case 'security-audit':void runSecurityAudit();break;case 'compat-check':void compatRun();break;
 case 'pwa-reload':void reloadPwaSafely();break;
 }}
 async function handleSubmit(form){let data=new FormData(form),id=form.dataset.id;switch(form.id){case 'client-form':{const existing=state.clients.find(c=>c.id===id);const name=String(data.get('name')||'').trim().slice(0,120);const email=String(data.get('email')||'').trim().slice(0,180);if(!name){alert('Podaj nazwę klienta.');return;}if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert('Sprawdź adres e-mail.');return;}if(!existing&&state.clients.length>=5000){alert('Osiągnięto limit kart klientów.');return;}const fields={name,company:String(data.get('company')||'').trim().slice(0,120),email,phone:String(data.get('phone')||'').trim().slice(0,50),address:String(data.get('address')||'').trim().slice(0,280),notes:String(data.get('notes')||'').trim().slice(0,2500)};let client;if(existing){Object.assign(existing,fields);client=existing;}else{client={...fields,id:uid(),createdAt:now()};state.clients.push(client);}for(const p of state.projects)if(p.clientId===client.id)p.client=client.name;closeModal();afterDataChange(existing?'Zaktualizowano kartę klienta':'Dodano klienta');

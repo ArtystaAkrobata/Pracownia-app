@@ -1,6 +1,20 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.29.0 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.29.1 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.29.1 — Etap 18.2: diagnostyka zgodności i niezawodności PWA
+
+**Cel:** bezpieczna weryfikacja obsługiwanych funkcji na Androidzie, iOS i iPadOS bez zapisów i bez ryzyka ingerencji w projekty.
+
+- **Nowa opcja:** `Ustawienia → Testowanie aplikacji → Kontrola zgodności urządzenia → Sprawdź urządzenie`. Jest domyślnie zwinięta, by nie zaśmiecać ekranu.
+- **Kontrola odczytowa:** sposób uruchomienia (przeglądarka/PWA), obecność 8 plików offline, dostępność IndexedDB, informacja o ochronie pamięci, funkcja drukowania i wskazanie przeglądarki o połączeniu. Nie czyta rekordów, nie tworzy cache ani nie żąda nowych uprawnień.
+- **Uczciwe wyniki:** obecność API drukowania nie potwierdza zapisu PDF; 8/8 plików w cache nie potwierdza ponownego uruchomienia bez internetu. Test sprzętowy na iOS nadal potrzebny.
+- **Aktualizacja:** numer 3.29.1 i spójne zasoby PWA. Brak migracji danych `version:18` i brak zmian w logice synchronizacji lub finansów.
+- **Testy regresyjne:** przypadki iOS bez API, iPhone z PWA i pełnym cache, oczekująca aktualizacja, brak cache bez zapisu oraz widoczność w Ustawieniach.
+
+**Weryfikacja na telefonie:** uruchom aplikację w wersji 3.29.1, rozwiń `Kontrola zgodności urządzenia` i naciśnij `Sprawdź urządzenie`. Pamięć i pliki offline pozostają bez zmian. Dla rzeczywistej weryfikacji trybu samolotowego użyj osobnego `Sprawdź gotowość offline` i wykonaj restart offline w bezpiecznym teście.
+
+**Punkt wyjścia kodu:** `3fce53df` (3.29.0). Zgodność iOS niepotwierdzona na fizycznym urządzeniu.
 
 ## MANU 3.29.0 — Etap 18.1: przygotowanie testu iOS / iPadOS
 
@@ -668,6 +682,7 @@ Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, 
 2. **17.3 — Instalacja i niezawodność:** poprawki PWA wdrożone w 3.28.2; wymagane potwierdzenie instalacji, restartu i pracy offline na drugim rzeczywistym telefonie.
 3. **17.4 — Ostatnie szlify:** poprawki dokumentów PDF i komunikatów wdrożone w 3.28.3; do potwierdzenia wygląd wydruków na telefonie i tablecie, potem końcowa kontrola wersji beta.
 4. **17.5 — Testy zewnętrzne:** narzędzia i zaproszenie gotowe; rzeczywiste testy przez niezależnych testerów nadal pozostają do przeprowadzenia.
-5. **18.1 — iOS / iPadOS:** wspólna instrukcja i raport od wersji 3.29.0; pełna zgodność wymaga sprawdzenia na fizycznym iPhonie/iPadzie.
+5. **18.1 — iOS / iPadOS:** instrukcja i raport od wersji 3.29.0; potrzebny test na urządzeniu Apple.
+6. **18.2 — Kontrola zgodności:** diagnostyka przeglądarki i PWA w wersji 3.29.1; praktyczne testy instalacji, PDF i restartu offline nadal do wykonania.
 
 MANU jest funkcjonalnym prototypem w trakcie finalizacji, a nie produktem o potwierdzonej gotowości do przechowywania rzeczywistych danych wielu użytkowników.

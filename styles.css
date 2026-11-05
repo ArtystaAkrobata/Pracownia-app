@@ -3953,3 +3953,13 @@ html[data-manu-text="large"] .manu-quick-button{font-size:14px;line-height:1.45}
  .manu-danger-settings .btn.danger{width:100%}
  .manu-tester-actions .btn{width:100%;justify-content:center;white-space:normal}
 }
+
+
+/* MANU 3.29.1 · Etap 18.2: spokojna, dostępna diagnostyka urządzenia. */
+.manu-compat-details{margin-top:16px}
+#manu-compat-result{margin-top:12px;overflow-wrap:anywhere}
+.manu-compat-results{display:grid;gap:0;border-top:1px solid rgba(190,149,119,.3);margin:12px 0}
+.manu-compat-result{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:baseline;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(190,149,119,.2);font-size:12px;line-height:1.5}
+.manu-compat-result strong{font-weight:700}
+.manu-compat-result span{color:#ecc2a3;overflow-wrap:anywhere}
+@media(max-width:420px){.manu-compat-result{display:block}.manu-compat-result span{display:block;margin-top:2px}}
