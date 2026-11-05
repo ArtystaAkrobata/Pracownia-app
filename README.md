@@ -2,6 +2,10 @@
 
 **Wersja 3.29.2 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
 
+## MANU — etap 18.6: pierwsze testy na innych urządzeniach
+
+Przygotowano [plan zaproszeń, scenariusze Android/iOS oraz formularz wyników](ETAP-18-6-TESTY-ZEWNETRZNE.md) dla dwóch niezależnych osób. **Status: oczekuje na wysłanie zaproszeń i rzeczywiste wyniki testów.** Sama dokumentacja nie oznacza, że MANU zostało przetestowane na iOS lub cudzym telefonie. Funkcje aplikacji nadal w wersji **3.29.2** — bez migracji danych.
+
 ## MANU 3.29.2 — Etap 18.5: zasady prywatności i bezpieczne testy beta
 
 **Cel:** przygotować pierwszych zewnętrznych testerów do korzystania z MANU bez gromadzenia prawdziwych danych. Nie powtarzać już zaliczonych testów zapisu i nawigacji na urządzeniu właściciela.
