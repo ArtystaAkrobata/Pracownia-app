@@ -1,6 +1,16 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.3 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.28.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.28.4 — Etap 17.4: korekta szerokości ilości na wydruku PDF A4
+
+**Powód:** test na Samsung Android w systemowym podglądzie A4 potwierdził, że ilość `0,33333333` była łamana pomiędzy wierszami w wąskiej kolumnie, mimo że suma wyceny 3 × 0,33 zł = 0,99 zł była poprawna. Zrzut użytkownika z dnia 05.11.2026.
+
+- **Podgląd MANU:** zwiększono kolumnę „Ilość” do 105 px, zmniejszono szerokość opisu oraz zabroniono łamania liczby na kolejne linie.
+- **Wydruk A4:** przywrócono kontrolowany układ kolumn (6% / 29% / 20% / 8% / 18% / 19%) i brak dzielenia cyfr w kolumnie „Ilość”; długie opisy mogą zawijać się w kolumnie opisu. Pozostałe kwoty i dane dokumentów nie są modyfikowane.
+- **Dane:** nie ma migracji. Zmiana wyłącznie CSS, numeru wersji i pamięci PWA. Zapisane wyceny i projekty pozostają bez zmian.
+- **Backup kodu:** `backup-manu-v3-28-3-before-pdf-quantity-nowrap-17-4`.
+- **Weryfikacja na urządzeniu:** otwórz testową wycenę, sprawdź uruchomioną wersję 3.28.4 i ponownie otwórz „Drukuj / zapisz PDF”; każda ilość powinna pozostać w jednym wierszu. Kontrola fizycznego podglądu jest potrzebna, bo nie jest to test automatyczny.
 
 ## MANU 3.28.3 — Etap 17.4: ostatnie szlify i weryfikacja ofert PDF
 
