@@ -3930,3 +3930,26 @@ html[data-manu-text="large"] .manu-quick-button{font-size:14px;line-height:1.45}
  #quote-print-root .quote-doc-table th:nth-child(6),
  #quote-print-root .quote-doc-table td:nth-child(6){width:19%!important}
 }
+
+
+/* MANU 3.28.5 · Etap 17.5 — bezpieczne testowanie pierwszej bety */
+.manu-danger-settings{
+ margin-top:16px;
+ border-color:#69424b;
+ background:linear-gradient(125deg,#2a2022,#201c20);
+}
+.manu-danger-settings>summary{color:#f1c8ca}
+.manu-danger-settings>summary .ico{color:#f3a4a0}
+.manu-danger-settings .smart-settings-content p{line-height:1.65}
+.manu-danger-settings .btn.danger{
+ margin-top:8px;
+ min-height:44px;
+ white-space:normal;
+ text-align:center;
+}
+.manu-tester-guide .manu-tester-steps{margin-top:14px}
+.manu-tester-guide .manu-tester-steps strong{color:inherit}
+@media(max-width:420px){
+ .manu-danger-settings .btn.danger{width:100%}
+ .manu-tester-actions .btn{width:100%;justify-content:center;white-space:normal}
+}
