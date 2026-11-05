@@ -241,13 +241,31 @@ function handleAction(b){
   return;
  }
  if(action==='template-delete'){
-  const t=api.getState().templates.find(x=>x.id===id);if(!t)return;
+  const t=api.getState().templates.find(x=>x.id===id);if(!t||busy)return;
   if(!confirm('Usunąć własny szablon „'+t.name+'”? Gotowe projekty pozostaną bez zmian.'))return;
-  api.getState().templates=api.getState().templates.filter(x=>x.id!==id);
-  api.afterChange('Usunięto szablon. Projekty bez zmian.');
+  void deleteTemplate(id);
  }
 }
-function submit(form){
+async function deleteTemplate(id){
+ if(busy)return;
+ const templates=api.getState().templates,index=templates.findIndex(x=>x.id===id);
+ if(index<0)return;
+ busy=true;
+ const removed=templates.splice(index,1)[0];
+ try{
+  const saved=await api.save();
+  if(!saved){
+   templates.splice(index,0,removed);
+   alert('Nie udało się usunąć szablonu z pamięci. Przywrócono go na liście.');
+   return;
+  }
+  api.afterSaved('Usunięto szablon. Projekty bez zmian.');
+ }catch(e){
+  templates.splice(index,0,removed);
+  alert('Nie udało się usunąć szablonu. Nie zmieniono zapisanej listy.');
+ }finally{busy=false}
+}
+async function submit(form){
  if(busy)return;
  const data=new FormData(form);
  const name=String(data.get('name')||'').trim().slice(0,90);
@@ -292,10 +310,30 @@ function submit(form){
  const normalized=sanitize(obj);
  if(!normalized){alert('Nieprawidłowy szablon.');return}
  const records=api.getState().templates;
+ const previous=exists?structuredClone(exists):null;
  if(exists)Object.assign(exists,normalized);
  else records.push(normalized);
+ busy=true;
+ const button=form.querySelector('button[type="submit"]');
+ if(button)button.disabled=true;
+ let saved=false;
+ try{saved=await api.save()}catch(e){console.warn('MANU: zapis szablonu',e)}
+ finally{
+  busy=false;
+  if(button?.isConnected)button.disabled=false;
+ }
+ if(!saved){
+  // Nie zostawiamy niepotwierdzonych zmian w RAM, gdy zapis się nie uda.
+  if(exists)Object.assign(exists,previous);
+  else{
+   const idx=records.findIndex(item=>item.id===normalized.id);
+   if(idx>=0)records.splice(idx,1);
+  }
+  alert('Nie udało się zapisać szablonu. Formularz pozostaje otwarty — sprawdź pamięć urządzenia i wykonaj kopię danych.');
+  return;
+ }
  api.closeModal();
- api.afterChange(exists?'Zapisano zmiany szablonu.':'Dodano nowy szablon.');
+ api.afterSaved(exists?'Zapisano zmiany szablonu.':'Dodano nowy szablon.');
 }
 function searchChanged(value){
  search=String(value||'');
