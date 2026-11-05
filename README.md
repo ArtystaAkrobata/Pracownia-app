@@ -1,6 +1,22 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.27.3 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.27.4 (MVP, testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.27.4 — Systemowy Wstecz z „Nowy klient” i innych formularzy
+
+- Naprawiono błąd Androida zgłoszony na ścieżce **Start → Projekty → Klienci → Nowy klient → systemowy Wstecz → systemowy Wstecz**. Dotychczas samodzielny formularz nie miał własnego wpisu historii i pierwsze cofnięcie zużywało wpis kartki Klienci. W zainstalowanej PWA następny Wstecz mógł nieoczekiwanie zamknąć aplikację.
+- **Każdy samodzielny modal** (bez nadrzędnego otwartego modalu) tworzy odtąd osobny wpis historii — również Nowy klient, Nowy projekt, Nowe zadanie, Nowe przypomnienie i Nowa wycena. Dotyczy także przycisku X: oba sposoby zamknięcia konsumują właściwy wpis, a nie cofają kartki pod spodem.
+- Powrót do Startu zachowuje logiczną hierarchię: **Nowy klient → Klienci → Projekty → Start**, jeśli do Klientów weszliśmy z Projektów. Przy bezpośrednim przejściu Start → Klienci jest to **Nowy klient → Klienci → Start**.
+- Po zapisaniu nowego/edytowanego klienta i dokumentu podgląd jest otwierany **po** zużyciu wpisu poprzedniego formularza, bez wyścigu z asynchronicznym `popstate`.
+- Naprawiono dodatkowy błąd, w którym otwarcie karty klienta bez `projectId` mogło błędnie uruchamiać przywracanie pozycji przewinięcia i odczytać `top` z `null`.
+- Testy regresji: **16/16** zaliczonych w symulowanej historii przeglądarki, w tym X, Android Wstecz, wielokrotne otwieranie klientów, zapis nowego klienta, podgląd zapisanej wyceny i podformularze wewnątrz projektu.
+- Bez zmian schematu bazy `version:18`, projektów, klientów ani rozliczeń. PWA: `manu-app-v3.27.4`. Backup gałęzi kodu: `backup-manu-v3-27-3-before-root-modal-android-back`.
+
+### Test na Androidzie
+1. **Start → Projekty → Klienci → Nowy klient**. Systemowy Wstecz powinien wrócić do Klientów, kolejny do Projektów, kolejny do Startu — bez wyjścia z aplikacji.
+2. Powtórz, zamykając formularz przez **X**, a potem cofając systemowo do Projektów i Startu.
+3. Spróbuj też **Zadania → Nowe zadanie → Wstecz**, **Kalendarz → Nowe przypomnienie → Wstecz** oraz **Wyceny → Nowa wycena → Wstecz**.
+4. Jeśli zapiszesz testowego klienta, jego karta powinna się otworzyć, a X / systemowy Wstecz wrócić do Klientów. Nie twórz w próbach prawdziwych danych.
 
 ## MANU 3.27.3 — Audyt cofania ze wszystkich sekcji
 
