@@ -1,7 +1,19 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.28.5 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.29.0 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
 
+## MANU 3.29.0 — Etap 18.1: przygotowanie testu iOS / iPadOS
+
+**Cel:** umożliwić testy MANU na iPhonie i iPadzie bez zmiany formatu danych, synchronizacji ani działania projektów. To przygotowanie do testów, **nie potwierdzenie działania na prawdziwym iPhonie**.
+
+- **Instalacja:** w ustawieniach PWA telefon Apple otrzymuje wskazówkę Safari → Udostępnij → Dodaj do ekranu początkowego. Android zachowuje instrukcję Chrome. Identyfikacja systemu służy tylko do pokazania właściwej instrukcji.
+- **Bezpieczeństwo pamięci:** informacja o możliwym odrębnym przechowywaniu danych przez Safari i aplikację uruchomioną z ikony. Testujemy w DEMO na danych fikcyjnych, nie przenosimy realnych danych przez samą instalację.
+- **Wspólny scenariusz testera:** instalacja, gotowość offline 8/8, wyceny, PDF, zamykanie i powrót mają wskazówki dla Androida i iOS; nie wymagamy systemowego przycisku Wstecz na iPhone.
+- **Zaproszenie i opinia:** oba teksty obsługują Android/iOS/iPadOS, zawierają pytanie o wersję systemu, uruchomienie z ikony, podgląd/zapis PDF i nawigację.
+- **Aktualizacja PWA:** wydanie 3.29.0 aktualizuje odnośniki do zasobów i osiem podstawowych plików offline. Baza version:18, projekty, kopie i moduł Supabase bez zmian.
+- **Do testu na fizycznym urządzeniu Apple:** dodanie do ekranu, tryb standalone, wcięcie i bezpieczne obszary ekranu, klawiatura, PDF, restart, pamięć, aktualizacja i cofanie. Brak potwierdzenia testu sprzętowego.
+
+**Backup kodu:** wersja bazowa commit `bd3f6acc` (MANU 3.28.5). Brak migracji danych.
 ## MANU 3.28.5 — Etap 17.5: przygotowanie dla pierwszych zewnętrznych testerów
 
 **Cel:** bezpieczny, samodzielny test pierwszego uruchomienia i obsługi na urządzeniu testera. Bez nowych funkcji produkcyjnych i bez migracji danych.
@@ -655,6 +667,7 @@ Obliczany wynik to **wartość projektów minus wpisane koszty bezpośrednie**, 
 1. **17.2 — Bezpieczeństwo danych:** audyt i poprawki kodu wykonane (3.28.1); nadal wymagane próby importu/odtworzenia na osobnym telefonie oraz izolacja dwóch kont Supabase na działającej instancji.
 2. **17.3 — Instalacja i niezawodność:** poprawki PWA wdrożone w 3.28.2; wymagane potwierdzenie instalacji, restartu i pracy offline na drugim rzeczywistym telefonie.
 3. **17.4 — Ostatnie szlify:** poprawki dokumentów PDF i komunikatów wdrożone w 3.28.3; do potwierdzenia wygląd wydruków na telefonie i tablecie, potem końcowa kontrola wersji beta.
-4. **17.5 — Testy zewnętrzne:** mała grupa twórców korzystająca z gotowego trybu DEMO, planu prób i wzoru opinii.
+4. **17.5 — Testy zewnętrzne:** narzędzia i zaproszenie gotowe; rzeczywiste testy przez niezależnych testerów nadal pozostają do przeprowadzenia.
+5. **18.1 — iOS / iPadOS:** wspólna instrukcja i raport od wersji 3.29.0; pełna zgodność wymaga sprawdzenia na fizycznym iPhonie/iPadzie.
 
 MANU jest funkcjonalnym prototypem w trakcie finalizacji, a nie produktem o potwierdzonej gotowości do przechowywania rzeczywistych danych wielu użytkowników.

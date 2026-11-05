@@ -64,7 +64,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const expose = [
     'const __MANU_REAL_MODAL = modal, __MANU_REAL_CLOSE = closeModal;',
     'globalThis.__MANU_TEST = {',
-    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1432,4 +1432,54 @@ test('MANU 3.26.2: odświeżenie otwartej karty projektu nie dopisuje kolejnych 
  api.projectDetail('test');
  assert.equal(android.entries.length,count,'Ponowne wyświetlenie projektu nie może tworzyć nowego wpisu');
  assert.equal(api.getProjectModalGuard(),true);
+});
+
+
+/* Etap 18.1 — iOS / iPadOS: testy treści i zgodności zasobów. */
+test('MANU 3.29.0: iPhone pokazuje instrukcję instalacji PWA w Safari',()=>{
+ const {api,context}=boot();
+ context.navigator.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)';
+ context.navigator.platform='iPhone';
+ const html=api.pwaSettingsMarkup();
+ assert.match(html,/Safari na iPhonie/);
+ assert.match(html,/Dodaj do ekranu początkowego/);
+ assert.match(html,/oddzielną lokalną pamięć/);
+ assert.doesNotMatch(html,/W Chrome na Androidzie wybierz menu/);
+});
+test('MANU 3.29.0: Android zachowuje Chrome, a iPadOS otrzymuje instrukcję Safari',()=>{
+ const {api,context}=boot();
+ context.navigator.userAgent='Mozilla/5.0 (Linux; Android 16)';
+ context.navigator.platform='Linux armv8l';
+ assert.match(api.pwaSettingsMarkup(),/W Chrome na Androidzie wybierz menu/);
+ context.navigator.userAgent='Mozilla/5.0 (Macintosh; Intel Mac OS X)';
+ context.navigator.platform='MacIntel';
+ context.navigator.maxTouchPoints=5;
+ assert.match(api.pwaSettingsMarkup(),/Safari na iPhonie lub iPadzie/);
+});
+test('MANU 3.29.0: przewodnik, zaproszenie i opinia obejmują Android i iOS',()=>{
+ const {api}=boot();
+ const guide=api.testerGuideMarkup();
+ assert.match(guide,/Udostępnij → Dodaj do ekranu początkowego/);
+ assert.match(guide,/iOS \/ iPadOS/);
+ assert.match(guide,/fikcyjn/);
+ const invite=api.manuTesterInvite();
+ assert.match(invite,/iPhone\/iPad/);
+ assert.match(invite,/zakończ demo/);
+ const report=api.manuTesterReport();
+ assert.match(report,/Android \/ iOS \/ iPadOS/);
+ assert.match(report,/Wstecz \/ X \/ gest Safari/);
+ assert.match(report,/zapis PDF/);
+});
+test('MANU 3.29.0: wersje ośmiu plików wymaganych do działania offline pozostają spójne',()=>{
+ const index=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+ const worker=fs.readFileSync(path.join(ROOT,'service-worker.js'),'utf8');
+ assert.match(appSource,/const APP_VERSION='3\.29\.0'/);
+ assert.match(index,/app\.js\?v=3\.29\.0/);
+ assert.match(index,/styles\.css\?v=3\.29\.0/);
+ assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.0'/);
+ assert.match(worker,/app\.js\?v=3\.29\.0/);
+ assert.match(worker,/styles\.css\?v=3\.29\.0/);
+ assert.match(appSource,/cloud\.js\?v=3\.29\.0/);
+ assert.match(appSource,/gallery\.js\?v=3\.29\.0/);
+ assert.match(appSource,/templates\.js\?v=3\.29\.0/);
 });

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.28.5';
+const APP_VERSION='3.29.0';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -1422,16 +1422,23 @@ function tasksPage(){
 function pwaIsStandalone(){
  return !!(window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true);
 }
+function pwaIsAppleDevice(){
+ const ua=String(navigator.userAgent||'');
+ return /iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+}
 function pwaSettingsMarkup(){
- const standalone=pwaIsStandalone();
+ const standalone=pwaIsStandalone(),apple=pwaIsAppleDevice();
  const installStatus=standalone
   ?'MANU działa już jako aplikacja uruchomiona z ekranu głównego.'
   :installEvent
    ?'MANU jest otwarte w przeglądarce. Możesz teraz zainstalować je na ekranie głównym.'
-   :'MANU jest teraz otwarte w przeglądarce. W Chrome na Androidzie wybierz menu ⋮, a następnie „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”.';
+   :apple
+    ?'MANU jest otwarte w przeglądarce. W Safari na iPhonie lub iPadzie wybierz Udostępnij → Dodaj do ekranu początkowego i uruchom MANU z nowej ikony.'
+    :'MANU jest teraz otwarte w przeglądarce. W Chrome na Androidzie wybierz menu ⋮, a następnie „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”.';
  return `<p class="small manu-pwa-status" role="status" aria-live="polite">${htmlEscape(installStatus)}</p>
  <p class="muted small">Uruchomiona wersja: <strong>${APP_VERSION}</strong></p>
  <p class="muted small">Po instalacji otwieraj MANU z jego ikony. Nie odinstalowuj aplikacji ani nie czyść jej danych bez sprawdzonej kopii JSON.</p>
+ ${apple?'<p class="muted small">Safari i aplikacja uruchomiona z ikony mogą mieć oddzielną lokalną pamięć. Do pierwszego testu użyj DEMO. Nie zakładaj, że projekty zapisane w Safari automatycznie pojawią się w aplikacji z ikony.</p>':''}
  ${pwaUpdateReady?'<p class="manu-pwa-update" role="status">Nowa wersja MANU jest gotowa. Zakończ edycję, a następnie odśwież aplikację przyciskiem poniżej.</p>':'<p class="muted small">Aktualizacje sprawdzisz ręcznie. MANU nie przeładuje samodzielnie otwartego formularza.</p>'}
  <div class="settings-actions manu-pwa-actions">
  ${!standalone&&installEvent?`<button type="button" class="btn" data-action="install">${icon('plus')} Zainstaluj MANU</button>`:''}
@@ -1463,8 +1470,8 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.28.5',
-  './gallery.js?v=3.28.5','./templates.js?v=3.28.5'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.0',
+  './gallery.js?v=3.29.0','./templates.js?v=3.29.0'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
@@ -2406,16 +2413,17 @@ function testerGuideMarkup(){
  return `<details class="smart-settings manu-tester-guide">
   <summary>${icon('checks')} Plan pierwszego testu · 10 minut</summary>
   <div class="smart-settings-content">
-   <p class="small">To <strong>wersja beta</strong>. Najpierw testujemy bez logowania i bez rzeczywistych danych. Najlepiej użyj własnego telefonu z Androidem i Chrome.</p>
+   <p class="small">To <strong>wersja beta</strong>. Testuj bez logowania i bez rzeczywistych danych. Możesz użyć Androida z Chrome lub iPhone’a/iPada z Safari.</p>
    <ol class="manu-tester-steps">
-    <li>Otwórz MANU we własnej przeglądarce. W Chrome wybierz <strong>⋮ → Zainstaluj aplikację</strong>, jeśli ta opcja jest dostępna. Uruchom z ikony.</li>
+    <li>Otwórz MANU we własnej przeglądarce. <strong>Android:</strong> w Chrome wybierz <strong>⋮ → Zainstaluj aplikację</strong>, jeśli opcja jest dostępna. <strong>iPhone/iPad:</strong> otwórz w Safari i wybierz <strong>Udostępnij → Dodaj do ekranu początkowego</strong>. Uruchom z ikony.</li>
     <li>W <strong>Ustawienia → Instalacja i aktualizacje</strong> sprawdź numer wersji. Następnie wybierz <strong>Sprawdź gotowość offline</strong>; oczekiwany wynik po pobraniu plików to <strong>8/8</strong>.</li>
     <li>W <strong>Ustawienia → Testowanie aplikacji</strong> wybierz <strong>Uruchom bezpieczny tryb demo</strong>. Powinien pojawić się pasek „TRYB DEMO”.</li>
     <li>Otwórz fikcyjne zlecenie, zmień status lub dodaj przykładowy koszt. Sprawdź przykładowy warsztat, miejsca i wpłaty.</li>
-    <li>W <strong>Projekty → Więcej narzędzi → Wyceny</strong> otwórz wycenę. Wypróbuj podgląd, <strong>Drukuj / zapisz PDF</strong>, przycisk zamknięcia i systemowy Wstecz.</li>
+    <li>W <strong>Projekty → Więcej narzędzi → Wyceny</strong> otwórz wycenę. Wypróbuj podgląd oraz <strong>Drukuj / zapisz PDF</strong>. Sprawdź zamknięcie przez X i powrót: na Androidzie systemowy Wstecz, na iOS przyciski MANU i ewentualnie gest powrotu Safari.</li>
     <li>Wybierz <strong>Zakończ demo</strong>. Zmiany z demo powinny zniknąć; rzeczywiste dane powinny pozostać bez zmian.</li>
     <li>Wybierz <strong>Przygotuj opinię</strong>, uzupełnij wynik i odeślij osobie zapraszającej. Opisz szczegółowo każdy problem.</li>
    </ol>
+   <p class="muted small"><strong>iOS / iPadOS:</strong> sprawdź PDF również przez opcję drukowania lub zapisu do Plików, jeśli system ją udostępnia. Zgłoś w opinii brak przycisku, problem z przewijaniem albo różnice między Safari a aplikacją z ikony. Na iPhonie nie ma systemowego przycisku Wstecz jak w Androidzie.</p>
    <p class="muted tiny"><strong>Ważne:</strong> demo służy tylko poznaniu obsługi — nie testuje trwałości danych po restarcie, kont, synchronizacji ani płatności. Nie wpisuj danych klientów. Nie odinstalowuj MANU ani nie używaj „Usuń wszystkie dane” podczas testu. Opinia nie wysyła się automatycznie.</p>
    <div class="settings-actions manu-tester-actions">
     <button type="button" class="btn secondary" data-action="tester-invite">${icon('copy')} Udostępnij zaproszenie</button>
@@ -2428,7 +2436,7 @@ function manuTesterInvite(){
  return [
   'Zapraszam do przetestowania MANU — Organizera twórcy (wersja beta).',
   'Link: https://artystaakrobata.github.io/Pracownia-app/',
-  'Najlepiej otwórz w Chrome na własnym telefonie z Androidem i zainstaluj z menu ⋮, jeśli przeglądarka oferuje instalację.',
+  'Android: otwórz w Chrome i zainstaluj z menu ⋮. iPhone/iPad: otwórz w Safari, wybierz Udostępnij → Dodaj do ekranu początkowego, a następnie uruchom z ikony.',
   'W Ustawieniach sprawdź wersję i gotowość offline (8/8), następnie wejdź w Testowanie aplikacji → Uruchom bezpieczny tryb demo.',
   'Rozwiń „Plan pierwszego testu · 10 minut”. Sprawdź fikcyjne zlecenie, warsztat, wycenę PDF i działanie Wstecz.',
   'Nie loguj się ani nie wpisuj prawdziwych danych klientów. To test obsługi, a nie synchronizacji kont.',
@@ -2438,16 +2446,16 @@ function manuTesterInvite(){
 function manuTesterReport(){
  return [
   'OPINIA Z TESTU MANU v'+APP_VERSION,
-  'Model telefonu i wersja Androida: [wpisz]',
+  'Model urządzenia, system i wersja (Android / iOS / iPadOS): [wpisz]',
   'Przeglądarka lub aplikacja z ikony (PWA): [wpisz]',
   'Widoczna wersja MANU: [wpisz]',
-  'Instalacja / uruchomienie: [OK / PROBLEM]',
+  'Instalacja na ekranie początkowym / uruchomienie z ikony: [OK / PROBLEM]',
   'Sprawdzenie gotowości offline 8/8: [OK / PROBLEM / NIE TESTOWANO]',
   'Uruchomienie DEMO: [OK / PROBLEM]',
   'Edycja fikcyjnego zlecenia: [OK / PROBLEM]',
   'Warsztat i rozliczenia: [OK / PROBLEM]',
-  'Wycena i podgląd PDF: [OK / PROBLEM]',
-  'Zamykanie formularza i systemowy Wstecz: [OK / PROBLEM]',
+  'Wycena i podgląd / zapis PDF: [OK / PROBLEM / NIE TESTOWANO]',
+  'Zamykanie formularza i nawigacja (Wstecz / X / gest Safari): [OK / PROBLEM]',
   'Zakończenie demo i brak zapisanych zmian: [OK / PROBLEM]',
   'Co było niejasne lub niewygodne: [wpisz]',
   'Jeżeli wystąpił błąd: co nacisnąłeś i jaki był skutek? [kroki]',
