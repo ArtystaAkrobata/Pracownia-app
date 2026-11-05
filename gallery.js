@@ -103,7 +103,7 @@ function showAdd(projectId){
  '<div class="field"><label>Zdjęcie z telefonu *</label><input type="file" name="photo" accept="image/*" required></div>'+
  '<div class="field"><label>Rodzaj fotografii</label><select name="kind">'+
  '<option value="final">Gotowa praca</option><option value="before">Przed</option><option value="after">Po</option></select></div>'+
- '<div class="field"><label>Krótki opis</label><textarea name="caption" maxlength="200" rows="3" placeholder="Np. lustro przed matowieniem"></textarea></div>'+
+ '<div class="field"><label>Krótki opis</label><textarea name="caption" maxlength="200" rows="3" placeholder="Np. Przygotowania lub gotowa realizacja"></textarea></div>'+
  '<p class="muted small">MANU zmniejszy zdjęcie do maks. 1600 px i wyśle prywatnie do Supabase. Oryginalny plik pozostanie w telefonie. Potrzebujesz internetu.</p>'+
  '<div class="modal-actions"><button type="button" class="btn ghost" data-action="gallery-return" data-id="'+escape(projectId)+'">Anuluj</button>'+
  '<button type="submit" class="btn">Zapisz zdjęcie</button></div></form>');
