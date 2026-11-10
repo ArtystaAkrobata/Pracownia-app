@@ -3963,3 +3963,48 @@ html[data-manu-text="large"] .manu-quick-button{font-size:14px;line-height:1.45}
 .manu-compat-result strong{font-weight:700}
 .manu-compat-result span{color:#ecc2a3;overflow-wrap:anywhere}
 @media(max-width:420px){.manu-compat-result{display:block}.manu-compat-result span{display:block;margin-top:2px}}
+
+
+/* MANU 3.29.3 — iOS: bez nachodzących na siebie dat i listy projektów. */
+#quote-form .quote-form-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+#quote-form .quote-form-meta>.field{min-width:0}
+#quote-form .quote-form-meta .field input,
+#quote-form .quote-form-meta .field select{
+ display:block;width:100%;max-width:100%;min-width:0;
+ box-sizing:border-box;
+}
+@media(max-width:690px){
+ #quote-form .quote-form-meta{grid-template-columns:minmax(0,1fr);gap:0}
+ #quote-form .quote-form-meta .field label{min-height:0}
+}
+
+/* MANU 3.29.3 — Ustawienia jako kompaktowe, rozwijane kafelki.
+   Nie zmieniamy formularzy ani logiki zapisu wewnątrz sekcji. */
+.manu-settings-tile{margin:0;min-width:0}
+.manu-settings-tile>summary{
+ position:relative;min-height:56px;
+ padding:16px 47px 16px 17px;
+ line-height:1.4;
+}
+.manu-settings-tile>summary::after{
+ content:"⌄";position:absolute;right:19px;top:50%;
+ color:#c59a78;font:600 21px/1 Arial,sans-serif;
+ transform:translateY(-55%);transition:transform .15s ease;
+}
+.manu-settings-tile[open]>summary::after{transform:translateY(-45%) rotate(180deg)}
+.manu-settings-content{padding:13px 15px 18px;min-width:0}
+.manu-settings-content>.settings-group{
+ margin:0;padding:0;background:transparent;border:0;
+ box-shadow:none;border-radius:0;min-width:0;
+}
+.manu-settings-content>.cloud-section>h3{display:none}
+.manu-settings-content .settings-actions .btn{
+ white-space:normal;text-align:center;min-width:0;
+}
+@media(max-width:420px){
+ .manu-settings-tile>summary{padding:16px 42px 16px 14px}
+ .manu-settings-content{padding:13px 12px 16px}
+}
+@media(prefers-reduced-motion:reduce){
+ .manu-settings-tile>summary::after{transition:none}
+}

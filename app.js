@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const APP_VERSION='3.29.2';
+const APP_VERSION='3.29.3';
 
 /* MANU 14.1 · personalizacja prostych ustawień interfejsu (tylko na urządzeniu) */
 const UI_PREFS_KEY='manu-ui-preferences-v1';
@@ -164,6 +164,14 @@ const modalReturnStack=[];
 const MODAL_RETURN_LIMIT=6;
 let smartAlertsExpanded=false;
 let smartSettingsExpanded=false;
+const settingsTilesExpanded=new Set();
+function settingsTileStart(key,label,ic){
+ return `<details class="smart-settings manu-settings-tile" data-settings-section="${key}" ${settingsTilesExpanded.has(key)?'open':''}><summary>${icon(ic)} ${htmlEscape(label)}</summary><div class="manu-settings-content">`;
+}
+function settingsTileEnd(){return '</div></details>'}
+function settingsTile(key,label,ic,body){
+ return settingsTileStart(key,label,ic)+body+settingsTileEnd();
+}
 let profitabilityExpanded=false,profitabilityScope='all',compareExpanded=false,compareLeftId='',compareRightId='',costBreakdownExpanded=false;
 let paymentControlExpanded=false,paymentControlFilter='all',paymentControlVisible=12;
 // Rozwinięte sekcje pamiętamy w UI, bez zmian zapisanych danych.
@@ -480,9 +488,21 @@ function bar(part,total){let percentage=total>0?Math.min(100,Math.max(0,(part/to
 function empty(title,desc,button=''){return `<div class="empty">${icon('spark')}<h3>${title}</h3><p>${desc}</p>${button}</div>`;}
 function navBtn(tab,ic,label){return `<button class="nav-link ${tab===view?'active':''}" data-action="nav" data-view="${tab}">${icon(ic)}${label}</button>`;}
 function mobileBtn(tab,ic,label){return `<button type="button" class="mobile-tab ${tab===view||tab==='projects'&&(view==='quotes'||view==='clients'||view==='gallery'||view==='templates')?'active':''}" data-action="nav" data-view="${tab}" aria-label="${tab==='add'?'Dodaj projekt':label}" ${tab==='add'?'title="Dodaj projekt"':''}>${icon(ic)}<span>${label}</span></button>`;}
+/* 3.29.3 — Na szerokim układzie z menu bocznym kolejne kartki zmieniają brzeg.
+   Na telefonie pozostaje sprawdzony dotychczasowy przydział krawędzi. */
+function notebookEdge(page,wideLayout=false){
+ const normalRight=['finance','calendar','quotes','clients','gallery','templates'];
+ const wideOrder=['projects','clients','gallery','templates','quotes','finance','tasks','calendar'];
+ const wideIndex=wideLayout?wideOrder.indexOf(page):-1;
+ return wideIndex>=0?(wideIndex%2===0?'left':'right'):(normalRight.includes(page)?'right':'left');
+}
+function notebookWideLayout(){
+ if(typeof window.matchMedia==='function')return window.matchMedia('(min-width: 691px)').matches;
+ return Number(window.innerWidth||0)>=691;
+}
 function openNotebook(content,page,turn=''){
  const pageLabels={projects:'REJESTR PROJEKTÓW',clients:'KSIĘGA KLIENTÓW',gallery:'GALERIA REALIZACJI',templates:'KSIĘGA SZABLONÓW',quotes:'REJESTR WYCEN',finance:'KSIĘGA FINANSÓW',tasks:'LISTA ZADAŃ',calendar:'KALENDARZ I TERMINY'};
- const edge=['finance','calendar','quotes','clients','gallery','templates'].includes(page)?'right':'left';
+ const edge=notebookEdge(page,notebookWideLayout());
  const animation=turn==='next'||turn==='prev'?' page-turn-'+turn:turn==='open'?' page-open':'';
  return `<section class="open-notebook open-notebook--${edge}${animation}" aria-label="${pageLabels[page]||'Wnętrze notesu'}" data-book-page="${htmlEscape(page)}" data-book-edge="${edge}">
   <div class="open-notebook-binding" aria-hidden="true">
@@ -786,7 +806,7 @@ function quoteForm(projectId='',quoteId='',sourceId=''){
  modal(existing?'Edytuj wycenę':source?'Nowy dokument na podstawie wyceny':'Nowa wycena',`<form id="quote-form" data-id="${htmlEscape(q.projectId)}" data-quote="${htmlEscape(existing?.id||'')}">
  <p class="form-note">Wycena nie zmienia ceny projektu, kosztów ani historii wpłat. To dokument ofertowy, nie faktura.</p>
  ${source?'<p class="quote-clone-note"><strong>Nowa kopia dokumentu '+htmlEscape(source.number)+'</strong><span>Numer będzie nowy, data wystawienia jest dzisiejsza, a pole „Ważna do” wyczyszczone. Sprawdź klienta, pozycje, ceny i warunki przed zapisaniem. Oryginał nie zostanie zmieniony.</span></p>':''}
- <div class="form-cols"><div class="field"><label>Numer</label><input value="${htmlEscape(q.number)}" disabled></div><div class="field"><label>Data wystawienia *</label><input name="issued" type="date" required value="${htmlEscape(q.issued)}"></div><div class="field"><label>Ważna do</label><input name="validUntil" type="date" value="${htmlEscape(q.validUntil)}"></div><div class="field"><label>Projekt (opcjonalnie)</label><select id="quote-form-project" name="projectId"><option value="">Bez projektu</option>${state.projects.map(project=>`<option value="${htmlEscape(project.id)}" ${project.id===q.projectId?'selected':''}>${htmlEscape(project.title)}</option>`).join('')}</select></div></div>
+ <div class="form-cols quote-form-meta"><div class="field"><label>Numer</label><input value="${htmlEscape(q.number)}" disabled></div><div class="field"><label>Data wystawienia *</label><input name="issued" type="date" required value="${htmlEscape(q.issued)}"></div><div class="field"><label>Ważna do</label><input name="validUntil" type="date" value="${htmlEscape(q.validUntil)}"></div><div class="field"><label>Projekt (opcjonalnie)</label><select id="quote-form-project" name="projectId"><option value="">Bez projektu</option>${state.projects.map(project=>`<option value="${htmlEscape(project.id)}" ${project.id===q.projectId?'selected':''}>${htmlEscape(project.title)}</option>`).join('')}</select></div></div>
  ${quoteAssistantMarkup(q,p)}
  <details class="quote-document-options" ${q.introduction||q.deliveryTerms||q.paymentTerms?'open':''}>
   <summary>${icon('brief')} Wygląd i treść dokumentu <span>opcjonalnie</span></summary>
@@ -1545,8 +1565,8 @@ async function checkOfflineReadiness(){
  }
  const essential=[
   './','./index.html','./styles.css?v='+APP_VERSION,'./app.js?v='+APP_VERSION,
-  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.2',
-  './gallery.js?v=3.29.2','./templates.js?v=3.29.2'
+  './cloud-config.js?v=3.13.0','./cloud.js?v=3.29.3',
+  './gallery.js?v=3.29.3','./templates.js?v=3.29.3'
  ];
  try{
   const registration=pwaRegistration||await navigator.serviceWorker.getRegistration();
@@ -1739,7 +1759,7 @@ async function runSecurityAudit(){
  }
 }
 
-function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack">${window.MANUCloud?.markup?.()||''}${personalizationMarkup()}<details class="smart-settings" ${smartSettingsExpanded?'open':''}><summary>${icon('calendar')} Inteligentne przypomnienia</summary><div class="smart-settings-content"><p>MANU wykrywa ważne terminy i pokazuje je na ekranie Start. Nie tworzy nowych, zduplikowanych wpisów.</p><label class="smart-settings-check"><input id="smart-alert-enabled" type="checkbox" ${state.smartAlerts?.enabled!==false?'checked':''}><span>Włącz inteligentne przypomnienia</span></label><label class="smart-settings-lead">Przypominaj o zleceniach i płatnościach<select id="smart-alert-lead" ${state.smartAlerts?.enabled===false?'disabled':''}><option value="1" ${state.smartAlerts?.leadDays===1?'selected':''}>1 dzień wcześniej</option><option value="3" ${state.smartAlerts?.leadDays!==1&&state.smartAlerts?.leadDays!==7?'selected':''}>3 dni wcześniej</option><option value="7" ${state.smartAlerts?.leadDays===7?'selected':''}>7 dni wcześniej</option></select></label><p class="muted tiny">Warsztaty: 7 dni wcześniej. Zadania: dzień wcześniej. Własne przypomnienia: w dniu terminu. „Jutro” odkłada pojedynczą wskazówkę. To funkcja wewnątrz MANU — aplikacja nie wysyła powiadomień, gdy jest całkowicie zamknięta.</p></div></details><div class="surface settings-group"><h3>${icon('shield')} Zabezpieczenia i kopie danych</h3>
+function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbamy o bezpieczeństwo Twoich informacji.')}<div class="stack">${settingsTile('account','Konto i synchronizacja','users',window.MANUCloud?.markup?.()||'')}${personalizationMarkup()}<details class="smart-settings" ${smartSettingsExpanded?'open':''}><summary>${icon('calendar')} Inteligentne przypomnienia</summary><div class="smart-settings-content"><p>MANU wykrywa ważne terminy i pokazuje je na ekranie Start. Nie tworzy nowych, zduplikowanych wpisów.</p><label class="smart-settings-check"><input id="smart-alert-enabled" type="checkbox" ${state.smartAlerts?.enabled!==false?'checked':''}><span>Włącz inteligentne przypomnienia</span></label><label class="smart-settings-lead">Przypominaj o zleceniach i płatnościach<select id="smart-alert-lead" ${state.smartAlerts?.enabled===false?'disabled':''}><option value="1" ${state.smartAlerts?.leadDays===1?'selected':''}>1 dzień wcześniej</option><option value="3" ${state.smartAlerts?.leadDays!==1&&state.smartAlerts?.leadDays!==7?'selected':''}>3 dni wcześniej</option><option value="7" ${state.smartAlerts?.leadDays===7?'selected':''}>7 dni wcześniej</option></select></label><p class="muted tiny">Warsztaty: 7 dni wcześniej. Zadania: dzień wcześniej. Własne przypomnienia: w dniu terminu. „Jutro” odkłada pojedynczą wskazówkę. To funkcja wewnątrz MANU — aplikacja nie wysyła powiadomień, gdy jest całkowicie zamknięta.</p></div></details>${settingsTileStart('security','Zabezpieczenia i kopie danych','shield')}<div class="surface settings-group">
  <p id="manu-save-status" class="save-state-line ${storageBlocked?'is-error':''}" role="status" aria-live="polite">${htmlEscape(saveMessage())}</p>
  <p class="small">MANU zapisuje dane na tym urządzeniu po każdej zmianie. Zostawia też jeden poprzedni lokalny stan, który możesz przywrócić. Nie chroni to przed utratą telefonu ani usunięciem danych przeglądarki.</p>
  <div class="manu-security-audit"><div class="manu-security-heading"><strong>Kontrola bezpieczeństwa danych</strong><button type="button" id="manu-security-check" class="btn secondary sm" data-action="security-audit">${icon('shield')} Sprawdź</button></div><div id="manu-security-audit" role="status" aria-live="polite">${securityAuditMarkup()}</div></div>
@@ -1756,12 +1776,12 @@ function settingsPage(){return `${pageHeading('Ustawienia i dane','To tutaj dbam
    <button type="button" class="btn danger" data-action="clear">${icon('trash')} Usuń wszystkie dane</button>
   </div>
  </details>
- </div><div class="surface settings-group"><h3>${icon('info')} Dostępność i praca offline</h3>
+ </div>${settingsTileEnd()}${settingsTileStart('offline','Dostępność i praca offline','info')}<div class="surface settings-group">
  <p id="manu-network-status" class="small">${navigator.onLine===false?'Brak internetu — wpisy pozostają na tym urządzeniu.':'Połączenie internetowe jest dostępne. Dane zapisują się lokalnie, a po aktywacji konta mogą także synchronizować się z chmurą.'}</p>
  <p class="muted small">Aplikacja może działać bez sieci po wcześniejszym wczytaniu zasobów. Offline nie oznacza synchronizacji ani tworzenia kopii w chmurze.</p>
  <p id="manu-offline-check-status" class="manu-offline-check-status" role="status" aria-live="polite">${htmlEscape(offlineAuditMessage)}</p>
  <div class="settings-actions"><button type="button" class="btn secondary" data-action="offline-check">${icon('check')} Sprawdź gotowość offline</button><button class="btn secondary" data-action="storage-persist">${icon('shield')} Zwiększ trwałość lokalnej pamięci</button></div>
- <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div><div class="surface settings-group"><h3>${icon('plus')} Instalacja i aktualizacje MANU</h3><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div><div class="surface settings-group"><h3>${icon('info')} Testowanie aplikacji</h3><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}${testerPrivacyMarkup()}${compatPanel()}</div><div class="surface settings-group"><h3>${icon('spark')} Animacja otwierania MANU</h3><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div><div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
+ <p class="muted tiny">Jeśli przeglądarka pozwala, poprosimy o ochronę pamięci przed automatycznym czyszczeniem. Nie zastępuje to pobierania kopii JSON.</p></div>${settingsTileEnd()}${settingsTileStart('install','Instalacja i aktualizacje MANU','plus')}<div class="surface settings-group"><div id="manu-pwa-panel">${pwaSettingsMarkup()}</div></div>${settingsTileEnd()}${settingsTileStart('testing','Testowanie aplikacji','info')}<div class="surface settings-group"><p>Wypróbuj MANU na fikcyjnych zleceniach i warsztatach bez logowania. Praca w trybie demo nie zapisuje nic w Twojej bazie ani w chmurze. Po zamknięciu demo próbne zmiany znikają.</p><div class="settings-actions"><button type="button" class="btn secondary" data-action="demo-start">${icon('spark')} Uruchom bezpieczny tryb demo</button></div>${testerGuideMarkup()}${testerPrivacyMarkup()}${compatPanel()}</div>${settingsTileEnd()}${settingsTileStart('intro','Animacja otwierania MANU','spark')}<div class="surface settings-group"><p>Krótka animacja skórzanego notesu przy uruchomieniu aplikacji. Możesz ją wyłączyć, jeśli wolisz natychmiastowy dostęp do pulpitu.</p><label class="manu-motion-control"><input id="manu-intro-preference" type="checkbox" ${introEnabled()?'checked':''}><span>Pokazuj animację otwarcia</span></label><p class="muted tiny">Ustawienie dotyczy tej przeglądarki. Systemowe ograniczenie animacji zawsze ma pierwszeństwo.</p></div>${settingsTileEnd()}<div class="form-note">MANU v${APP_VERSION} · Wersja testowa. Synchronizacja kont wymaga połączenia z Supabase. Bez fakturowania i obsługi prawdziwych płatności. Nie wpisuj w testach danych osobowych uczestników bez odpowiedniego zabezpieczenia i podstawy prawnej.</div></div>`;}
 function modal(title,body,options={}){
  const detail=options.detail===true;
  const paper=detail||body.trimStart().startsWith('<form');
@@ -3319,6 +3339,11 @@ function events(){
  document.addEventListener('toggle',e=>{const el=e.target;if(el?.matches?.('details.smart-alerts-panel')&&el.isConnected){smartAlertsExpanded=!!el.open;return;}
  if(el?.matches?.('details.project-tools-more')&&el.isConnected){projectToolsExpanded=!!el.open;return;}
  if(el?.matches?.('details.manu-personalization')&&el.isConnected){personalizationExpanded=!!el.open;return;}
+ if(el?.matches?.('details.manu-settings-tile')&&el.isConnected){
+  const key=el.dataset.settingsSection;
+  if(key){if(el.open)settingsTilesExpanded.add(key);else settingsTilesExpanded.delete(key)}
+  return;
+ }
  if(el?.matches?.('details.smart-settings')&&el.isConnected){smartSettingsExpanded=!!el.open;return;}
  if(el?.matches?.('details.payment-control-panel')&&el.isConnected){paymentControlExpanded=!!el.open;return;}
  if(el?.matches?.('details.profitability-panel')&&el.isConnected){profitabilityExpanded=!!el.open;return;}

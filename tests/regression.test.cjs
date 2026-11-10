@@ -64,7 +64,7 @@ function boot(snapshot = {version: 18, projects: [], tasks: []}) {
   const expose = [
     'const __MANU_REAL_MODAL = modal, __MANU_REAL_CLOSE = closeModal;',
     'globalThis.__MANU_TEST = {',
-    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, testerGuideMarkup, testerPrivacyMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, compatPlatform, compatProbe, compatMarkup, compatPanel, compatRun, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
+    ' demoSnapshot, beginDemo, endDemo, demoBanner, demoSettingsPage, notebookEdge, notebookWideLayout, settingsTileStart, settingsTileEnd, testerGuideMarkup, testerPrivacyMarkup, manuTesterInvite, manuTesterReport, pwaSettingsMarkup, compatPlatform, compatProbe, compatMarkup, compatPanel, compatRun, readProjectDraft, clearProjectDraft, getDemoStatus:()=>!!demoSession, securityAuditSnapshot, securityAuditMarkup, runSecurityAudit, settingsPage, normalize, normalizeQuotes, quoteForm, quotePreview, rememberQuotePreview, returnToQuotePreview, quoteCloneDraft, quoteLastIssuer, quoteDocument, quoteDocumentLabel, quoteDocumentStyle, quoteDocumentTerms, quoteTitleForDocumentType, quoteProjectItem, quoteClientFields, quoteCostHints, quoteProjectHintsMarkup, validateBackup, metrics, expenses, projectIncome, projectPaid, normalizeUiPreferences, updateUiPreferences, quickActionOrderMarkup, quickAccessMarkup, getUiPreferences: () => ({...uiPreferences,quickActions:[...uiPreferences.quickActions]}),',
     ' calendarEvents, smartAlertsData, plusDaysDate, localDay,',
     ' costCategoryData, profitabilityData, comparisonSelection, comparisonMetrics, paymentControlData, paymentControlRows, paymentControlPanel,',
     ' profitabilityResults, profitabilityPanel, projectDetail, events,',
@@ -1476,15 +1476,15 @@ test('MANU 3.29.0: przewodnik, zaproszenie i opinia obejmują Android i iOS',()=
 test('MANU 3.29.0: wersje ośmiu plików wymaganych do działania offline pozostają spójne',()=>{
  const index=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
  const worker=fs.readFileSync(path.join(ROOT,'service-worker.js'),'utf8');
- assert.match(appSource,/const APP_VERSION='3\.29\.2'/);
- assert.match(index,/app\.js\?v=3\.29\.2/);
- assert.match(index,/styles\.css\?v=3\.29\.2/);
- assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.2'/);
- assert.match(worker,/app\.js\?v=3\.29\.2/);
- assert.match(worker,/styles\.css\?v=3\.29\.2/);
- assert.match(appSource,/cloud\.js\?v=3\.29\.2/);
- assert.match(appSource,/gallery\.js\?v=3\.29\.2/);
- assert.match(appSource,/templates\.js\?v=3\.29\.2/);
+ assert.match(appSource,/const APP_VERSION='3\.29\.3'/);
+ assert.match(index,/app\.js\?v=3\.29\.3/);
+ assert.match(index,/styles\.css\?v=3\.29\.3/);
+ assert.match(worker,/CACHE_NAME='manu-app-v3\.29\.3'/);
+ assert.match(worker,/app\.js\?v=3\.29\.3/);
+ assert.match(worker,/styles\.css\?v=3\.29\.3/);
+ assert.match(appSource,/cloud\.js\?v=3\.29\.3/);
+ assert.match(appSource,/gallery\.js\?v=3\.29\.3/);
+ assert.match(appSource,/templates\.js\?v=3\.29\.3/);
 });
 
 
@@ -1584,4 +1584,54 @@ test('MANU 3.29.2: informacja o prywatności pozostaje bez pól i żądań upraw
  assert.doesNotMatch(html,/data-action=/);
  const guides=api.testerGuideMarkup();
  assert.match(guides,/Plan pierwszego testu/);
+});
+
+
+/* MANU 3.29.3 — trzy zgłoszenia zewnętrznych testerów. */
+test('MANU 3.29.3: układ kartek na telefonie pozostaje dokładnie taki jak wcześniej',()=>{
+ const {api}=boot();
+ const pages=['projects','clients','gallery','templates','quotes','finance','tasks','calendar'];
+ assert.deepEqual(pages.map(page=>api.notebookEdge(page,false)),
+  ['left','right','right','right','right','right','left','right']);
+});
+test('MANU 3.29.3: tablet zmienia brzeg dla każdej kolejnej kartki w bocznym menu',()=>{
+ const {api,context}=boot();
+ const pages=['projects','clients','gallery','templates','quotes','finance','tasks','calendar'];
+ assert.deepEqual(pages.map(page=>api.notebookEdge(page,true)),
+  ['left','right','left','right','left','right','left','right']);
+ context.window.matchMedia=()=>({matches:true});
+ assert.equal(api.notebookWideLayout(),true);
+ context.window.matchMedia=()=>({matches:false});
+ assert.equal(api.notebookWideLayout(),false);
+});
+test('MANU 3.29.3: ustawienia mają niezależne domyślnie zwinięte kafelki',()=>{
+ const {api}=boot();
+ const html=api.settingsPage();
+ for(const key of ['account','security','offline','install','testing','intro']){
+  assert.match(html,new RegExp('data-settings-section="'+key+'"'));
+  assert.doesNotMatch(html,new RegExp('data-settings-section="'+key+'" open'));
+ }
+ assert.match(html,/Konto i synchronizacja/);
+ assert.match(html,/Personalizacja MANU/);
+ assert.match(html,/Inteligentne przypomnienia/);
+ assert.match(html,/data-action="backup-recovery"/);
+ assert.match(html,/data-action="demo-start"/);
+ assert.match(html,/manu-danger-settings/);
+});
+test('MANU 3.29.3: kafelki zachowują stan otwarcia, bez ingerencji w dane',()=>{
+ const {api}=boot({version:18,projects:[job('a')],tasks:[]});
+ const before=JSON.stringify(api.getState());
+ const card=api.settingsTileStart('security','Zabezpieczenia i kopie danych','shield');
+ assert.match(card,/data-settings-section="security"/);
+ assert.doesNotMatch(card,/open/);
+ assert.equal(api.settingsTileEnd(),'</div></details>');
+ assert.equal(JSON.stringify(api.getState()),before);
+});
+test('MANU 3.29.3: pola wyceny mobilnej dostają osobną responsywną siatkę',()=>{
+ const css=fs.readFileSync(path.join(ROOT,'styles.css'),'utf8');
+ assert.match(appSource,/class="form-cols quote-form-meta"/);
+ assert.match(css,/#quote-form \.quote-form-meta\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/@media\(max-width:690px\)\{\s*#quote-form \.quote-form-meta\{grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/#quote-form \.quote-form-meta \.field select/);
+ assert.match(css,/\.manu-settings-tile>summary/);
 });

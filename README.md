@@ -1,6 +1,19 @@
 # MANU — Organizer twórcy
 
-**Wersja 3.29.2 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+**Wersja 3.29.3 (beta testowa)** · Polska aplikacja instalowana jako PWA, przygotowana dla artystów, organizatorów warsztatów i małych pracowni rzemieślniczych.
+
+## MANU 3.29.3 — Etap 18.7: poprawki po pierwszych testach zewnętrznych
+
+**Zakres:** trzy zgłoszenia (formularz wyceny iOS, czytelność ustawień, kolejność brzegów na tablecie Android). Brak migracji danych i zmian logiki projektów, finansów, synchronizacji i kopii.
+
+- **Wycena na telefonie:** cztery pola „Numer”, „Data wystawienia”, „Ważna do”, „Projekt” korzystają z własnej siatki. Na ekranie do 690 px są wyświetlane jedno pod drugim; selektor i daty mają ograniczoną szerokość do dostępnego miejsca. Inne formularze zachowują dotychczasową strukturę.
+- **Ustawienia:** główne sekcje „Konto i synchronizacja”, „Zabezpieczenia i kopie danych”, „Dostępność i praca offline”, „Instalacja i aktualizacje MANU”, „Testowanie aplikacji” i „Animacja otwierania MANU” są domyślnie zwiniętymi kafelkami. „Personalizacja” i „Inteligentne przypomnienia” były już rozwijane. Wszystkie dotychczasowe przyciski pozostają w tych samych grupach. Stan rozwinięcia nowych kafelków utrzymuje się podczas przerysowania strony w bieżącej sesji.
+- **Tablet Android / szeroki układ:** w trybie z menu bocznym (min. 691 px CSS) główne kartki mają naprzemienny brzeg zgodnie z kolejnością w bocznym menu: Projekty L, Klienci P, Galeria L, Szablony P, Wyceny L, Finanse P, Zadania L, Kalendarz P. Pulpit i Ustawienia pozostają osobnymi widokami. **Na telefonie (do 690 px) dotychczasowe przypisanie brzegów i animacje pozostają nietknięte.**
+- **Testy:** regresja dotychczasowego układu telefonu i nowego układu tabletu, obecności grup w Ustawieniach, kontrola układu pól wyceny, synchronizacja wersji zasobów PWA.
+
+**Do potwierdzenia na rzeczywistych urządzeniach:** Safari iOS (brak nakładania pól), Android tablet (kolejne brzegi, poziom/pion, poprawna wersja 3.29.3), Android telefon (dotychczasowe przewracanie, działanie Ustawień i wyceny). Testy automatyczne nie zastępują testów sprzętowych.
+
+**Otwarta wersja do dalszych testów:** 3.29.3.
 
 ## MANU — etap 18.6: pierwsze testy na innych urządzeniach
 
