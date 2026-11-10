@@ -1509,7 +1509,7 @@ test('MANU 3.29.1: iPhone PWA rozpoznaje osiem plików bez modyfikacji cache',as
  context.navigator.storage={persisted:async()=>true};
  let cacheOpens=0,cacheMatches=0;
  context.window.caches={
-  keys:async()=>['manu-app-v3.29.2'],
+  keys:async()=>['manu-app-v3.29.3'],
   open:async()=>{cacheOpens++;return {match:async()=>{cacheMatches++;return {ok:true}}};}
  };
  context.location.href='https://example.org/Pracownia-app/';
